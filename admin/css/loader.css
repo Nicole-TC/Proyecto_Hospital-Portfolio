@@ -1,0 +1,80 @@
+*,*:after, *:before{
+    margin: 0;
+    padding: 0; 
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+#contenedor_carga{
+    background-color: rgba(250, 240, 245, 09.9);
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    -webkit-transition: all 1s ease;
+    -o-transition: all 1s ease;
+    transition: all 1s ease;
+    z-index: 10000;
+}
+
+#carga{
+    border: 15px solid #ccc;
+    border-top-color: #b4d7edf9;
+    border-top-style:inset;
+    height: 75px;
+    width: 75px;
+    border-radius: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    -webkit-animation: girar 1.5s linear infinite;
+    -o-animation: girar 1.5s linear infinite;
+    animation: girar 1.5s linear infinite;
+}
+
+@keyframes girar{
+    FROM{ transform: rotate(0deg);}
+    to { transform: rotate(360deg);}
+}
+
+@media print {
+    .no-imprimir {
+        display: none;
+    }
+}
+
+#grafico_compras_por_ano {
+    height: 100%;
+}
+
+.vertical-line {
+    border-left: 1px solid #dee2e6; /* Color del borde */
+    height: 100%; /* Establecer la altura de la línea */
+    position: absolute; /* Posición absoluta para superponer la línea */
+    right: 0; /* Alinear la línea a la derecha de la celda */
+    top: 0; /* Alinear la línea en la parte superior de la celda */
+}
+
+/* Estilo striped para filas alternadas */
+.striped:nth-child(even) {
+    background-color: #f2f2f2; /* Color de fondo para filas pares */
+}
+
+/* Ensancha el dropdown de mi perfil de la top nav y mejorar la distribución */
+.nav-profile .dropdown-menu {
+min-width: 220px;
+padding: 0.2rem;
+}
+
+/* Ajustes a la fila con el switch */
+.nav-profile .dropdown-item.d-flex {
+gap: 0.5rem;
+}
+
+/* Alineación y separación más suave del switch */
+.nav-profile .form-switch {
+margin-left: auto;
+}

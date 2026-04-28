@@ -1,0 +1,585 @@
+from pathlib import Path
+
+html = r'''<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Guía del repositorio base - APP del hospital</title>
+    <style>
+        :root {
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --primary: #0d6efd;
+            --primary-dark: #084298;
+            --border: #dbe3ef;
+            --code-bg: #111827;
+            --code-text: #e5e7eb;
+            --success-bg: #ecfdf5;
+            --success-border: #10b981;
+            --warning-bg: #fffbeb;
+            --warning-border: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #ffffff;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+        }
+
+        header p {
+            margin: 0;
+            opacity: .95;
+            font-size: 1.05rem;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: -25px auto 50px auto;
+            padding: 0 18px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 22px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+        }
+
+        h2 {
+            color: var(--primary-dark);
+            margin-top: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            color: #243b64;
+            margin-top: 24px;
+        }
+
+        code {
+            background: #eef2ff;
+            color: #1e3a8a;
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: .95em;
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 16px;
+            overflow-x: auto;
+            border-radius: 12px;
+            font-size: .94rem;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 14px;
+        }
+
+        .mini-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .mini-card strong {
+            color: var(--primary-dark);
+        }
+
+        .notice {
+            border-left: 5px solid var(--success-border);
+            background: var(--success-bg);
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin: 16px 0;
+        }
+
+        .warning {
+            border-left: 5px solid var(--warning-border);
+            background: var(--warning-bg);
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin: 16px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 10px;
+            margin: 14px 0;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eaf2ff;
+            color: var(--primary-dark);
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: .9rem;
+            margin-top: 28px;
+        }
+
+        @media print {
+            header {
+                background: #ffffff;
+                color: #000000;
+                padding: 20px;
+                border-bottom: 1px solid #cccccc;
+            }
+
+            main {
+                margin: 0;
+                max-width: none;
+            }
+
+            .card {
+                box-shadow: none;
+                page-break-inside: avoid;
+            }
+
+            pre {
+                white-space: pre-wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Repositorio base - Aplicación del hospìtal</h1>
+    <p>Guía educativa para comprender la estructura, permisos, sesiones, rutas y creación de módulos.</p>
+</header>
+
+<main>
+
+    <section class="card">
+        <h2>1. Objetivo del repositorio</h2>
+        <p>
+            Este repositorio contiene una versión educativa y reducida de la aplicación desarrollada en
+            <strong>PHP, MySQL, PDO, Bootstrap 5 y JavaScript</strong>.
+        </p>
+        <p>
+            Su finalidad es permitir que estudiantes desarrollen nuevos módulos respetando la arquitectura original
+            de la aplicación.
+        </p>
+
+        <div class="notice">
+            <strong>Importante:</strong> este repositorio no contiene datos reales de pacientes, personal, usuarios institucionales,
+            claves, tokens, archivos médicos, documentos administrativos reales ni información sensible.
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>2. Tecnologías utilizadas</h2>
+        <div class="grid">
+            <div class="mini-card"><strong>Back-end</strong><br>PHP 7.4</div>
+            <div class="mini-card"><strong>Base de datos</strong><br>MySQL / MariaDB</div>
+            <div class="mini-card"><strong>Conexión</strong><br>PDO con consultas preparadas</div>
+            <div class="mini-card"><strong>Front-end</strong><br>Bootstrap 5, CSS, JavaScript</div>
+            <div class="mini-card"><strong>Tablas</strong><br>DataTables</div>
+            <div class="mini-card"><strong>Iconos</strong><br>FontAwesome</div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>3. Estructura general del proyecto</h2>
+        <p>La aplicación trabaja dentro de la carpeta <code>admin</code>.</p>
+
+<pre><code>admin/
+├── app/                 # Acciones PHP: guardar, editar, eliminar, AJAX
+├── auxiliar/            # Imágenes y recursos generales
+├── css/                 # Estilos locales
+├── docs/                # Archivos subidos por usuarios
+├── funciones/           # Funciones auxiliares
+├── includes/            # Validaciones, permisos, helpers
+├── js/                  # Scripts locales
+├── model/               # Conexión PDO
+├── template/            # Layout, header, sidebar, rutas
+├── vistas/              # Vistas principales invocadas por rutas.php
+├── index.php
+├── login.php
+└── logout.php</code></pre>
+
+        <p>El archivo principal es:</p>
+<pre><code>admin/index.php</code></pre>
+
+        <p>Desde ahí se cargan los componentes comunes de la aplicación:</p>
+<pre><code>includes/auth_validate.php
+model/conexion.php
+template/header.php
+template/topnav.php
+template/sidebar.php
+template/rutas.php
+template/footer.php</code></pre>
+    </section>
+
+    <section class="card">
+        <h2>4. Instalación rápida en XAMPP</h2>
+        <ol>
+            <li>Copiar o clonar el repositorio en:</li>
+        </ol>
+
+<pre><code>C:\xampp\htdocs\_repo</code></pre>
+
+        <ol start="2">
+            <li>Crear la base de datos:</li>
+        </ol>
+
+<pre><code>CREATE DATABASE hospital_demo CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;</code></pre>
+
+        <ol start="3">
+            <li>Importar el archivo SQL demo:</li>
+        </ol>
+
+<pre><code>hospital_demo.sql</code></pre>
+
+        <ol start="4">
+            <li>Editar las credenciales locales en <code>conexion.php</code>.</li>
+            <li>Abrir en el navegador:</li>
+        </ol>
+
+<pre><code>http://localhost/_repo/admin/</code></pre>
+    </section>
+
+    <section class="card">
+        <h2>5. Usuario demo</h2>
+        <p>Luego de importar la base de datos demo, se puede ingresar con:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Clave</th>
+                    <th>Uso sugerido</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>admin</code></td>
+                    <td><code>admin</code></td>
+                    <td>Usuario administrador demo</td>
+                </tr>
+                <tr>
+                    <td><code>pepito</code></td>
+                    <td><code>123456</code></td>
+                    <td>Usuario estudiante demo</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </section>
+
+    <section class="card">
+        <h2>6. Lógica principal de rutas</h2>
+        <p>
+            El enrutamiento de la aplicación se realiza desde:
+        </p>
+
+<pre><code>admin/template/rutas.php</code></pre>
+
+        <p>
+            Cada módulo se invoca mediante el parámetro <code>modulo</code> en la URL:
+        </p>
+
+<pre><code>index.php?modulo=nombre_modulo</code></pre>
+
+        <p>Ejemplo:</p>
+
+<pre><code>index.php?modulo=notas</code></pre>
+
+        <p>
+            El archivo <code>rutas.php</code> recibe ese valor, valida el permiso correspondiente y carga la vista indicada.
+        </p>
+
+<pre><code>case "notas":
+    validar_permiso($_SESSION["notas"] ?? 0);
+    include "forms/notas.php";
+    break;</code></pre>
+    </section>
+
+    <section class="card">
+        <h2>7. Lógica de permisos, sesiones y vistas</h2>
+        <p>
+            La aplicación utiliza un sistema simple de permisos basado en columnas de la tabla <code>admin</code>.
+            Cada permiso es una columna <code>TINYINT(1)</code>.
+        </p>
+
+        <p>Ejemplo de columnas de permisos:</p>
+
+<pre><code>admin
+debug
+miperfil
+menu_usuarios
+nuevo_usuario
+editar_usuario
+usuarios_activos
+notas
+paginas_ayuda
+en_construccion</code></pre>
+
+        <p>
+            Cuando un usuario inicia sesión correctamente, <code>login.php</code> consulta la tabla <code>admin</code>
+            y carga esos permisos en variables de sesión.
+        </p>
+
+<pre><code>$_SESSION["notas"] = $usuario->notas;
+$_SESSION["nuevo_usuario"] = $usuario->nuevo_usuario;
+$_SESSION["editar_usuario"] = $usuario->editar_usuario;</code></pre>
+
+        <p>
+            Luego, el sistema utiliza esas variables para decidir si el usuario puede acceder o no a un módulo.
+        </p>
+
+        <h3>Relación completa</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Elemento</th>
+                    <th>Ejemplo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Columna en tabla <code>admin</code></td>
+                    <td><code>notas</code></td>
+                </tr>
+                <tr>
+                    <td>Variable de sesión</td>
+                    <td><code>$_SESSION["notas"]</code></td>
+                </tr>
+                <tr>
+                    <td>URL del módulo</td>
+                    <td><code>index.php?modulo=notas</code></td>
+                </tr>
+                <tr>
+                    <td>Archivo cargado</td>
+                    <td><code>admin/forms/notas.php</code></td>
+                </tr>
+                <tr>
+                    <td>Acciones del módulo</td>
+                    <td><code>admin/app/documentos/</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="notice">
+            Para que un módulo funcione correctamente deben coincidir la columna de permiso, la variable de sesión,
+            la ruta y el archivo de vista.
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>8. Cómo agregar un nuevo módulo</h2>
+
+        <h3>Paso 1: crear la columna de permiso</h3>
+        <p>Ejemplo para crear un módulo llamado <code>reclamos</code>:</p>
+
+<pre><code>ALTER TABLE admin
+ADD COLUMN reclamos TINYINT(1) NOT NULL DEFAULT 0;</code></pre>
+
+        <h3>Paso 2: cargar el permiso en sesión</h3>
+        <p>En <code>login.php</code>, luego de validar el usuario:</p>
+
+<pre><code>$_SESSION["reclamos"] = $usuario->reclamos;</code></pre>
+
+        <h3>Paso 3: agregar el permiso al formulario de usuarios</h3>
+        <p>En:</p>
+
+<pre><code>admin/forms/nuevo_usuario.php
+admin/forms/editar_usuario.php</code></pre>
+
+        <p>Agregar un switch:</p>
+
+<pre><code>&lt;div class="form-check form-switch mb-1"&gt;
+    &lt;input type="checkbox" class="form-check-input" name="reclamos" id="reclamos"&gt;
+    &lt;label class="form-check-label" for="reclamos"&gt;Reclamos&lt;/label&gt;
+&lt;/div&gt;</code></pre>
+
+        <h3>Paso 4: guardar el permiso</h3>
+        <p>En:</p>
+
+<pre><code>admin/app/usuarios/registrar.php
+admin/app/usuarios/editar.php</code></pre>
+
+        <p>Recibir el valor:</p>
+
+<pre><code>$reclamos = boton_switch($_POST["reclamos"] ?? 0);</code></pre>
+
+        <p>Y agregarlo al <code>INSERT</code> o <code>UPDATE</code> correspondiente.</p>
+
+        <h3>Paso 5: crear la vista</h3>
+
+<pre><code>admin/forms/reclamos.php</code></pre>
+
+        <h3>Paso 6: registrar la ruta</h3>
+        <p>En <code>admin/template/rutas.php</code>:</p>
+
+<pre><code>case "reclamos":
+    validar_permiso($_SESSION["reclamos"] ?? 0);
+    include "forms/reclamos.php";
+    break;</code></pre>
+
+        <h3>Paso 7: agregar acceso visual al menú</h3>
+        <p>En <code>admin/template/sidebar.php</code> o en el archivo de menú correspondiente:</p>
+
+<pre><code>&lt;?php if ($_SESSION["reclamos"] == 1) { ?&gt;
+    &lt;a href="index.php?modulo=reclamos"&gt;Reclamos&lt;/a&gt;
+&lt;?php } ?&gt;</code></pre>
+    </section>
+
+    <section class="card">
+        <h2>9. Convenciones recomendadas</h2>
+        <p>
+            Para mantener coherencia, se recomienda usar siempre el mismo nombre para el permiso,
+            la sesión, la ruta y la vista.
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Elemento</th>
+                    <th>Convención</th>
+                    <th>Ejemplo</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Columna en <code>admin</code></td>
+                    <td>minúsculas y guion bajo</td>
+                    <td><code>notas</code></td>
+                </tr>
+                <tr>
+                    <td>Variable de sesión</td>
+                    <td>mismo nombre que la columna</td>
+                    <td><code>$_SESSION["notas"]</code></td>
+                </tr>
+                <tr>
+                    <td>URL</td>
+                    <td>mismo nombre que el módulo</td>
+                    <td><code>index.php?modulo=reclamos</code></td>
+                </tr>
+                <tr>
+                    <td>Vista</td>
+                    <td>archivo PHP en <code>vistas/</code></td>
+                    <td><code>forms/reclamos.php</code></td>
+                </tr>
+                <tr>
+                    <td>Acciones</td>
+                    <td>carpeta propia en <code>app/</code></td>
+                    <td><code>app/reclamos/guardar.php</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+<pre><code>Columna en admin: reclamos
+Variable de sesión: $_SESSION["reclamos"]
+Módulo por URL: index.php?modulo=reclamos
+Vista: forms/reclamos.php
+Acciones: app/reclamos/</code></pre>
+    </section>
+
+    <section class="card">
+        <h2>10. Seguridad básica</h2>
+        <ul>
+            <li>No subir credenciales reales.</li>
+            <li>No subir archivos reales dentro de <code>docs/</code>.</li>
+            <li>No subir bases de datos productivas.</li>
+            <li>Usar <code>password_hash()</code> y <code>password_verify()</code>.</li>
+            <li>Usar consultas preparadas con PDO.</li>
+            <li>Validar permisos antes de cargar cada módulo.</li>
+            <li>Escapar salidas HTML con <code>htmlspecialchars()</code> cuando corresponda.</li>
+        </ul>
+    </section>
+
+    <section class="card">
+        <h2>11. Archivos que no deben versionarse</h2>
+
+<pre><code>admin/model/conexion.php
+admin/docs/*
+admin/uploads/*
+*.log
+*.zip
+*.rar
+*.sql productivos
+.env</code></pre>
+
+    </section>
+
+    <section class="card">
+        <h2>12. Resumen para estudiantes</h2>
+        <p>
+            Para crear un módulo nuevo no alcanza con crear un archivo PHP. Hay que integrarlo a la lógica de la aplicación.
+        </p>
+
+        <ol>
+            <li>Crear la columna de permiso en <code>admin</code>.</li>
+            <li>Cargar ese permiso en sesión desde <code>login.php</code>.</li>
+            <li>Crear la vista en <code>vistas/</code>.</li>
+            <li>Crear las acciones en <code>app/nombre_modulo/</code>.</li>
+            <li>Registrar la ruta en <code>template/rutas.php</code>.</li>
+            <li>Agregar el acceso en el menú.</li>
+            <li>Probar con un usuario que tenga el permiso habilitado.</li>
+        </ol>
+
+        <div class="notice">
+            La regla de oro: el nombre del permiso, la sesión, la ruta y el archivo deben ser coherentes (Idénticos).
+        </div>
+    </section>
+
+    <p class="footer">
+        Documento para el repositorio base de la aplicación hospitalaria.
+    </p>
+
+</main>
+
+</body>
+</html>

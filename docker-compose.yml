@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    container_name: cliente_proyecto
+    ports:
+      - "${APP_PORT}:80"
+    volumes:
+      - .:/var/www/html
+    restart: always
+    env_file: .env

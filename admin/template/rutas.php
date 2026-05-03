@@ -62,6 +62,13 @@ switch (@$_GET["modulo"]) {
         $modal = TRUE;
         $require = "vistas/notas.php";
         break;
+
+// DIGITALIZAR
+    case 'menu_digitalizar':
+        $menu = 'Menú Digitalización';
+        $modal = FALSE;
+        $require = "vistas/digitalizar/menu_digitalizar.php";
+        break;
 }
 ?>
 

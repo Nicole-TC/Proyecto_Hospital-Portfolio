@@ -73,6 +73,7 @@ if (isset($_POST['submit'])) {
             // DOCUMENTOS
             //$_SESSION['formularios']   = $user["formularios"];
             $_SESSION['notas']         = $user["notas"];
+            $_SESSION['menu_digitalizar'] = isset($user["menu_digitalizar"]) ? $user["menu_digitalizar"] : 0;
 
             // Construir la URL relativa para redirigir al módulo/valor correcto
             if (!empty($redirect_modulo)) {

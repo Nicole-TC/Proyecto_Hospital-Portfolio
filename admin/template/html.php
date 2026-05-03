@@ -128,7 +128,7 @@ class HTML
     } */
     public static function tarjeta($session, $titulo, $descripcion, $icono, $color, $link)
     {
-        if (@$_SESSION[$session] == TRUE) {
+        if (@$_SESSION[$session] == TRUE || @$_SESSION['admin'] == 1) {
             // Tarjeta para pantallas grandes
             $html = '<div class="d-none d-lg-block col-xl-3 col-lg-4 col-sm-6 col-12 mb-1">';
             $html .= '  <div class="card shadow-sm">';
@@ -180,7 +180,7 @@ class HTML
     }
 
     public static function li($session, $titulo){
-        if(@$_SESSION[$session] == TRUE) {
+        if(@$_SESSION[$session] == TRUE || @$_SESSION['admin'] == 1) {
             $html = '<li><a class="dropdown-item" href="index.php?modulo=' . $session . '"><i class="fa-solid fa-chevron-right ml-1 mr-1"></i>' . $titulo . '</a></li>';
             echo $html;
         }

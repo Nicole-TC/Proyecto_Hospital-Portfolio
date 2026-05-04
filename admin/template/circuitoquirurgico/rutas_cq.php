@@ -28,3 +28,4 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/menu_circuitoquirurgico.php";
         break;
 }
+?>

@@ -9,6 +9,10 @@ switch (@$_GET["accion"]) {
         $menu = 'Gestión de Usuarios (CQ)'; // Título en la barra de navegación superior
         $require = "vistas/circuitoquirurgico/gestion_usuarios.php"; // Archivo físico a cargar
         break;
+    case 'dashboard':
+        $menu = 'Dashboard de Gestión';
+        $require = "vistas/circuitoquirurgico/dashboard.php";
+        break;
 
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*

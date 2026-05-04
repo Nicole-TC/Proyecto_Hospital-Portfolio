@@ -27,6 +27,12 @@ if (isset($_GET["modulo"])) {
     $menu    = $_GET["modulo"];
     // En $_SESSION[$menu] debemos tener 1 o 0 según el permiso
     $permiso = isset($_SESSION[$menu]) ? $_SESSION[$menu] : 0;
+    
+    // para administradores
+    if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1) {
+        $permiso = 1;
+    }
+
     if ($permiso == 0) {
         $_SESSION['info'] = "No tienes permisos para acceder a este lugar.";
         // Redirigimos nuevamente a index.php (sin parámetros)

@@ -1,13 +1,3 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>SIGHO - Admisión de Pacientes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-</head>
-<body class="modo-claro">
-
   <!-- Contenido principal -->
   <main class="p-4">
     <div class="card shadow bg-white">
@@ -90,5 +80,3 @@
       </div>
     </div>
   </main>
-</body>
-</html>

@@ -10,6 +10,11 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/gestion_usuarios.php"; // Archivo físico a cargar
         break;
 
+    case 'admision':
+        $menu = 'Admision (CQ)'; // Título en la barra de navegación superior
+        $require = "vistas/circuitoquirurgico/admision.php"; // Archivo físico a cargar
+        break;
+
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*
     case 'programar_cirugia':

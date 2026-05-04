@@ -23,7 +23,7 @@ try {
                     </div>
                     <h3 class="card-title fw-bold mb-3">Cargar Nuevo Documento</h3>
                     <p class="card-text text-muted mb-4">Sube un nuevo documento al sistema de digitalización. Asigna sus datos y etiquetas correspondientes para un fácil acceso posterior.</p>
-                    <a href="#" class="btn btn-primary btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow">
+                    <a href="index.php?modulo=nuevo_documento" class="btn btn-primary btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow">
                         <i class="fa-solid fa-plus me-2"></i> Nuevo Documento
                     </a>
                 </div>

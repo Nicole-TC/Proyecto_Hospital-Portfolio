@@ -6,7 +6,7 @@ services:
       - "${APP_PORT}:80"
     volumes:
       - .:/var/www/html
-      - uploads_data:/var/www/html/uploads
+      - uploads_data:/var/www/html/admin/uploads
     restart: always
     env_file: .env
 

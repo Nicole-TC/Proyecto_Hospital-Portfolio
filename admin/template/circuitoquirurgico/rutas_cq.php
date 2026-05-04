@@ -23,6 +23,10 @@ switch (@$_GET["accion"]) {
         $menu = 'Agenda Quirúrgica (CQ)'; // Título en la barra de navegación superior
         $require = "vistas/circuitoquirurgico/agenda_quirurgica.php"; // Archivo físico a cargar
         break;
+    case 'lista_espera':
+        $menu = 'Lista de Espera Quirúrgica';
+        $require = "vistas/circuitoquirurgico/lista_de_espera_quirurgica.php";
+        break;
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*
     case 'programar_cirugia':

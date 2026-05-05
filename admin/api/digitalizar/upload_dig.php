@@ -13,9 +13,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // si es POST
 http_response_code(200);
+
+// detectar archivo
+if (!isset($_FILES['archivo'])) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No se detectó archivo"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// éxito (solo detección)
 echo json_encode([
-    "status" => "ok",
-    "message" => "Solicitud POST recibida correctamente"
+    "status" => "success",
+    "message" => "Archivo detectado correctamente"
 ], JSON_UNESCAPED_UNICODE);
 
 ?>

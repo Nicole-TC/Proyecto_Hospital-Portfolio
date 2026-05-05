@@ -24,10 +24,20 @@ if (!isset($_FILES['archivo'])) {
     exit;
 }
 
-// éxito (solo detección)
+// validar error en la subida
+if ($_FILES['archivo']['error'] !== 0) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Error al subir el archivo"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// éxito (archivo detectado y sin errores)
 echo json_encode([
     "status" => "success",
-    "message" => "Archivo detectado correctamente"
+    "message" => "Archivo recibido correctamente"
 ], JSON_UNESCAPED_UNICODE);
 
 ?>

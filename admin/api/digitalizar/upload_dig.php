@@ -43,6 +43,15 @@ $temporal = $archivo['tmp_name'];
 $partes = explode('.', $nombreOriginal); // separa el nombre por puntos
 $extension = strtolower(end($partes)); // toma la última parte (la extensión)
 
+if ($extension !== "pdf") {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Solo se permiten archivos PDF"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // éxito (archivo detectado y sin errores)
 echo json_encode([
     "status" => "success",

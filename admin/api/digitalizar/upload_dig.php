@@ -11,9 +11,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// si es POST
-http_response_code(200);
-
 // validar que exista archivo
 if (!isset($_FILES['archivo'])) {
     http_response_code(400);
@@ -33,6 +30,14 @@ if ($_FILES['archivo']['error'] !== 0) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// leer datos del archivo
+$archivo = $_FILES['archivo'];
+
+$nombreOriginal = $archivo['name'];
+$tamaño = $archivo['size'];
+$tipo = $archivo['type'];
+$temporal = $archivo['tmp_name'];
 
 // éxito (archivo detectado y sin errores)
 echo json_encode([

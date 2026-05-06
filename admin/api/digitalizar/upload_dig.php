@@ -43,16 +43,14 @@ $temporal = $archivo['tmp_name'];
 $partes = explode('.', $nombreOriginal); // separa el nombre por puntos
 $extension = strtolower(end($partes)); // toma la última parte (la extensión)
 
-if (
-    $extension !== "pdf" &&
-    $extension !== "jpg" &&
-    $extension !== "jpeg" &&
-    $extension !== "png"
-) {
+# archivos permitidos y validación de formato
+$formatosPermitidos = ["pdf", "jpg", "jpeg", "png"];
+
+if (!in_array($extension, $formatosPermitidos)) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "Solo se permiten archivos PDF, JPG o PNG"
+        "message" => "Formato no permitido. Solo PDF, JPG o PNG"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

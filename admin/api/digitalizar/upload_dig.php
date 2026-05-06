@@ -39,6 +39,10 @@ $tamaño = $archivo['size'];
 $tipo = $archivo['type'];
 $temporal = $archivo['tmp_name'];
 
+// obtener extensión del archivo
+$partes = explode('.', $nombreOriginal); // separa el nombre por puntos
+$extension = strtolower(end($partes)); // toma la última parte (la extensión)
+
 // éxito (archivo detectado y sin errores)
 echo json_encode([
     "status" => "success",

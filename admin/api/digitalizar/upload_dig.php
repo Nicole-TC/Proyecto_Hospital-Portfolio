@@ -14,17 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // si es POST
 http_response_code(200);
 
-// detectar archivo
+// validar que exista archivo
 if (!isset($_FILES['archivo'])) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "No se detectó archivo"
+        "message" => "No se recibió ningún archivo"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// validar error en la subida
+// detectar archivo
 if ($_FILES['archivo']['error'] !== 0) {
     http_response_code(400);
     echo json_encode([

@@ -44,11 +44,11 @@ $tamanoMaximo = 5 * 1024 * 1024;
 
 if ($tamaño > $tamanoMaximo) {
 
-    http_response_code(400);
+    http_response_code(413);
 
     echo json_encode([
         "status" => "error",
-        "message" => "El archivo supera el tamaño permitido"
+        "message" => "El archivo excede el tamaño máximo permitido de 5MB"
     ], JSON_UNESCAPED_UNICODE);
 
     exit;

@@ -100,6 +100,23 @@ if (!$guardado) {
 
     exit;
 }
+
+// preparar consulta de inserción
+$sentencia = $bd->prepare("
+    INSERT INTO documentos_formularios
+    (
+        nombre,
+        ruta,
+        fecha_carga
+    )
+    VALUES
+    (
+        :nombre,
+        :ruta,
+        NOW()
+    )
+");
+
 // éxito (archivo detectado y sin errores)
 echo json_encode([
     "status" => "success",

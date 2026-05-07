@@ -39,6 +39,21 @@ $tamaño = $archivo['size'];
 $tipo = $archivo['type'];
 $temporal = $archivo['tmp_name'];
 
+// tamaño máximo permitido (5MB)
+$tamanoMaximo = 5 * 1024 * 1024;
+
+if ($tamaño > $tamanoMaximo) {
+
+    http_response_code(400);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "El archivo supera el tamaño permitido"
+    ], JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
+
 // obtener extensión del archivo
 $partes = explode('.', $nombreOriginal); // separa el nombre por puntos
 $extension = strtolower(end($partes)); // toma la última parte (la extensión)

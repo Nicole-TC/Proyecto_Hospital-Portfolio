@@ -41,8 +41,10 @@ $tamaño = $archivo['size'];
 $tipo = $archivo['type'];
 $temporal = $archivo['tmp_name'];
 
+$timestamp = time(); //devuelvo número único basado en fecha/hora actual para luego crear nombres únicos de archivos
+
 // tamaño máximo permitido (5MB)
-$tamanoMaximo = 5 * 1024 * 1024;
+$tamanoMaximo = 5 * 1024 * 1024;    
 
 if ($tamaño > $tamanoMaximo) {
 

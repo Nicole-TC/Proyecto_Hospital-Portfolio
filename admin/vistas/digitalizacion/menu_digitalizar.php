@@ -1,15 +1,5 @@
 <?php
 // Obtener tags de la base de datos
-$tags = [];
-try {
-    $stmt = $bd->prepare("SELECT id, nombre AS name FROM etiquetas WHERE activo = 1 ORDER BY nombre ASC");
-    if ($stmt) {
-        $stmt->execute();
-        $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-} catch (Throwable $e) {
-    // Si la tabla no existe o hay error, continuamos silenciosamente
-}
 ?>
 
 <div class="container mt-4 mb-5">
@@ -23,7 +13,7 @@ try {
                     </div>
                     <h3 class="card-title fw-bold mb-3">Cargar Nuevo Documento</h3>
                     <p class="card-text text-muted mb-4">Sube un nuevo documento al sistema de digitalización. Asigna sus datos y etiquetas correspondientes para un fácil acceso posterior.</p>
-                    <a href="index.php?modulo=nuevo_documento" class="btn btn-primary btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow">
+                    <a href="index.php?modulo=menu_digitalizar&accion=nuevo_documento" class="btn btn-primary btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow">
                         <i class="fa-solid fa-plus me-2"></i> Nuevo Documento
                     </a>
                 </div>
@@ -53,15 +43,6 @@ try {
                             <label for="tag_id" class="form-label fw-bold"><i class="fa-solid fa-tags me-2 text-muted"></i>Etiqueta (Tag)</label>
                             <select class="form-select form-select-lg bg-light border-0" id="tag_id" name="tag_id">
                                 <option value="">-- Seleccionar Etiqueta --</option>
-                                <?php if (!empty($tags)): ?>
-                                    <?php foreach($tags as $tag): ?>
-                                        <option value="<?php echo htmlspecialchars($tag['id']); ?>">
-                                            <?php echo htmlspecialchars($tag['name']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <option value="" disabled>No hay etiquetas cargadas</option>
-                                <?php endif; ?>
                             </select>
                         </div>
                         
@@ -83,3 +64,32 @@ try {
 .menu-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
 .menu-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.15)!important; }
 </style>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function() {
+    try {
+        const response = await fetch("api/digitalizar/get_opciones.php");
+        const json = await response.json();
+        
+        if (json.status === 'success') {
+            const selectTag = document.getElementById("tag_id");
+            if(json.data.etiquetas.length === 0) {
+                const option = document.createElement("option");
+                option.value = "";
+                option.disabled = true;
+                option.textContent = "No hay etiquetas cargadas";
+                selectTag.appendChild(option);
+            } else {
+                json.data.etiquetas.forEach(etiqueta => {
+                    const option = document.createElement("option");
+                    option.value = etiqueta.id;
+                    option.textContent = etiqueta.name;
+                    selectTag.appendChild(option);
+                });
+            }
+        }
+    } catch(error) {
+        console.error("Error al cargar las etiquetas:", error);
+    }
+});
+</script>

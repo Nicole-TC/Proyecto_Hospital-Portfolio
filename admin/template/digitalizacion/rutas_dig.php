@@ -7,10 +7,15 @@ switch (@$_GET["accion"]) {
         $menu = 'Etiquetas Digitalizar';
         require_once "vistas/digitalizacion/etiquetas_digitalizar.php";
         break;
+    case 'nuevo_documento':
+        $menu = 'Nuevo Documento';
+        $modal = TRUE;
+        require_once "vistas/digitalizacion/nuevo_documento.php";
+        break;
     default:
         // Si no hay acción, o la acción no existe, mostramos el menú principal del grupo
         $menu = 'Menú digitalizacion';
-        require_once  "vistas/digitalizacion/menu_digitalizar.php";
+        require_once "vistas/digitalizacion/menu_digitalizar.php";
         break;
 }
 ?> 

@@ -78,6 +78,11 @@ if (!in_array($extension, $formatosPermitidos)) {
     exit;
 }
 
+move_uploaded_file(
+    $temporal,
+    $rutaDestino . $nombreUnico
+);
+
 // éxito (archivo detectado y sin errores)
 echo json_encode([
     "status" => "success",

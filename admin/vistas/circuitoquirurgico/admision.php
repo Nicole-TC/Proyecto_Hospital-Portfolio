@@ -9,24 +9,24 @@
         <p class="text-muted">Ingreso de pacientes al circuito administrativo quirúrgico</p>
 
         <form>
-          <!-- Nombre y Apellido -->
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label for="nombre" class="form-label">Nombre*</label>
-              <input type="text" class="form-control" id="nombre" placeholder="Ej: María" required>
-            </div>
-            <div class="col-md-6">
-              <label for="apellido" class="form-label">Apellido*</label>
-              <input type="text" class="form-control" id="apellido" placeholder="Ej: García" required>
-            </div>
-          </div>
-
-          <!-- DNI y Fecha de nacimiento -->
+          <!-- DNI y Apellido -->
           <div class="row mb-3">
            <div class="col-md-6">
              <label for="dni" class="form-label">DNI*</label>
              <input type="text" class="form-control" id="dni" placeholder="Ej: 34.567.890" required>
            </div>
+            <div class="col-md-6">
+              <label for="apellido" class="form-label">Apellido*</label>
+              <input type="text" class="form-control" id="apellido" placeholder="Ej: García" required>
+            </div>
+          </div>
+          
+          <!-- Nombre y Fecha de nacimiento -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="nombre" class="form-label">Nombre*</label>
+              <input type="text" class="form-control" id="nombre" placeholder="Ej: María" required>
+            </div>
            <div class="col-md-6">
              <label for="fechaNacimiento" class="form-label">Fecha de Nacimiento*</label>
              <input type="date" class="form-control" id="fechaNacimiento" required>

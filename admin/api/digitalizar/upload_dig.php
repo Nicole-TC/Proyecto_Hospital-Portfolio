@@ -91,12 +91,12 @@ if (!$guardado) {
 
     echo json_encode([
         "status" => "error",
-        "message" => "No se pudo guardar el archivo"
+        "message" => "Error al guardar el archivo en el servidor",
+        "archivo" => $nombreOriginal
     ], JSON_UNESCAPED_UNICODE);
 
     exit;
 }
-
 // éxito (archivo detectado y sin errores)
 echo json_encode([
     "status" => "success",

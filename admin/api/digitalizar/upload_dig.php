@@ -1,4 +1,7 @@
 <?php
+
+require_once '../../model/conexion.php';
+
 header('Content-Type: application/json; charset=utf-8');
 
 // validar que la solicitud sea POST

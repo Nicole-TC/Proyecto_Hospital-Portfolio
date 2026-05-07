@@ -34,7 +34,9 @@ if ($_FILES['archivo']['error'] !== 0) {
 // leer datos del archivo
 $archivo = $_FILES['archivo'];
 
-$nombreOriginal = $archivo['name'];
+// obtener nombre original del archivo
+$nombreOriginal = basename($archivo['name']);
+
 $tamaño = $archivo['size'];
 $tipo = $archivo['type'];
 $temporal = $archivo['tmp_name'];

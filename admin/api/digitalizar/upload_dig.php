@@ -78,10 +78,24 @@ if (!in_array($extension, $formatosPermitidos)) {
     exit;
 }
 
-move_uploaded_file(
+// mover archivo al directorio de almacenamiento
+$guardado = move_uploaded_file(
     $temporal,
     $rutaDestino . $nombreUnico
 );
+
+// verificar si se guardó correctamente
+if (!$guardado) {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "No se pudo guardar el archivo"
+    ], JSON_UNESCAPED_UNICODE);
+
+    exit;
+}
 
 // éxito (archivo detectado y sin errores)
 echo json_encode([

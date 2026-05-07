@@ -43,7 +43,9 @@ $temporal = $archivo['tmp_name'];
 
 $timestamp = time(); //devuelvo número único basado en fecha/hora actual para luego crear nombres únicos de archivos
 
-$nombreUnico = $timestamp . "_" . $nombreOriginal; // genero nombre único para archivo
+$nombreUnico = $timestamp . "_" . $nombreOriginal;
+
+$rutaDestino = "../../uploads/digitalizar/";
 
 // tamaño máximo permitido (5MB)
 $tamanoMaximo = 5 * 1024 * 1024;    

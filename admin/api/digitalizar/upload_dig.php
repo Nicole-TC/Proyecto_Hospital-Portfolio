@@ -9,7 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode([
         "status" => "error",
-        "message" => "Método no permitido"
+        "message" => "Método no permitido",
+        "error" => [
+            "tipo" => "method_not_allowed"
+        ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -19,7 +22,10 @@ if (!isset($_FILES['archivo'])) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "No se recibió ningún archivo"
+        "message" => "No se recibió ningún archivo",
+        "error" => [
+            "tipo" => "missing_file"
+        ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -29,7 +35,11 @@ if ($_FILES['archivo']['error'] !== 0) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "Error al subir el archivo"
+        "message" => "Error al subir el archivo",
+        "error" => [
+            "tipo" => "upload_error",
+            "codigo" => $_FILES['archivo']['error']
+        ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -59,7 +69,12 @@ if ($tamaño > $tamanoMaximo) {
 
     echo json_encode([
         "status" => "error",
-        "message" => "El archivo excede el tamaño máximo permitido de 5MB"
+        "message" => "El archivo excede el tamaño máximo permitido de 5MB",
+        "error" => [
+            "tipo" => "file_too_large",
+            "tamaño_maximo" => "5MB",
+            "tamaño_recibido" => round($tamaño / 1024 / 1024, 2) . "MB"
+        ]
     ], JSON_UNESCAPED_UNICODE);
 
     exit;
@@ -76,7 +91,12 @@ if (!in_array($extension, $formatosPermitidos)) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "Formato no permitido. Solo PDF, JPG o PNG"
+        "message" => "Formato no permitido. Solo PDF, JPG o PNG",
+        "error" => [
+            "tipo" => "invalid_format",
+            "extension" => $extension,
+            "formatos_permitidos" => $formatosPermitidos
+        ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -113,7 +133,11 @@ if ($id_persona === null || $id_tipo_documento === null) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "Faltan parámetros: id_persona o id_tipo_documento"
+        "message" => "Faltan parámetros: id_persona o id_tipo_documento",
+        "error" => [
+            "tipo" => "missing_parameters",
+            "parametros_requeridos" => ["id_persona", "id_tipo_documento"]
+        ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

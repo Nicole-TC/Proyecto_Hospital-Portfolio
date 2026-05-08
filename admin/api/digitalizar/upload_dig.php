@@ -101,26 +101,76 @@ if (!$guardado) {
     exit;
 }
 
-// preparar consulta de inserción
-$sentencia = $bd->prepare("
-    INSERT INTO documentos_formularios
-    (
-        nombre,
-        ruta,
-        fecha_carga
-    )
-    VALUES
-    (
-        :nombre,
-        :ruta,
-        NOW()
-    )
-");
+// Recibir parámetros POST necesarios para la inserción
+$id_persona = isset($_POST['id_persona']) ? (int)$_POST['id_persona'] : null;
+$id_tipo_documento = isset($_POST['id_tipo_documento']) ? (int)$_POST['id_tipo_documento'] : null;
+$comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : null;
 
-// éxito (archivo detectado y sin errores)
-echo json_encode([
-    "status" => "success",
-    "message" => "Archivo recibido correctamente"
-], JSON_UNESCAPED_UNICODE);
+// Validar que vengan los datos obligatorios
+if ($id_persona === null || $id_tipo_documento === null) {
+    http_response_code(400);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Faltan parámetros: id_persona o id_tipo_documento"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Preparar e insertar en base de datos PostgreSQL
+try {
+    $stmt = $bd->prepare("
+        INSERT INTO documentos
+        (
+            id_persona,
+            id_tipo_documento,
+            ruta_archivo,
+            comentario,
+            fecha_subido,
+            estado
+        )
+        VALUES
+        (
+            :id_persona,
+            :id_tipo_documento,
+            :ruta_archivo,
+            :comentario,
+            NOW(),
+            true
+        )
+    ");
+
+    $resultado = $stmt->execute([
+        ':id_persona' => $id_persona,
+        ':id_tipo_documento' => $id_tipo_documento,
+        ':ruta_archivo' => $rutaDestino . $nombreUnico,
+        ':comentario' => $comentario
+    ]);
+
+    if ($resultado) {
+        http_response_code(201);
+        echo json_encode([
+            "status" => "success",
+            "message" => "Documento insertado correctamente en la base de datos",
+            "data" => [
+                "archivo" => $nombreOriginal,
+                "ruta" => $rutaDestino . $nombreUnico
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+    } else {
+        http_response_code(500);
+        echo json_encode([
+            "status" => "error",
+            "message" => "Error al insertar documento en la base de datos"
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        "status" => "error",
+        "message" => "Error de base de datos",
+        "details" => $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
+}
 
 ?>

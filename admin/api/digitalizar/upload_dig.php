@@ -101,12 +101,12 @@ if (!$guardado) {
     exit;
 }
 
-// Recibir parámetros POST necesarios para la inserción
+// recibir parámetros POST necesarios para la inserción
 $id_persona = isset($_POST['id_persona']) ? (int)$_POST['id_persona'] : null;
 $id_tipo_documento = isset($_POST['id_tipo_documento']) ? (int)$_POST['id_tipo_documento'] : null;
 $comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : null;
 
-// Validar que vengan los datos obligatorios
+// validar que vengan los datos obligatorios
 if ($id_persona === null || $id_tipo_documento === null) {
     http_response_code(400);
     echo json_encode([
@@ -116,9 +116,9 @@ if ($id_persona === null || $id_tipo_documento === null) {
     exit;
 }
 
-// Preparar e insertar en base de datos PostgreSQL
+// preparar e insertar en base de datos PostgreSQL
 try {
-    // Ejecutar INSERT con RETURNING para obtener el ID
+    // ejecutar INSERT con RETURNING para obtener el ID
     $stmt = $bd_dig->prepare("
         INSERT INTO documentos
         (
@@ -149,11 +149,11 @@ try {
     ]);
 
     if ($resultado) {
-        // Obtener el ID del documento insertado
+        // obtener el ID del documento insertado
         $documento = $stmt->fetch(PDO::FETCH_ASSOC);
         $id_documento = $documento['id'];
 
-        // Verificar que el documento existe consultando la base de datos
+        // verificar que el documento existe consultando la base de datos
         $verificar = $bd_dig->prepare("
             SELECT id, id_persona, id_tipo_documento, ruta_archivo, comentario, fecha_subido
             FROM documentos
@@ -194,7 +194,14 @@ try {
     }
 
 } catch (Exception $e) {
+
+    // eliminar archivo si falló la base de datos
+    if (file_exists($rutaDestino . $nombreUnico)) {
+        unlink($rutaDestino . $nombreUnico);
+    }
+
     http_response_code(500);
+
     echo json_encode([
         "status" => "error",
         "message" => "Error de base de datos",

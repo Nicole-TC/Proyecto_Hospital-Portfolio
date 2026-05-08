@@ -118,7 +118,8 @@ if ($id_persona === null || $id_tipo_documento === null) {
 
 // Preparar e insertar en base de datos PostgreSQL
 try {
-    $stmt = $bd->prepare("
+    // Ejecutar INSERT con RETURNING para obtener el ID
+    $stmt = $bd_dig->prepare("
         INSERT INTO documentos
         (
             id_persona,
@@ -137,6 +138,7 @@ try {
             NOW(),
             true
         )
+        RETURNING id
     ");
 
     $resultado = $stmt->execute([
@@ -147,15 +149,42 @@ try {
     ]);
 
     if ($resultado) {
-        http_response_code(201);
-        echo json_encode([
-            "status" => "success",
-            "message" => "Documento insertado correctamente en la base de datos",
-            "data" => [
-                "archivo" => $nombreOriginal,
-                "ruta" => $rutaDestino . $nombreUnico
-            ]
-        ], JSON_UNESCAPED_UNICODE);
+        // Obtener el ID del documento insertado
+        $documento = $stmt->fetch(PDO::FETCH_ASSOC);
+        $id_documento = $documento['id'];
+
+        // Verificar que el documento existe consultando la base de datos
+        $verificar = $bd_dig->prepare("
+            SELECT id, id_persona, id_tipo_documento, ruta_archivo, comentario, fecha_subido
+            FROM documentos
+            WHERE id = :id
+            LIMIT 1
+        ");
+
+        $verificar->execute([':id' => $id_documento]);
+        $doc_verificado = $verificar->fetch(PDO::FETCH_ASSOC);
+
+        if ($doc_verificado) {
+            http_response_code(201);
+            echo json_encode([
+                "status" => "success",
+                "message" => "Documento insertado correctamente en la base de datos",
+                "data" => [
+                    "id_documento" => $id_documento,
+                    "archivo" => $nombreOriginal,
+                    "ruta" => $rutaDestino . $nombreUnico,
+                    "id_persona" => $doc_verificado['id_persona'],
+                    "id_tipo_documento" => $doc_verificado['id_tipo_documento'],
+                    "fecha_subido" => $doc_verificado['fecha_subido']
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+        } else {
+            http_response_code(500);
+            echo json_encode([
+                "status" => "error",
+                "message" => "Error: documento insertado pero no se puede verificar"
+            ], JSON_UNESCAPED_UNICODE);
+        }
     } else {
         http_response_code(500);
         echo json_encode([

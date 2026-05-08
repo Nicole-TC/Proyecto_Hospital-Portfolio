@@ -92,11 +92,13 @@ if (!$guardado) {
 
     http_response_code(500);
 
-    echo json_encode([
-        "status" => "error",
-        "message" => "Error al guardar el archivo en el servidor",
+   echo json_encode([
+    "status" => "error",
+    "message" => "Error al guardar el archivo en el servidor",
+    "error" => [
         "archivo" => $nombreOriginal
-    ], JSON_UNESCAPED_UNICODE);
+    ]
+], JSON_UNESCAPED_UNICODE);
 
     exit;
 }
@@ -165,32 +167,42 @@ try {
         $doc_verificado = $verificar->fetch(PDO::FETCH_ASSOC);
 
         if ($doc_verificado) {
-            http_response_code(201);
-            echo json_encode([
-                "status" => "success",
-                "message" => "Documento insertado correctamente en la base de datos",
-                "data" => [
-                    "id_documento" => $id_documento,
-                    "archivo" => $nombreOriginal,
-                    "ruta" => $rutaDestino . $nombreUnico,
-                    "id_persona" => $doc_verificado['id_persona'],
-                    "id_tipo_documento" => $doc_verificado['id_tipo_documento'],
-                    "fecha_subido" => $doc_verificado['fecha_subido']
-                ]
-            ], JSON_UNESCAPED_UNICODE);
-        } else {
-            http_response_code(500);
-            echo json_encode([
-                "status" => "error",
-                "message" => "Error: documento insertado pero no se puede verificar"
-            ], JSON_UNESCAPED_UNICODE);
-        }
+
+    http_response_code(201);
+
+    echo json_encode([
+        "status" => "success",
+        "message" => "Documento insertado correctamente en la base de datos",
+        "data" => [
+            "documento" => [
+                "id" => $id_documento,
+                "archivo" => $nombreOriginal,
+                "ruta" => $rutaDestino . $nombreUnico,
+                "id_persona" => $doc_verificado['id_persona'],
+                "id_tipo_documento" => $doc_verificado['id_tipo_documento'],
+                "fecha_subido" => $doc_verificado['fecha_subido']
+            ]
+        ]
+    ], JSON_UNESCAPED_UNICODE);
+
+} else {
+
+    http_response_code(500);
+
+    echo json_encode([
+        "status" => "error",
+        "message" => "Error: documento insertado pero no se puede verificar"
+    ], JSON_UNESCAPED_UNICODE);
+}
     } else {
         http_response_code(500);
         echo json_encode([
-            "status" => "error",
-            "message" => "Error al insertar documento en la base de datos"
-        ], JSON_UNESCAPED_UNICODE);
+    "status" => "error",
+    "message" => "Error al insertar documento en la base de datos",
+    "error" => [
+        "tipo" => "database_insert"
+    ]
+], JSON_UNESCAPED_UNICODE);
     }
 
 } catch (Exception $e) {

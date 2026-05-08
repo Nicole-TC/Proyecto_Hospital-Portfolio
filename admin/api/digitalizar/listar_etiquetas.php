@@ -1,20 +1,6 @@
 <?php
-
 header('Content-Type: application/json');
-
-$datos = [
-    [
-        "id" => 1,
-        "nombre_etiqueta" => "Urgente",
-        "color_hex" => "#ff0000",
-        "estado" => 1
-    ],
-    [
-        "id" => 2,
-        "nombre_etiqueta" => "Pendiente",
-        "color_hex" => "#00ff00",
-        "estado" => 0
-    ]
-];
-
+require_once __DIR__ . '/../../model/conexion_dig.php';
+$stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado FROM etiquetas ORDER BY id ASC");
+$datos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 echo json_encode($datos);

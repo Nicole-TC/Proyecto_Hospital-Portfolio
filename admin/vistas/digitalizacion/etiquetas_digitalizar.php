@@ -31,7 +31,7 @@
 <script>
 $(document).ready(function() {
     $('#tabla-etiquetas').DataTable({
-        ajax:{ url:'api/digitalizar/listar_etiquetas.php',
+        ajax:{ url:'api/digitalizar/api_etiquetas_dig.php',
         dataSrc: ''},
         columns: [
             {
@@ -81,7 +81,7 @@ $(document).ready(function() {
                         <a class="text-success" href="index.php?modulo=editar_etiqueta&id=${data}">
                             <i class="bi bi-pencil-square"></i>
                         </a>
-                        <a onclick="return confirm('¿Estás seguro de eliminar?');" class="text-danger" href="app/etiquetas/eliminar.php?id=${data}">
+                        <a onclick="eliminarEtiqueta(${data})" class="text-danger" href="#">
                             <i class="bi bi-trash ml-1"></i>
                         </a>
                         <a href="https://api.whatsapp.com/send?text=Te comparto la página de SITT. Entra en https://sitt.ar/admin">
@@ -112,5 +112,33 @@ $(document).ready(function() {
             }
         }
     });
+
+    window.eliminarEtiqueta = function(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Se desactivará la etiqueta',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (result.isConfirmed) {
+                fetch('api/digitalizar/api_etiquetas_dig.php', {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: id})
+                })
+                    .then(r => r.json())
+                    .then(r => {
+                        if (r.success) {
+                            Swal.fire({icon:'success', title:'Eliminada', text:'Etiqueta desactivada', timer:1500, showConfirmButton:false});
+                            $('#tabla-etiquetas').DataTable().ajax.reload();
+                        } else {
+                            Swal.fire({icon:'error', title:'Error', text: r.error || 'No se pudo eliminar'});
+                        }
+                    });
+            }
+        });
+    };
 });
 </script>

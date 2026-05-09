@@ -5,7 +5,7 @@
             <h2 class="blue fw-bold mb-1">Gestión de Usuarios</h2>
             <p class="text-secondary mb-0">Administración de usuarios y permisos del sistema</p>
         </div>
-        <a href="index.php?modulo=nuevo_usuario" class="btn btn-success px-3 py-2 rounded-3 fw-semibold shadow-sm">
+        <a href="index.php?modulo=menu_circuitoquirurgico&accion=form_users" class="btn btn-success px-3 py-2 rounded-3 fw-semibold shadow-sm">
             <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
         </a>
     </div>
@@ -135,40 +135,6 @@
                             </td>
                         </tr>
                         <tr>
-                            <td class="ps-4 py-3 fw-medium">Carlos Pérez</td>
-                            <td class="py-3">cperez@hospital.com</td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">Laboratorio</span>
-                            </td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary">20/04/2026 15:15</td>
-                            <td class="py-3 pe-4 text-center">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="ps-4 py-3 fw-medium">Ana López</td>
-                            <td class="py-3">alopez@hospital.com</td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">Radiólogo</span>
-                            </td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary">18/04/2026 15:45</td>
-                            <td class="py-3 pe-4 text-center">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
-                            </td>
-                        </tr>
-                        <tr>
                             <td class="ps-4 py-3 fw-medium border-0">Pedro Ramírez</td>
                             <td class="py-3 border-0">pramirez@hospital.com</td>
                             <td class="py-3 border-0">
@@ -191,3 +157,6 @@
         </div>
     </div>
 </div>
+
+<!-- Descomentar cuando la API esté lista -->
+<!-- <script src="js/circuitoquirurgico/gestion_usuarios.js"></script> -->

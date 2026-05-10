@@ -1,248 +1,139 @@
 <?php
-
-require_once '../../model/conexion.php';
-
+session_start();
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../../model/conexion_dig.php';
 
-// validar que la solicitud sea POST
+// Validar que la solicitud sea POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Método no permitido",
-        "error" => [
-            "tipo" => "method_not_allowed"
-        ]
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["status" => "error", "message" => "Método no permitido"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// validar que exista archivo
-if (!isset($_FILES['archivo'])) {
+// Validar que exista archivo
+if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== 0) {
     http_response_code(400);
-    echo json_encode([
-        "status" => "error",
-        "message" => "No se recibió ningún archivo",
-        "error" => [
-            "tipo" => "missing_file"
-        ]
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["status" => "error", "message" => "No se recibió ningún archivo o hubo un error al subirlo"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// detectar archivo
-if ($_FILES['archivo']['error'] !== 0) {
-    http_response_code(400);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Error al subir el archivo",
-        "error" => [
-            "tipo" => "upload_error",
-            "codigo" => $_FILES['archivo']['error']
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// leer datos del archivo
-$archivo = $_FILES['archivo'];
-
-// obtener nombre original del archivo
-$nombreOriginal = basename($archivo['name']);
-
-$tamaño = $archivo['size'];
-$tipo = $archivo['type'];
-$temporal = $archivo['tmp_name'];
-
-$timestamp = time(); //devuelvo número único basado en fecha/hora actual para luego crear nombres únicos de archivos
-
-$nombreUnico = $timestamp . "_" . $nombreOriginal;
-
-$rutaDestino = "../../uploads/digitalizar/";
-
-// tamaño máximo permitido (5MB)
-$tamanoMaximo = 5 * 1024 * 1024;    
-
-if ($tamaño > $tamanoMaximo) {
-
-    http_response_code(413);
-
-    echo json_encode([
-        "status" => "error",
-        "message" => "El archivo excede el tamaño máximo permitido de 5MB",
-        "error" => [
-            "tipo" => "file_too_large",
-            "tamaño_maximo" => "5MB",
-            "tamaño_recibido" => round($tamaño / 1024 / 1024, 2) . "MB"
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-
-    exit;
-}
-
-// obtener extensión del archivo
-$partes = explode('.', $nombreOriginal); // separa el nombre por puntos
-$extension = strtolower(end($partes)); // toma la última parte (la extensión)
-
-# archivos permitidos y validación de formato
-$formatosPermitidos = ["pdf", "jpg", "jpeg", "png"];
-
-if (!in_array($extension, $formatosPermitidos)) {
-    http_response_code(400);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Formato no permitido. Solo PDF, JPG o PNG",
-        "error" => [
-            "tipo" => "invalid_format",
-            "extension" => $extension,
-            "formatos_permitidos" => $formatosPermitidos
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// mover archivo al directorio de almacenamiento
-$guardado = move_uploaded_file(
-    $temporal,
-    $rutaDestino . $nombreUnico
-);
-
-// verificar si se guardó correctamente
-if (!$guardado) {
-
-    http_response_code(500);
-
-   echo json_encode([
-    "status" => "error",
-    "message" => "Error al guardar el archivo en el servidor",
-    "error" => [
-        "archivo" => $nombreOriginal
-    ]
-], JSON_UNESCAPED_UNICODE);
-
-    exit;
-}
-
-// recibir parámetros POST necesarios para la inserción
-$id_persona = isset($_POST['id_persona']) ? (int)$_POST['id_persona'] : null;
-$id_tipo_documento = isset($_POST['id_tipo_documento']) ? (int)$_POST['id_tipo_documento'] : null;
-$comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : null;
-
-// validar que vengan los datos obligatorios
-if ($id_persona === null || $id_tipo_documento === null) {
-    http_response_code(400);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Faltan parámetros: id_persona o id_tipo_documento",
-        "error" => [
-            "tipo" => "missing_parameters",
-            "parametros_requeridos" => ["id_persona", "id_tipo_documento"]
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// preparar e insertar en base de datos PostgreSQL
 try {
-    // ejecutar INSERT con RETURNING para obtener el ID
-    $stmt = $bd_dig->prepare("
-        INSERT INTO documentos
-        (
-            id_persona,
-            id_tipo_documento,
-            ruta_archivo,
-            comentario,
-            fecha_subido,
-            estado
-        )
-        VALUES
-        (
-            :id_persona,
-            :id_tipo_documento,
-            :ruta_archivo,
-            :comentario,
-            NOW(),
-            true
-        )
-        RETURNING id
-    ");
+    $bd_dig->beginTransaction();
 
-    $resultado = $stmt->execute([
-        ':id_persona' => $id_persona,
-        ':id_tipo_documento' => $id_tipo_documento,
-        ':ruta_archivo' => $rutaDestino . $nombreUnico,
-        ':comentario' => $comentario
-    ]);
+    // 1. Obtener y validar datos del formulario
+    $titulo = trim($_POST['titulo'] ?? '');
+    $dni = trim($_POST['dni'] ?? '');
+    $nombre = trim($_POST['nombre'] ?? '');
+    $apellido = trim($_POST['apellido'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $telefono = trim($_POST['telefono'] ?? '');
+    $id_tipo_documento = filter_var($_POST['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
+    $descripcion = trim($_POST['descripcion'] ?? '');
+    $tag_ids = isset($_POST['tag_id']) && is_array($_POST['tag_id']) ? $_POST['tag_id'] : [];
+    $id_usuario = $_SESSION['id'] ?? null;
 
-    if ($resultado) {
-        // obtener el ID del documento insertado
-        $documento = $stmt->fetch(PDO::FETCH_ASSOC);
-        $id_documento = $documento['id'];
-
-        // verificar que el documento existe consultando la base de datos
-        $verificar = $bd_dig->prepare("
-            SELECT id, id_persona, id_tipo_documento, ruta_archivo, comentario, fecha_subido
-            FROM documentos
-            WHERE id = :id
-            LIMIT 1
-        ");
-
-        $verificar->execute([':id' => $id_documento]);
-        $doc_verificado = $verificar->fetch(PDO::FETCH_ASSOC);
-
-        if ($doc_verificado) {
-
-    http_response_code(201);
-
-    echo json_encode([
-        "status" => "success",
-        "message" => "Documento insertado correctamente en la base de datos",
-        "data" => [
-            "documento" => [
-                "id" => $id_documento,
-                "archivo" => $nombreOriginal,
-                "ruta" => $rutaDestino . $nombreUnico,
-                "id_persona" => $doc_verificado['id_persona'],
-                "id_tipo_documento" => $doc_verificado['id_tipo_documento'],
-                "fecha_subido" => $doc_verificado['fecha_subido']
-            ]
-        ]
-    ], JSON_UNESCAPED_UNICODE);
-
-} else {
-
-    http_response_code(500);
-
-    echo json_encode([
-        "status" => "error",
-        "message" => "Error: documento insertado pero no se puede verificar"
-    ], JSON_UNESCAPED_UNICODE);
-}
-    } else {
-        http_response_code(500);
-        echo json_encode([
-    "status" => "error",
-    "message" => "Error al insertar documento en la base de datos",
-    "error" => [
-        "tipo" => "database_insert"
-    ]
-], JSON_UNESCAPED_UNICODE);
+    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo) {
+        throw new Exception("Faltan datos requeridos (Título, DNI, Nombre, Apellido o Tipo de Documento).");
     }
+
+    // 2. Gestionar la Persona (Buscar en `personal` o insertar paciente)
+    $stmt = $bd_dig->prepare("SELECT id FROM personal WHERE dni = ?");
+    $stmt->execute([$dni]);
+    $persona = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($persona) {
+        $id_persona = $persona['id'];
+    } else {
+        // Insertar paciente en la tabla `personal` con valores por defecto para los NOT NULL
+        $stmt = $bd_dig->prepare("
+            INSERT INTO personal (
+                dni, activo, legajo, apellidoynombre, apellido, nombre, 
+                encasillamiento, cargo, rh, dependencia, regimen, turno, telefono, correo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+        ");
+        $apellidoynombre = $apellido . ' ' . $nombre;
+        $stmt->execute([
+            $dni, 
+            true, // activo
+            0, // legajo
+            $apellidoynombre, 
+            $apellido, 
+            $nombre, 
+            'Paciente', // encasillamiento
+            'Paciente', // cargo
+            0, // rh
+            'Ninguna', // dependencia
+            'Ninguno', // regimen
+            'Ninguno', // turno
+            $telefono, 
+            $email
+        ]);
+        $id_persona = $stmt->fetchColumn();
+    }
+
+    // 3. Gestionar la subida del archivo
+    $archivo = $_FILES['archivo'];
+    $nombreOriginal = $archivo['name'];
+    $temporal = $archivo['tmp_name'];
+    
+    $extension = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+    $formatosPermitidos = ["pdf", "jpg", "jpeg", "png"];
+    
+    if (!in_array($extension, $formatosPermitidos)) {
+        throw new Exception("Formato no permitido. Solo PDF, JPG o PNG.");
+    }
+
+    // Carpeta destino (Docker volume mapeado en /var/www/html/admin/uploads)
+    $carpetaDestino = __DIR__ . '/../../uploads/';
+    if (!is_dir($carpetaDestino)) {
+        if (!mkdir($carpetaDestino, 0755, true)) {
+            throw new Exception("No se pudo crear el directorio de subida.");
+        }
+    }
+
+    $nombreArchivoNuevo = uniqid("doc_") . '.' . $extension;
+    $rutaFisica = $carpetaDestino . $nombreArchivoNuevo;
+    $rutaRelativa = "uploads/" . $nombreArchivoNuevo;
+
+    if (!move_uploaded_file($temporal, $rutaFisica)) {
+        throw new Exception("Error al mover el archivo al volumen de destino.");
+    }
+
+    // 4. Insertar el documento en la base de datos
+    // Como no hay campo 'titulo' en la tabla documentos, lo agregamos al comentario
+    $comentario_final = "Título: " . $titulo . "\nDescripción: " . $descripcion;
+    
+    $stmt = $bd_dig->prepare("
+        INSERT INTO documentos (id_persona, id_tipo_documento, ruta_archivo, comentario, id_usuario, estado, fecha_subido) 
+        VALUES (?, ?, ?, ?, ?, true, NOW()) RETURNING id
+    ");
+    $stmt->execute([$id_persona, $id_tipo_documento, $rutaRelativa, trim($comentario_final), $id_usuario]);
+    $id_documento = $stmt->fetchColumn();
+
+    // 5. Insertar etiquetas vinculadas al documento
+    if (!empty($tag_ids)) {
+        $stmtTag = $bd_dig->prepare("INSERT INTO documento_etiquetas (id_documento, id_etiqueta) VALUES (?, ?)");
+        foreach ($tag_ids as $tag_id) {
+            if (filter_var($tag_id, FILTER_VALIDATE_INT)) {
+                $stmtTag->execute([$id_documento, $tag_id]);
+            }
+        }
+    }
+
+    $bd_dig->commit();
+
+    echo json_encode([
+        "status" => "ok",
+        "message" => "Documento subido y registrado correctamente."
+    ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
-
-    // eliminar archivo si falló la base de datos
-    if (file_exists($rutaDestino . $nombreUnico)) {
-        unlink($rutaDestino . $nombreUnico);
+    if ($bd_dig->inTransaction()) {
+        $bd_dig->rollBack();
     }
-
-    http_response_code(500);
-
+    http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "Error de base de datos",
-        "details" => $e->getMessage()
+        "message" => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
-
-?>

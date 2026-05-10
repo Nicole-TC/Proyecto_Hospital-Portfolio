@@ -29,7 +29,7 @@
                     </div>
                     <h3 class="card-title fw-bold mb-3">Administrar Etiquetas</h3>
                     <p class="card-text text-muted mb-4">Gestiona las etiquetas disponibles en el sistema para organizar y categorizar los documentos de forma eficiente.</p>
-                    <a href="index.php?modulo=menu_digitalizar&accion=etiquetas_digitalizar" class="btn btn-warning btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow text-white fw-bold">
+                    <a href="index.php?modulo=menu_digitalizar&accion=etiquetas_digitalizar" class="btn btn-warning btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow text-white">
                         <i class="fa-solid fa-tag me-2"></i> Administrar Etiquetas
                     </a>
                 </div>

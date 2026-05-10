@@ -9,7 +9,7 @@
       <h3 class="mb-0 fw-bold">Auditoría Global</h3>
     </div>
     <div class="card-body">
-      <p class="text-muted mb-4">Historial completo de actividades del sistema SIGHO</p>
+      <p class="text-muted mb-4">Historial completo de actividades del sistema</p>
 
       <!-- Filtros de búsqueda -->
       <div class="border rounded p-3 mb-4">

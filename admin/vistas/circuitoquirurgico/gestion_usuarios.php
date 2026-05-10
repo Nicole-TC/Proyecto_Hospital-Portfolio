@@ -65,90 +65,11 @@
                             <th class="py-3 pe-4 text-center border-0 text-secondary">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tablaUsuariosBody">
                         <tr>
-                            <td class="ps-4 py-3 fw-medium">María González</td>
-                            <td class="py-3">mgonzalez@hospital.com</td>
-                            <td class="py-3">
-                                <span class="badge bg-light-purple purple rounded-pill px-2 py-1 fw-normal">Administrador</span>
-                            </td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary">20/04/2026 14:30</td>
-                            <td class="py-3 pe-4 text-center">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="ps-4 py-3 fw-medium">Roberto Silva</td>
-                            <td class="py-3">rsilva@hospital.com</td>
-                            <td class="py-3">
-                                <span class="badge bg-light-blue blue rounded-pill px-2 py-1 fw-normal">Médico Cirujano</span>
-                            </td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary">20/04/2026 17:30</td>
-                            <td class="py-3 pe-4 text-center">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="ps-4 py-3 fw-medium">Juan Martínez</td>
-                            <td class="py-3">jmartinez@hospital.com</td>
-                            <td class="py-3">
-                                <span class="badge bg-light-blue blue rounded-pill px-2 py-1 fw-normal">Médico Cardiólogo</span>
-                            </td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary">20/04/2026 16:00</td>
-                            <td class="py-3 pe-4 text-center">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="ps-4 py-3 fw-medium">Laura Pérez</td>
-                            <td class="py-3">lperez@hospital.com</td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">Administrativo Admisión</span>
-                            </td>
-                            <td class="py-3">
-                                <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary">20/04/2026 15:00</td>
-                            <td class="py-3 pe-4 text-center">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="ps-4 py-3 fw-medium border-0">Pedro Ramírez</td>
-                            <td class="py-3 border-0">pramirez@hospital.com</td>
-                            <td class="py-3 border-0">
-                                <span class="badge bg-light-blue blue rounded-pill px-2 py-1 fw-normal">Médico Anestesiólogo</span>
-                            </td>
-                            <td class="py-3 border-0">
-                                <span class="badge bg-light-danger danger rounded-pill px-2 py-1 fw-normal">
-                                    <i class="fa-solid fa-circle" style="font-size: 0.5rem; vertical-align: middle;"></i> Inactivo
-                                </span>
-                            </td>
-                            <td class="py-3 text-secondary border-0">10/04/2026 09:00</td>
-                            <td class="py-3 pe-4 text-center border-0">
-                                <a href="#" class="blue me-2"><i class="bi bi-pencil-square"></i></a>
-                                <a href="#" class="danger"><i class="bi bi-trash"></i></a>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                Cargando usuarios desde el servicio...
                             </td>
                         </tr>
                     </tbody>
@@ -158,5 +79,4 @@
     </div>
 </div>
 
-<!-- Descomentar cuando la API esté lista -->
-<!-- <script src="js/circuitoquirurgico/gestion_usuarios.js"></script> -->
+<script src="js/circuitoquirurgico/gestion_usuarios.js"></script>

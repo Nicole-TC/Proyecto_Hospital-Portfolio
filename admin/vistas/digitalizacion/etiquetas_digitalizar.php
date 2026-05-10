@@ -1,7 +1,7 @@
 <div class="col-12 mb-5">
     <div class="card">
         <div class="card-header">
-            <a href="index.php?modulo=nueva_etiqueta" class="btn btn-success float-right">
+            <a href="index.php?modulo=menu_digitalizar&accion=nueva_etiqueta" class="btn btn-success float-right">
                 <i class="fa-solid fa-user-plus fa-bounce white fs-3"></i>
                 <span class="float-right fs-6 text-white ml-1">Nueva etiqueta</span>
             </a>
@@ -78,7 +78,7 @@ $(document).ready(function() {
                 searchable: false,
                 render: function(data) {
                     return `
-                        <a class="text-success" href="index.php?modulo=editar_etiqueta&id=${data}">
+                        <a class="text-success" href="index.php?modulo=menu_digitalizar&accion=editar_etiqueta&id=${data}">
                             <i class="bi bi-pencil-square"></i>
                         </a>
                         <a onclick="eliminarEtiqueta(${data})" class="text-danger" href="#">

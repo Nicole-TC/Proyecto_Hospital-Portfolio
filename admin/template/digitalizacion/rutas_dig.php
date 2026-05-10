@@ -8,6 +8,14 @@ switch (@$_GET["accion"]) {
         $menu = 'Etiquetas Digitalizar';
         require_once "vistas/digitalizacion/etiquetas_digitalizar.php";
         break;
+    case 'nueva_etiqueta':
+        $menu = 'Nueva Etiqueta';
+        require_once "vistas/digitalizacion/nueva_etiqueta.php";
+        break;
+    case 'editar_etiqueta':
+        $menu = 'Editar Etiqueta';
+        require_once "vistas/digitalizacion/editar_etiqueta.php";
+        break;
     case 'nuevo_documento':
         $menu = 'Nuevo Documento';
         $modal = TRUE;

@@ -34,6 +34,7 @@
                     </div>
                 </div>
 
+                <!-- Comentado temporalmente: Datos de acceso para tabla admin (MySQL)
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <label for="username" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Nombre usuario</label>
@@ -48,6 +49,7 @@
                         </div>
                     </div>
                 </div>
+                -->
 
                 <div class="row mb-4">
                     <div class="col-md-6">
@@ -79,14 +81,16 @@
                 </div>
                 
                 <div class="row mb-4">
-                    <div class="col-md-8">
+                    <div class="col-md-12">
                         <label for="direccion" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Dirección</label>
                         <input type="text" class="form-control text-secondary" id="direccion" name="direccion" maxlength="150">
                     </div>
+                    <!-- Comentado temporalmente: No se incluye en tabla persona por ahora
                     <div class="col-md-4">
                         <label for="codigo_postal" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Código Postal</label>
                         <input type="text" class="form-control text-secondary" id="codigo_postal" name="codigo_postal" maxlength="10">
                     </div>
+                    -->
                 </div>
 
 

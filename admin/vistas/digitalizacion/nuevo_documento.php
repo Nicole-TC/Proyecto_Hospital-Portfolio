@@ -8,7 +8,8 @@
                     <div class="text-center mb-4">
                         <i class="fa-solid fa-cloud-arrow-up text-primary" style="font-size: 3rem;"></i>
                         <h3 class="card-title fw-bold mt-3 mb-2">Cargar Nuevo Documento</h3>
-                        <p class="card-text text-muted">Sube un nuevo documento al sistema de digitalización. Asigna sus datos y etiquetas correspondientes.</p>
+                        <p class="card-text text-muted">Sube un nuevo documento al sistema de digitalización.</p>
+                        <p class="card-text text-muted">Asigna sus datos y etiquetas correspondientes.</p>
                     </div>
 
                     <form id="formDocumento" enctype="multipart/form-data">

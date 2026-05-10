@@ -23,8 +23,16 @@ switch (@$_GET["accion"]) {
         break;
     default:
         // Si no hay acción, o la acción no existe, mostramos el menú principal del grupo
-        $menu = 'Menú digitalizacion';
+        $menu = 'Menú Digitalizar';
         require_once "vistas/digitalizacion/menu_digitalizar.php";
         break;
 }
-?> 
+?>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let breadcrumb = document.querySelector(".card-navegacion .col-8.text-center a.ml-0 b");
+    if (breadcrumb) {
+        breadcrumb.textContent = "<?php echo $menu; ?>";
+    }
+});
+</script>

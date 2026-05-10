@@ -1,19 +1,11 @@
 <?php
 
-/*if ($_SERVER['SERVER_NAME'] == '149.50.133.15')*/ {
-    // BD Digitalización - PostgreSQL
-    $host_dig = '149.50.133.15';
-    $contrasena_dig = "d3v_d1g!";
-    $usuario_dig = "dev_dig";
-    $nombre_bd_dig = "digitalizar";
-    $port_dig = "9432";
-} /*else {
-    $host_dig = '';
-    $usuario_dig = '';
-    $contrasena_dig = '';
-    $nombre_bd_dig = '';
-    $port_dig = "9432";
-}*/
+// BD Digitalización - PostgreSQL
+$host_dig = getenv('DB_DIG_HOST');
+$usuario_dig = getenv('DB_DIG_USER');
+$contrasena_dig = getenv('DB_DIG_PASSWORD');
+$nombre_bd_dig = getenv('DB_DIG_NAME');
+$port_dig = getenv('DB_DIG_PORT');
 
 try {
     $bd_dig = new PDO(
@@ -22,8 +14,9 @@ try {
         $contrasena_dig
     );
     $bd_dig->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // echo "Conexión exitosa";
 } catch (Exception $e) {
-    echo "Problema con la conexion: " . $e->getMessage();
+    error_log("Problema con la conexion de digitalización: " . $e->getMessage());
 }
 
 ?>

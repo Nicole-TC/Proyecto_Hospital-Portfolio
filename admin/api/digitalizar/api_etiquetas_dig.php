@@ -17,15 +17,45 @@ switch ($method) {
     // CREAR
     case 'POST':
         $data = json_decode(file_get_contents('php://input'), true);
+        $errores = [];
+
+        $nombre = trim($data['nombre_etiqueta'] ?? '');
+        if ($nombre === '') {
+            $errores[] = 'El nombre es obligatorio';
+        } elseif (preg_match('/\d/', $nombre)) {
+            $errores[] = 'El nombre no debe contener números';
+        } elseif (strlen($nombre) > 100) {
+            $errores[] = 'El nombre no debe exceder 100 caracteres';
+        } else {
+            $dup = $bd_dig->prepare("SELECT id FROM etiquetas WHERE LOWER(nombre_etiqueta) = LOWER(?)");
+            $dup->execute([$nombre]);
+            if ($dup->fetch()) {
+                $errores[] = 'Ya existe una etiqueta con ese nombre';
+            }
+        }
+
+        $color = $data['color_hex'] ?? '';
+        if ($color === '') {
+            $errores[] = 'El color es obligatorio';
+        } elseif (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+            $errores[] = 'El color debe ser un hexadecimal válido (#RRGGBB)';
+        }
+
+        $estado = $data['estado'] ?? null;
+        if (!in_array($estado, ['0', '1', 0, 1], true)) {
+            $errores[] = 'El estado debe ser Activo o Inactivo';
+        }
+
+        if (!empty($errores)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'errores' => $errores]);
+            break;
+        }
 
         $stmt = $bd_dig->prepare(
             "INSERT INTO etiquetas (nombre_etiqueta, color_hex, estado) VALUES (?, ?, ?)"
         );
-        $stmt->execute([
-            $data['nombre_etiqueta'],
-            $data['color_hex'],
-            $data['estado']
-        ]);
+        $stmt->execute([$nombre, $color, $estado]);
 
         echo json_encode(['success' => true, 'id' => $bd_dig->lastInsertId()]);
         break;
@@ -33,16 +63,56 @@ switch ($method) {
     // ACTUALIZAR
     case 'PUT':
         $data = json_decode(file_get_contents('php://input'), true);
+        $errores = [];
+
+        $id = $data['id'] ?? null;
+        if (!filter_var($id, FILTER_VALIDATE_INT)) {
+            $errores[] = 'ID inválido';
+        } else {
+            $exist = $bd_dig->prepare("SELECT id FROM etiquetas WHERE id = ?");
+            $exist->execute([$id]);
+            if (!$exist->fetch()) {
+                $errores[] = 'La etiqueta no existe';
+            }
+        }
+
+        $nombre = trim($data['nombre_etiqueta'] ?? '');
+        if ($nombre === '') {
+            $errores[] = 'El nombre es obligatorio';
+        } elseif (preg_match('/\d/', $nombre)) {
+            $errores[] = 'El nombre no debe contener números';
+        } elseif (strlen($nombre) > 100) {
+            $errores[] = 'El nombre no debe exceder 100 caracteres';
+        } else {
+            $dup = $bd_dig->prepare("SELECT id FROM etiquetas WHERE LOWER(nombre_etiqueta) = LOWER(?) AND id != ?");
+            $dup->execute([$nombre, $id]);
+            if ($dup->fetch()) {
+                $errores[] = 'Ya existe otra etiqueta con ese nombre';
+            }
+        }
+
+        $color = $data['color_hex'] ?? '';
+        if ($color === '') {
+            $errores[] = 'El color es obligatorio';
+        } elseif (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) {
+            $errores[] = 'El color debe ser un hexadecimal válido (#RRGGBB)';
+        }
+
+        $estado = $data['estado'] ?? null;
+        if (!in_array($estado, ['0', '1', 0, 1], true)) {
+            $errores[] = 'El estado debe ser Activo o Inactivo';
+        }
+
+        if (!empty($errores)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'errores' => $errores]);
+            break;
+        }
 
         $stmt = $bd_dig->prepare(
             "UPDATE etiquetas SET nombre_etiqueta = ?, color_hex = ?, estado = ? WHERE id = ?"
         );
-        $stmt->execute([
-            $data['nombre_etiqueta'],
-            $data['color_hex'],
-            $data['estado'],
-            $data['id']
-        ]);
+        $stmt->execute([$nombre, $color, $estado, $id]);
 
         echo json_encode(['success' => true]);
         break;

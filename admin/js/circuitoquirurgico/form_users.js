@@ -49,29 +49,32 @@ if (dniInput) {
             // Mostramos por consola lo que se enviará (para pruebas del equipo)
             console.log("Datos listos para enviar al endpoint de Circuito Quirúrgico:", data);
 
-            /*
-            // TODO: Integrar con el endpoint real del servicio
-            fetch('/api/circuitoquirurgico/usuarios', {
+            // Enviar los datos al endpoint que acabamos de crear
+            fetch('app/cir-api/endpoints/crear_users-e.php', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    // 'Authorization': 'Bearer ' + token // si usan tokens
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(data)
             })
             .then(response => response.json())
             .then(result => {
-                if(result.success) {
-                    alert('Usuario creado correctamente');
-                    // Aquí pueden redirigir con window.location.href o limpiar el form
+                if(result.status === 'success') {
+                    // Mostrar alerta de éxito
+                    alert(result.message);
+                    
+                    // Limpiar el formulario y quitar las clases de validación
+                    form.reset();
+                    form.classList.remove('was-validated');
                 } else {
-                    alert('Error desde la API: ' + result.message);
+                    // Mostrar error que devuelve el endpoint
+                    alert('Error: ' + result.message);
                 }
             })
             .catch(error => {
                 console.error('Error al contactar el servicio:', error);
+                alert('Ocurrió un error al intentar conectarse con el servidor.');
             });
-            */
         }, false)
     })
 })()

@@ -1,117 +1,118 @@
 <?php
-header('Content-Type: application/json');
-error_reporting(E_ALL);
-
-// require_once '../../model/conexion.php';
-
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method === 'GET' && ($_GET['action'] ?? '') === 'buscar_dni') {
-    $dni = $_GET['dni'] ?? '';
-
-    if (!preg_match('/^\d{2}\.?\d{3}\.?\d{3}$/', $dni)) {
-        echo json_encode(['ok' => false, 'error' => 'Formato de DNI inválido']);
-        exit;
-    }
-
-    $dni_clean = str_replace('.', '', $dni);
-
-    // TODO: Buscar en DB
-    echo json_encode(['ok' => true, 'encontrado' => false]);
-    exit;
-}
-
-if ($method !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['ok' => false, 'error' => 'Método no permitido']);
-    exit;
-}
-
-$input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input) {
-    echo json_encode(['ok' => false, 'error' => 'JSON inválido']);
-    exit;
-}
-
-$dni = $input['dni'] ?? '';
-$apellido = $input['apellido'] ?? '';
-$nombre = $input['nombre'] ?? '';
-$fechaNacimiento = $input['fechaNacimiento'] ?? '';
-$direccion = $input['direccion'] ?? '';
-$codigoPostal = $input['codigoPostal'] ?? '';
-$email = $input['email'] ?? '';
-$telefono = $input['telefono'] ?? '';
-$tipoCirugia = $input['tipoCirugia'] ?? '';
-$tipoCirujano = $input['tipoCirujano'] ?? '';
-
-$errores = [];
-$dni_clean = str_replace('.', '', $dni);
-
-if (!preg_match('/^\d{2}\.?\d{3}\.?\d{3}$/', $dni)) {
-    $errores[] = 'El formato del DNI no es válido.';
-}
-
-if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirugia)) {
-    $errores[] = 'El tipo de cirugía no es válido.';
-}
-
-if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirujano)) {
-    $errores[] = 'El tipo de cirujano no es válido.';
-}
-
-// TODO: Consultar en DB si el paciente existe
-$paciente_existente = false;
-
-if (!$paciente_existente) {
-    $solo_letras = '/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{2,100}$/';
-
-    if (!preg_match($solo_letras, $apellido)) {
-        $errores[] = 'El apellido solo debe contener letras (mín. 2).';
-    }
-
-    if (!preg_match($solo_letras, $nombre)) {
-        $errores[] = 'El nombre solo debe contener letras (mín. 2).';
-    }
-
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaNacimiento)) {
-        $errores[] = 'El formato de la fecha de nacimiento no es válido.';
-    } else {
-        $parts = explode('-', $fechaNacimiento);
-        if (!checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0])) {
-            $errores[] = 'La fecha de nacimiento no es una fecha real.';
+$envPath = __DIR__ . '/../../../../.env';
+if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            putenv(trim($parts[0]) . '=' . trim($parts[1]));
         }
     }
-
-    if (!preg_match('/^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s\.,#\-\/]{5,255}$/', $direccion)) {
-        $errores[] = 'El formato de la dirección no es válido.';
-    }
-
-    if (!preg_match('/^\d{4}$/', $codigoPostal)) {
-        $errores[] = 'El código postal debe tener 4 dígitos.';
-    }
-
-    if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
-        $errores[] = 'El formato del email no es válido.';
-    }
-
-    if (!preg_match('/^[\d\s\-\(\)\+]{7,20}$/', $telefono)) {
-        $errores[] = 'El formato del teléfono no es válido.';
-    }
 }
 
-if (!empty($errores)) {
-    echo json_encode(['ok' => false, 'errores' => $errores]);
-    exit;
+require_once __DIR__ . '/../../../model/cir_conexion.php';
+
+class ConsultasAdmision {
+
+    public static function buscarPaciente($dni) {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT * FROM persona WHERE dni = :dni";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':dni', $dni);
+        $stmt->execute();
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $resultado ?: false;
+    }
+
+    public static function validarDatos($input, $paciente_existente) {
+        $errores = [];
+
+        $dni = $input['dni'] ?? '';
+        $tipoCirugia = $input['tipoCirugia'] ?? '';
+        $tipoCirujano = $input['tipoCirujano'] ?? '';
+
+        if (!preg_match('/^\d{2}\.?\d{3}\.?\d{3}$/', $dni)) {
+            $errores[] = 'El formato del DNI no es válido.';
+        }
+
+        if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirugia)) {
+            $errores[] = 'El tipo de cirugía no es válido.';
+        }
+
+        if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirujano)) {
+            $errores[] = 'El tipo de cirujano no es válido.';
+        }
+
+        if (!$paciente_existente) {
+            $apellido = $input['apellido'] ?? '';
+            $nombre = $input['nombre'] ?? '';
+            $fechaNacimiento = $input['fechaNacimiento'] ?? '';
+            $direccion = $input['direccion'] ?? '';
+            $codigoPostal = $input['codigoPostal'] ?? '';
+            $email = $input['email'] ?? '';
+            $telefono = $input['telefono'] ?? '';
+
+            $solo_letras = '/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{2,100}$/';
+
+            if (!preg_match($solo_letras, $apellido)) {
+                $errores[] = 'El apellido solo debe contener letras (mín. 2).';
+            }
+
+            if (!preg_match($solo_letras, $nombre)) {
+                $errores[] = 'El nombre solo debe contener letras (mín. 2).';
+            }
+
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaNacimiento)) {
+                $errores[] = 'El formato de la fecha de nacimiento no es válido.';
+            } else {
+                $parts = explode('-', $fechaNacimiento);
+                if (!checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0])) {
+                    $errores[] = 'La fecha de nacimiento no es una fecha real.';
+                }
+            }
+
+            if (!preg_match('/^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s\.,#\-\/]{5,255}$/', $direccion)) {
+                $errores[] = 'El formato de la dirección no es válido.';
+            }
+
+            if (!preg_match('/^\d{4}$/', $codigoPostal)) {
+                $errores[] = 'El código postal debe tener 4 dígitos.';
+            }
+
+            if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
+                $errores[] = 'El formato del email no es válido.';
+            }
+
+            if (!preg_match('/^[\d\s\-\(\)\+]{7,20}$/', $telefono)) {
+                $errores[] = 'El formato del teléfono no es válido.';
+            }
+        }
+
+        return $errores;
+    }
+
+    public static function registrarAdmision($datos) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $sql = "INSERT INTO persona (dni, nombre, apellido, fecha_nacimiento, email, telefono, direccion, codigo_postal) 
+                VALUES (:dni, :nombre, :apellido, :fecha_nacimiento, :email, :telefono, :direccion, :codigo_postal)
+                RETURNING id_persona";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':dni', $datos['dni']);
+        $stmt->bindParam(':nombre', $datos['nombre']);
+        $stmt->bindParam(':apellido', $datos['apellido']);
+        $stmt->bindParam(':fecha_nacimiento', $datos['fecha_nacimiento']);
+        $stmt->bindParam(':email', $datos['email']);
+        $stmt->bindParam(':telefono', $datos['telefono']);
+        $stmt->bindParam(':direccion', $datos['direccion']);
+        $stmt->bindParam(':codigo_postal', $datos['codigo_postal']);
+
+        if ($stmt->execute()) {
+            $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $resultado['id_persona'];
+        }
+        return false;
+    }
 }
-
-// TODO: Insertar en DB
-// if ($paciente_existente) {
-//     $mensaje = "Cirugía de $tipoCirugia registrada para el paciente.";
-// } else {
-//     $mensaje = "Paciente $apellido, $nombre registrado correctamente con cirugía de $tipoCirugia.";
-// }
-
-$mensaje = "Validación exitosa. Todos los campos son correctos. (Pendiente de inserción en DB)";
-
-echo json_encode(['ok' => true, 'mensaje' => $mensaje]);

@@ -1,6 +1,6 @@
 <?php
 
-require_once '../../model/conexion.php';
+require_once '../../model/conexion_dig.php';
 
 header('Content-Type: application/json');
 
@@ -9,10 +9,10 @@ try {
     // Obtener tipos de documentos
     $tipos_documentos = [];
 
-    $stmtTipos = $bd->prepare("
+    $stmtTipos = $bd_dig->prepare("
         SELECT id, nombre
         FROM tipos_documentos
-        WHERE estado = 1
+        WHERE estado = true
         ORDER BY nombre ASC
     ");
 
@@ -26,10 +26,10 @@ try {
     // Obtener etiquetas
     $etiquetas = [];
 
-    $stmtEtiquetas = $bd->prepare("
+    $stmtEtiquetas = $bd_dig->prepare("
         SELECT id, nombre_etiqueta AS name
         FROM etiquetas
-        WHERE estado = 1
+        WHERE estado = true
         ORDER BY nombre_etiqueta ASC
     ");
 
@@ -39,6 +39,19 @@ try {
 
         $etiquetas = $stmtEtiquetas->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    // Obtener servicios (sectores)
+    $servicios = [];
+    $stmtServicios = $bd_dig->prepare("
+        SELECT id, detalle AS nombre
+        FROM servicios
+        ORDER BY detalle ASC
+    ");
+    
+    if ($stmtServicios) {
+        $stmtServicios->execute();
+        $servicios = $stmtServicios->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     http_response_code(200);
 
@@ -46,7 +59,8 @@ try {
         "status" => "success",
         "data" => [
             "tipos_documentos" => $tipos_documentos,
-            "etiquetas" => $etiquetas
+            "etiquetas" => $etiquetas,
+            "servicios" => $servicios
         ]
     ], JSON_UNESCAPED_UNICODE);
 
@@ -56,6 +70,6 @@ try {
 
     echo json_encode([
         "status" => "error",
-        "message" => "Error al obtener opciones"
+        "message" => "Error al obtener opciones: " . $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }

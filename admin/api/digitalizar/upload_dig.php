@@ -22,7 +22,10 @@ try {
 
     // 1. Obtener y validar datos del formulario
     $titulo = trim($_POST['titulo'] ?? '');
+    
+    // Campo de identificación único
     $dni = trim($_POST['dni'] ?? '');
+    
     $nombre = trim($_POST['nombre'] ?? '');
     $apellido = trim($_POST['apellido'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -31,9 +34,38 @@ try {
     $descripcion = trim($_POST['descripcion'] ?? '');
     $tag_ids = isset($_POST['tag_id']) && is_array($_POST['tag_id']) ? $_POST['tag_id'] : [];
     $id_usuario = $_SESSION['id'] ?? null;
+    
+    // Nuevos campos del documento
+    $fecha_documento = trim($_POST['fecha_documento'] ?? '');
+    $id_servicio = filter_var($_POST['id_servicio'] ?? '', FILTER_VALIDATE_INT);
+    $prioridad = trim($_POST['prioridad'] ?? 'Media');
+    $estado_documento = trim($_POST['estado_documento'] ?? 'Activo');
+    $forzar_subida = isset($_POST['forzar_subida']) && $_POST['forzar_subida'] == '1';
 
-    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo) {
-        throw new Exception("Faltan datos requeridos (Título, DNI, Nombre, Apellido o Tipo de Documento).");
+    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo || !$fecha_documento || !$id_servicio) {
+        $missing = [];
+        if (!$dni) $missing[] = "DNI";
+        if (!$nombre) $missing[] = "Nombre";
+        if (!$apellido) $missing[] = "Apellido";
+        if (!$id_tipo_documento) $missing[] = "Tipo Documento";
+        if (!$titulo) $missing[] = "Título";
+        if (!$fecha_documento) $missing[] = "Fecha";
+        if (!$id_servicio) $missing[] = "Sector";
+        throw new Exception("Faltan datos requeridos: " . implode(", ", $missing));
+    }
+
+    // Validaciones estrictas solicitadas
+    if (!preg_match('/^[0-9]{8}$/', $dni)) {
+        throw new Exception("El DNI debe contener exactamente 8 dígitos y no puede contener letras.");
+    }
+    if (strlen($nombre) > 20) {
+        throw new Exception("El nombre no puede superar los 20 caracteres.");
+    }
+    if (strlen($apellido) > 20) {
+        throw new Exception("El apellido no puede superar los 20 caracteres.");
+    }
+    if ($fecha_documento > date('Y-m-d')) {
+        throw new Exception("La fecha del documento no puede ser superior a la del día actual.");
     }
 
     // 2. Gestionar la Persona (Buscar en `personal` o insertar paciente)
@@ -71,7 +103,25 @@ try {
         $id_persona = $stmt->fetchColumn();
     }
 
-    // 3. Gestionar la subida del archivo
+    // 3. Comprobar duplicados si no se forzó la subida
+    if (!$forzar_subida) {
+        $stmt_dup = $bd_dig->prepare("
+            SELECT id FROM documentos 
+            WHERE id_persona = ? 
+            AND id_tipo_documento = ? 
+            AND DATE(fecha_subido) = ?
+        ");
+        $stmt_dup->execute([$id_persona, $id_tipo_documento, $fecha_documento]);
+        if ($stmt_dup->fetch()) {
+            echo json_encode([
+                "status" => "duplicate",
+                "message" => "⚠ Ya existe un documento similar para esta persona. Agrégalo a lo que ya tenes."
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    // 4. Gestionar la subida del archivo
     $archivo = $_FILES['archivo'];
     $nombreOriginal = $archivo['name'];
     $temporal = $archivo['tmp_name'];
@@ -83,7 +133,7 @@ try {
         throw new Exception("Formato no permitido. Solo PDF, JPG o PNG.");
     }
 
-    // Carpeta destino (Docker volume mapeado en /var/www/html/admin/uploads)
+    // Carpeta destino
     $carpetaDestino = __DIR__ . '/../../uploads/';
     if (!is_dir($carpetaDestino)) {
         if (!mkdir($carpetaDestino, 0755, true)) {
@@ -99,18 +149,34 @@ try {
         throw new Exception("Error al mover el archivo al volumen de destino.");
     }
 
-    // 4. Insertar el documento en la base de datos
-    // Como no hay campo 'titulo' en la tabla documentos, lo agregamos al comentario
+    // 5. Generar código único y preparar comentario
+    $codigo_unico = 'DOC-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -5));
     $comentario_final = "Título: " . $titulo . "\nDescripción: " . $descripcion;
     
+    // 6. Insertar el documento en la base de datos (se omite tipo_identificacion y numero_identificacion)
     $stmt = $bd_dig->prepare("
-        INSERT INTO documentos (id_persona, id_tipo_documento, ruta_archivo, comentario, id_usuario, estado, fecha_subido) 
-        VALUES (?, ?, ?, ?, ?, true, NOW()) RETURNING id
+        INSERT INTO documentos (
+            id_persona, id_tipo_documento, id_servicio, ruta_archivo, comentario, 
+            id_usuario, estado, fecha_subido,
+            codigo_unico, prioridad, estado_documento
+        ) 
+        VALUES (?, ?, ?, ?, ?, ?, true, ?, ?, ?, ?) RETURNING id
     ");
-    $stmt->execute([$id_persona, $id_tipo_documento, $rutaRelativa, trim($comentario_final), $id_usuario]);
+    $stmt->execute([
+        $id_persona, 
+        $id_tipo_documento, 
+        $id_servicio,
+        $rutaRelativa, 
+        trim($comentario_final), 
+        $id_usuario,
+        $fecha_documento, 
+        $codigo_unico,
+        $prioridad,
+        $estado_documento
+    ]);
     $id_documento = $stmt->fetchColumn();
 
-    // 5. Insertar etiquetas vinculadas al documento
+    // 7. Insertar etiquetas vinculadas al documento
     if (!empty($tag_ids)) {
         $stmtTag = $bd_dig->prepare("INSERT INTO documento_etiquetas (id_documento, id_etiqueta) VALUES (?, ?)");
         foreach ($tag_ids as $tag_id) {
@@ -124,7 +190,12 @@ try {
 
     echo json_encode([
         "status" => "ok",
-        "message" => "Documento subido y registrado correctamente."
+        "message" => "Documento subido y registrado correctamente.",
+        "data" => [
+            "documento" => [
+                "codigo_unico" => $codigo_unico
+            ]
+        ]
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

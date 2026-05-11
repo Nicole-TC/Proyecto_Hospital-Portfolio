@@ -1,6 +1,6 @@
 <?php
 
-require_once '../../model/conexion.php';
+require_once '../../model/conexion_dig.php';
 
 header('Content-Type: application/json');
 
@@ -20,9 +20,9 @@ $dni = trim($_GET['dni']);
 
 try {
 
-    // Buscar en la tabla personal
-    $stmt = $bd->prepare("
-        SELECT nombre, apellido, correo AS email, telefono
+    // Buscar en la tabla personal (PostgreSQL)
+    $stmt = $bd_dig->prepare("
+        SELECT id, nombre, apellido, correo AS email, telefono
         FROM personal
         WHERE dni = :dni
         LIMIT 1
@@ -41,6 +41,7 @@ try {
         echo json_encode([
             "status" => "success",
             "data" => [
+                "id" => $persona['id'],
                 "nombre" => $persona['nombre'],
                 "apellido" => $persona['apellido'],
                 "email" => $persona['email'],

@@ -21,6 +21,10 @@ switch (@$_GET["accion"]) {
         $modal = TRUE;
         require_once "vistas/digitalizacion/nuevo_documento.php";
         break;
+    case 'tipos_documentos':
+        $menu = 'Tipos de Documentos';
+        require_once "vistas/digitalizacion/tipos_documentos.php";
+        break;
     default:
         // Si no hay acción, o la acción no existe, mostramos el menú principal del grupo
         $menu = 'Menú Digitalizar';

@@ -29,6 +29,7 @@ if (isset($_GET["modulo"])) {
     $permiso = isset($_SESSION[$menu]) ? $_SESSION[$menu] : 0;
     
     // para administradores
+    // Si el usuario es administrador, siempre tiene permiso
     if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1) {
         $permiso = 1;
     }

@@ -9,7 +9,7 @@
             <!-- Notas -->
             <?php $html = HTML::tarjeta("notas", "Notas", "Presentadas a dirección", "fa-solid fa-file", "warning", "index.php?modulo=notas"); ?>
 
-            <?php HTML::tarjeta("menu_usuarios", "Digitalizacion", "Beta", "fa-solid fa-users-gear", "info", "index.php?modulo=menu_usuarios"); ?>
+            <?php HTML::tarjeta("menu_digitalizar", "Digitalizacion", "Beta", "fa-solid fa-users-gear", "info", "index.php?modulo=menu_digitalizar"); ?>
 
             <!-- Circuito Quirúrgico -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Circuito Quirúrgico", "Beta", "fa-solid fa-heart-pulse", "danger", "index.php?modulo=menu_circuitoquirurgico"); ?>

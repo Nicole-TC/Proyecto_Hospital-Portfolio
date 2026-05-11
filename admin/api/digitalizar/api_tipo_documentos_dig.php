@@ -1,0 +1,135 @@
+<?php
+
+header('Content-Type: application/json');
+
+require_once __DIR__ . '/../../model/conexion_dig.php';
+
+$method = $_SERVER['REQUEST_METHOD'];
+
+switch ($method) {
+
+    // LISTAR
+    case 'GET':
+        $stmt = $bd_dig->query("SELECT id, nombre, estado::int as estado FROM tipos_documentos ORDER BY id ASC");
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        break;
+
+    // CREAR
+    case 'POST':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $errores = [];
+
+        $nombre = trim($data['nombre'] ?? '');
+        if ($nombre === '') {
+            $errores[] = 'El nombre es obligatorio';
+        } elseif (preg_match('/\d/', $nombre)) {
+            $errores[] = 'El nombre no debe contener números';
+        } elseif (strlen($nombre) > 100) {
+            $errores[] = 'El nombre no debe exceder 100 caracteres';
+        } else {
+            $dup = $bd_dig->prepare("SELECT id FROM tipos_documentos WHERE LOWER(nombre) = LOWER(?)");
+            $dup->execute([$nombre]);
+            if ($dup->fetch()) {
+                $errores[] = 'Ya existe un tipo de documento con ese nombre';
+            }
+        }
+
+        $estado = $data['estado'] ?? null;
+        if (!in_array($estado, ['0', '1', 0, 1], true)) {
+            $errores[] = 'El estado debe ser Activo o Inactivo';
+        }
+
+        if (!empty($errores)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'errores' => $errores]);
+            break;
+        }
+
+        $stmt = $bd_dig->prepare(
+            "INSERT INTO tipos_documentos (nombre, estado) VALUES (?, ?)"
+        );
+        $stmt->execute([$nombre, $estado]);
+
+        echo json_encode(['success' => true, 'id' => $bd_dig->lastInsertId()]);
+        break;
+
+    // ACTUALIZAR
+    case 'PUT':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $errores = [];
+
+        $id = $data['id'] ?? null;
+        if (!filter_var($id, FILTER_VALIDATE_INT)) {
+            $errores[] = 'ID inválido';
+        } else {
+            $exist = $bd_dig->prepare("SELECT id FROM tipos_documentos WHERE id = ?");
+            $exist->execute([$id]);
+            if (!$exist->fetch()) {
+                $errores[] = 'El tipo de documento no existe';
+            }
+        }
+
+        $nombre = trim($data['nombre'] ?? '');
+        if ($nombre === '') {
+            $errores[] = 'El nombre es obligatorio';
+        } elseif (preg_match('/\d/', $nombre)) {
+            $errores[] = 'El nombre no debe contener números';
+        } elseif (strlen($nombre) > 100) {
+            $errores[] = 'El nombre no debe exceder 100 caracteres';
+        } else {
+            $dup = $bd_dig->prepare("SELECT id FROM tipos_documentos WHERE LOWER(nombre) = LOWER(?) AND id != ?");
+            $dup->execute([$nombre, $id]);
+            if ($dup->fetch()) {
+                $errores[] = 'Ya existe otro tipo de documento con ese nombre';
+            }
+        }
+
+        $estado = $data['estado'] ?? null;
+        if (!in_array($estado, ['0', '1', 0, 1], true)) {
+            $errores[] = 'El estado debe ser Activo o Inactivo';
+        }
+
+        if (!empty($errores)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'errores' => $errores]);
+            break;
+        }
+
+        $stmt = $bd_dig->prepare(
+            "UPDATE tipos_documentos SET nombre = ?, estado = ? WHERE id = ?"
+        );
+        $stmt->execute([$nombre, $estado, $id]);
+
+        echo json_encode(['success' => true]);
+        break;
+
+    // ELIMINAR
+    case 'DELETE':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = $data['id'] ?? null;
+
+        if (!$id) {
+            echo json_encode(['success' => false, 'error' => 'ID no proporcionado']);
+            break;
+        }
+
+        $check = $bd_dig->prepare("SELECT estado FROM tipos_documentos WHERE id = ?");
+        $check->execute([$id]);
+        $row = $check->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            echo json_encode(['success' => false, 'error' => 'El tipo de documento no existe']);
+            break;
+        }
+
+        if ($row['estado'] === 'f' || $row['estado'] === false || $row['estado'] === 0) {
+            echo json_encode(['success' => false, 'error' => 'El tipo de documento ya está desactivado']);
+            break;
+        }
+
+        $stmt = $bd_dig->prepare("UPDATE tipos_documentos SET estado = false WHERE id = ?");
+        $stmt->execute([$id]);
+
+        echo json_encode(['success' => true]);
+        break;
+}

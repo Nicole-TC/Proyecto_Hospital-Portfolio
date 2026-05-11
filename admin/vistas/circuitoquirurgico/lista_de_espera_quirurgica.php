@@ -1,61 +1,63 @@
 <?php
+
 $pacientes = [
     [
-        'dni' => '41.234.567',
-        'paciente' => 'López, Ana',
-        'cirugia' => 'Apendicectomía',
-        'apto_desde' => '14/04/2026',
-        'estado' => 'Apto Quirúrgico',
+        'dni'         => '28.765.432',
+        'paciente'    => 'Fernández, Elena',
+        'cirugia'     => 'Histerectomía',
+        'apto_desde'  => '09/04/2026',
+        'estado'      => 'Rechazado',
     ],
     [
-        'dni' => '33.789.456',
-        'paciente' => 'González, Roberto',
-        'cirugia' => 'Hernioplastia',
-        'apto_desde' => '13/04/2026',
-        'estado' => 'Apto Quirúrgico',
+        'dni'         => '25.456.789',
+        'paciente'    => 'Martínez, Carlos',
+        'cirugia'     => 'Prostatectomía',
+        'apto_desde'  => '10/04/2026',
+        'estado'      => 'Pendiente',
     ],
     [
-        'dni' => '37.123.789',
-        'paciente' => 'Sánchez, Patricia',
-        'cirugia' => 'Colecistectomía',
-        'apto_desde' => '12/04/2026',
-        'estado' => 'Apto Quirúrgico',
+        'dni'         => '37.123.789',
+        'paciente'    => 'Sánchez, Patricia',
+        'cirugia'     => 'Colecistectomía',
+        'apto_desde'  => '12/04/2026',
+        'estado'      => 'Apto Quirúrgico',
     ],
     [
-        'dni' => '25.456.789',
-        'paciente' => 'Martínez, Carlos',
-        'cirugia' => 'Prostatectomía',
-        'apto_desde' => '10/04/2026',
-        'estado' => 'Pendiente',
+        'dni'         => '33.789.456',
+        'paciente'    => 'González, Roberto',
+        'cirugia'     => 'Hernioplastia',
+        'apto_desde'  => '13/04/2026',
+        'estado'      => 'Apto Quirúrgico',
     ],
     [
-        'dni' => '28.765.432',
-        'paciente' => 'Fernández, Elena',
-        'cirugia' => 'Histerectomía',
-        'apto_desde' => '09/04/2026',
-        'estado' => 'Rechazado',
+        'dni'         => '41.234.567',
+        'paciente'    => 'López, Ana',
+        'cirugia'     => 'Apendicectomía',
+        'apto_desde'  => '14/04/2026',
+        'estado'      => 'Apto Quirúrgico',
     ],
 ];
 
 function renderEstadoBadge($estado)
 {
     $estadoNormalizado = trim($estado);
-    
+
     $estadoColorMap = [
         'Apto Quirúrgico' => 'bg-success',
-        'Pendiente' => 'bg-warning text-dark',
-        'Rechazado' => 'bg-danger',
-        'En Evaluación' => 'bg-info',
-        'No Apto' => 'bg-secondary',
+        'Pendiente'       => 'bg-warning text-dark',
+        'Rechazado'       => 'bg-danger',
+        'En Evaluación'   => 'bg-info',
+        'No Apto'         => 'bg-secondary',
     ];
-    
-    $badgeClass = isset($estadoColorMap[$estadoNormalizado]) 
-        ? $estadoColorMap[$estadoNormalizado] 
+
+    $badgeClass = isset($estadoColorMap[$estadoNormalizado])
+        ? $estadoColorMap[$estadoNormalizado]
         : 'bg-secondary';
-    
+
     $text = htmlspecialchars($estadoNormalizado, ENT_QUOTES, 'UTF-8');
     return '<span class="badge ' . $badgeClass . ' px-3 py-2 rounded-pill">' . $text . '</span>';
 }
+
 ?>
 
 <div class="col-12 mb-5 px-3">

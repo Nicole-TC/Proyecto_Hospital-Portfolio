@@ -67,48 +67,16 @@
 
     <div class="container mb-5">
 
-        <!-- Sección 1: Entorno y Docker -->
-        <div class="card p-4">
-            <div class="d-flex align-items-center mb-3">
-                <div class="icon-circle bg-primary text-white me-3">
-                    <i class="fa-brands fa-docker"></i>
-                </div>
-                <h2 class="h3 fw-bold mb-0">1. Entorno y Configuración (Docker)</h2>
-            </div>
-            <p>Este módulo ha sido diseñado para funcionar de manera completamente aislada mediante contenedores de
-                <strong>Docker</strong>, utilizando una base de datos <strong>PostgreSQL</strong> exclusiva para
-                garantizar el rendimiento en la carga masiva de archivos.
-            </p>
-
-            <h4 class="h5 mt-4 text-primary fw-bold">Variables de Entorno (.env)</h4>
-            <p>Para que el sistema se conecte correctamente a la base de datos de digitalización y despliegue el
-                servidor, debes asegurarte de que tu archivo <code>.env</code> en la raíz del proyecto contenga las
-                siguientes variables obligatorias:</p>
-
-            <pre><code>APP_PORT=8050
-DB_DIG_HOST=149.50.133.15
-DB_DIG_USER=dev_dig
-DB_DIG_PASSWORD=d3v_d1g!
-DB_DIG_NAME=digitalizar
-DB_DIG_PORT=9432</code></pre>
-
-            <div class="alert alert-info mt-3">
-                <i class="fa-solid fa-circle-info me-2"></i> <strong>Nota:</strong> Los archivos subidos por los
-                usuarios se almacenarán dentro del contenedor de Docker en un volumen local
-                (<code>/admin/uploads/digitalizar/</code>).
-            </div>
-        </div>
-
-        <!-- Sección 2: Uso del Sistema -->
+        <!-- Sección 1: Uso del Sistema -->
         <div class="card p-4 mt-4">
             <div class="d-flex align-items-center mb-3">
                 <div class="icon-circle bg-success text-white me-3">
                     <i class="fa-solid fa-chalkboard-user"></i>
                 </div>
-                <h2 class="h3 fw-bold mb-0">2. ¿Cómo usar el Módulo?</h2>
+                <h2 class="h3 fw-bold mb-0">1. ¿Cómo usar el Módulo?</h2>
             </div>
             <p>Una vez que el proyecto esté corriendo en la VPS (accediendo a través de
-                <a href="http://149.50.137.127/admin/index.php" target="_blank">http://149.50.137.127:5337/admin</a>),
+                <a href="http://149.50.137.127:8080" target="_blank">http://149.50.137.127:8080/admin</a>),
                 podrás encontrar la sección "Digitalización" en el
                 <strong>menú lateral izquierdo (Sidebar)</strong>. Este menú ofrece accesos rápidos a las 4 funciones
                 principales:
@@ -120,8 +88,7 @@ DB_DIG_PORT=9432</code></pre>
                         <h4 class="h6 fw-bold text-primary"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Nuevo
                             Documento</h4>
                         <p class="small text-muted">Permite subir un archivo PDF o imagen. El sistema buscará
-                            automáticamente a la persona por su DNI en la base de datos. Posee validación estricta de 8
-                            dígitos para DNI y topes de tamaño.</p>
+                            automáticamente a la persona por su DNI en la base de datos.</p>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
@@ -145,29 +112,27 @@ DB_DIG_PORT=9432</code></pre>
                     <div class="p-3 border rounded bg-light h-100">
                         <h4 class="h6 fw-bold text-info"><i class="fa-solid fa-magnifying-glass me-2"></i> Buscar
                             Documento</h4>
-                        <p class="small text-muted">Motor de búsqueda para encontrar documentos históricos por DNI,
-                            Etiqueta, o tipo de archivo. (Módulo en expansión).</p>
+                        <p class="small text-muted">Motor de búsqueda para encontrar documentos históricos por filtros DNI,
+                            Etiqueta, Servicio, estado del archivo o tipo de archivo. (Módulo en expansión).</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sección 3: Validaciones -->
+        <!-- Sección 2: Validaciones -->
         <div class="card p-4 mt-4">
             <div class="d-flex align-items-center mb-3">
                 <div class="icon-circle bg-danger text-white me-3">
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
-                <h2 class="h3 fw-bold mb-0">3. Seguridad y Validaciones</h2>
+                <h2 class="h3 fw-bold mb-0">2. Seguridad y Validaciones</h2>
             </div>
             <p>El módulo cuenta con una doble capa de seguridad tanto en el Frontend (JavaScript y Atributos HTML) como
                 en el Backend (PHP).</p>
             <ul>
                 <li><strong>Archivos:</strong> Solo se admiten formatos <code>.pdf</code>, <code>.jpg</code>,
-                    <code>.png</code> con un tamaño máximo de 5MB.
+                    <code>.png</code> con un tamaño máximo de 5000 Bytes.
                 </li>
-                <li><strong>DNI:</strong> Forzado a 8 dígitos exactos. No permite letras ni caracteres especiales.</li>
-                <li><strong>Fechas:</strong> Bloqueo de fechas futuras mediante JavaScript.</li>
                 <li><strong>Bases de Datos:</strong> Independencia total. Digitalización solo lee y escribe en
                     PostgreSQL (<code>$bd_dig</code>).</li>
             </ul>

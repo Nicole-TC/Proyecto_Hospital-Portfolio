@@ -20,5 +20,9 @@ RUN a2enmod rewrite
 # 4. Directorio de trabajo
 WORKDIR /var/www/html
 
-# 5. Permisos básicos para Apache
-RUN chown -R www-data:www-data /var/www/html
+# 5. Preparamos el script de entrada
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# 6. Usamos el Entrypoint para que los permisos se apliquen AL ARRANCAR
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

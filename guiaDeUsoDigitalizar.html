@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Uso - Módulo de Digitalización</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
+            padding: 4rem 0;
+            border-radius: 0 0 2rem 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s;
+            margin-bottom: 2rem;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .icon-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        pre {
+            background-color: #272822;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="hero text-center mb-5">
+        <div class="container">
+            <i class="fa-solid fa-folder-tree fa-4x mb-3"></i>
+            <h1 class="display-4 fw-bold">Módulo de Digitalización</h1>
+            <p class="lead">Manual de Usuario y Configuración Técnica</p>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+
+        <!-- Sección 1: Uso del Sistema -->
+        <div class="card p-4 mt-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="icon-circle bg-success text-white me-3">
+                    <i class="fa-solid fa-chalkboard-user"></i>
+                </div>
+                <h2 class="h3 fw-bold mb-0">1. ¿Cómo usar el Módulo?</h2>
+            </div>
+            <p>Una vez que el proyecto esté corriendo en la VPS (accediendo a través de
+                <a href="http://149.50.137.127:8080" target="_blank">http://149.50.137.127:8080/admin</a>),
+                podrás encontrar la sección "Digitalización" en el
+                <strong>menú lateral izquierdo (Sidebar)</strong>. Este menú ofrece accesos rápidos a las 4 funciones
+                principales:
+            </p>
+
+            <div class="row mt-4">
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-primary"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Nuevo
+                            Documento</h4>
+                        <p class="small text-muted">Permite subir un archivo PDF o imagen. El sistema buscará
+                            automáticamente a la persona por su DNI en la base de datos.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-warning"><i class="fa-solid fa-tags me-2"></i> Administrar Etiquetas
+                        </h4>
+                        <p class="small text-muted">Abre el panel CRUD para gestionar los "Tags" de los documentos.
+                            Útiles para clasificar los archivos (Ej: Urgente, Auditoría, Facturado).</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-success"><i class="fa-solid fa-file-signature me-2"></i> Tipos de
+                            Documentos</h4>
+                        <p class="small text-muted">CRUD flotante (Modal) para gestionar los tipos principales de
+                            archivos (Historia Clínica, Receta, Informe). Usa tecnología de Soft-Delete para no romper
+                            el historial.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-info"><i class="fa-solid fa-magnifying-glass me-2"></i> Buscar
+                            Documento</h4>
+                        <p class="small text-muted">Motor de búsqueda para encontrar documentos históricos por filtros DNI,
+                            Etiqueta, Servicio, estado del archivo o tipo de archivo. (Módulo en expansión).</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección 2: Validaciones -->
+        <div class="card p-4 mt-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="icon-circle bg-danger text-white me-3">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h2 class="h3 fw-bold mb-0">2. Seguridad y Validaciones</h2>
+            </div>
+            <p>El módulo cuenta con una doble capa de seguridad tanto en el Frontend (JavaScript y Atributos HTML) como
+                en el Backend (PHP).</p>
+            <ul>
+                <li><strong>Archivos:</strong> Solo se admiten formatos <code>.pdf</code>, <code>.jpg</code>,
+                    <code>.png</code> con un tamaño máximo de 5000 Bytes.
+                </li>
+                <li><strong>Bases de Datos:</strong> Independencia total. Digitalización solo lee y escribe en
+                    PostgreSQL (<code>$bd_dig</code>).</li>
+            </ul>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

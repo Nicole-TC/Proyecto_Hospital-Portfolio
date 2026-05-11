@@ -62,6 +62,12 @@ switch (@$_GET["modulo"]) {
         $modal = TRUE;
         $require = "vistas/notas.php";
         break;
+
+// DIGITALIZAR
+    case 'menu_digitalizar':
+        //delegamos las rutas a un archivo propio del modulo digtalizar
+        $require = "template/digitalizacion/rutas_dig.php";
+        break;
 }
 ?>
 

@@ -132,8 +132,8 @@ hr.my-0 {
     </li>
     <?php } ?>
     
-    <!--   Notas   -->
-    <?php if ($_SESSION["notas"] == TRUE) { ?>
+    <!--   Notas y Digitalización   -->
+    <?php if (@$_SESSION["notas"] == TRUE || @$_SESSION["admin"] == 1) { ?>
     <li>
       <a data-bs-toggle="collapse" href="#submenuAyuda" role="button" aria-expanded="false" aria-controls="submenuAyuda">
         <i class="fa-solid fa-globe menu-icon icon-ayuda"></i> Páginas de ayuda
@@ -142,8 +142,19 @@ hr.my-0 {
         <?php HTML::li("notas", "Notas a dirección"); ?>
       </ul>
     </li>
-    <!-- <hr class="my-0"> -->
     <?php } ?>
+
+    <?php if (@$_SESSION["menu_digitalizar"] == TRUE || @$_SESSION["admin"] == 1) { ?>
+    <li>
+      <a data-bs-toggle="collapse" href="#submenuDigitalizar" role="button" aria-expanded="false" aria-controls="submenuDigitalizar">
+        <i class="fa-solid fa-folder-open menu-icon icon-sis"></i> Digitalización
+      </a>
+      <ul class="collapse list-unstyled" id="submenuDigitalizar">
+        <?php require_once "template/digitalizacion/sidebar_dig.php"; ?>
+      </ul>
+    </li>
+    <?php } ?>
+    <!-- <hr class="my-0"> -->
   </ul>
 </div>
 

@@ -23,12 +23,12 @@ function cargarUsuariosAPI() {
         if(data && data.usuarios && data.usuarios.length > 0) {
             data.usuarios.forEach(usuario => {
                 const tr = document.createElement('tr');
-                // Como no tenemos el Rol en la tabla persona todavía, ponemos algo genérico o su teléfono
+                const rolNombre = usuario.rol_nombre || 'Sin rol';
                 tr.innerHTML = `
                     <td class="ps-4 py-3 fw-medium">${usuario.nombre} ${usuario.apellido}</td>
                     <td class="py-3">${usuario.email || 'Sin email'}</td>
                     <td class="py-3">
-                        <span class="badge bg-light-blue blue rounded-pill px-2 py-1 fw-normal">Personal</span>
+                        <span class="badge bg-light-blue blue rounded-pill px-2 py-1 fw-normal">${rolNombre}</span>
                     </td>
                     <td class="py-3">
                         <span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal">

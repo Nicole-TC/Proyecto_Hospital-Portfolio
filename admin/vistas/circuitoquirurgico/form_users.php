@@ -61,9 +61,6 @@
                         <label for="rol" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Rol del sistema *</label>
                         <select class="form-select text-secondary" id="rol" name="rol" required>
                             <option value="" selected disabled>Seleccionar rol...</option>
-                            <option value="Administrador">Administrador</option>
-                            <option value="Médico Cirujano">Médico Cirujano</option>
-                            <option value="Administrativo Admisión">Administrativo Admisión</option>
                         </select>
                     </div>
                 </div>
@@ -85,12 +82,35 @@
                         <label for="direccion" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Dirección</label>
                         <input type="text" class="form-control text-secondary" id="direccion" name="direccion" maxlength="150">
                     </div>
-                    <!-- Comentado temporalmente: No se incluye en tabla persona por ahora
                     <div class="col-md-4">
                         <label for="codigo_postal" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Código Postal</label>
                         <input type="text" class="form-control text-secondary" id="codigo_postal" name="codigo_postal" maxlength="10">
                     </div>
-                    -->
+                </div>
+
+                <!-- Campos de Cirujano -->
+                <div id="datos_cirujano" style="display: none;">
+                    <h6 class="text-secondary mt-4 mb-3 border-bottom pb-2">Datos del Cirujano</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="especialidad" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Especialidad</label>
+                            <select class="form-select text-secondary" id="especialidad" name="especialidad">
+                                <option value="" selected disabled>Seleccionar especialidad...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="numero_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Número de Matrícula</label>
+                            <input type="text" class="form-control text-secondary" id="numero_matricula" name="numero_matricula" maxlength="50">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="tipo_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Tipo de Matrícula</label>
+                            <select class="form-select text-secondary" id="tipo_matricula" name="tipo_matricula">
+                                <option value="" selected disabled>Seleccionar tipo...</option>
+                                <option value="Nacional">Nacional</option>
+                                <option value="Provincial">Provincial</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
 

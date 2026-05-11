@@ -5,8 +5,9 @@
             <h2 class="blue fw-bold mb-1">Gestión de Usuarios</h2>
             <p class="text-secondary mb-0">Administración de usuarios y permisos del sistema</p>
         </div>
-        <a href="index.php?modulo=menu_circuitoquirurgico&accion=form_users" class="btn btn-success px-3 py-2 rounded-3 fw-semibold shadow-sm">
-            <i class="bi bi-person-plus me-1"></i> Nuevo Usuario
+        <a href="index.php?modulo=menu_circuitoquirurgico&accion=form_users" class="btn btn-success float-right">
+            <i class="fa-solid fa-user-plus fa-bounce white fs-3"></i>
+            <span class="float-right fs-6 text-white ml-1"> Nuevo usuario</span>
         </a>
     </div>
 

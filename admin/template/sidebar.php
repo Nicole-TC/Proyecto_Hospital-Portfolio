@@ -150,7 +150,7 @@ hr.my-0 {
         <i class="fa-solid fa-folder-open menu-icon icon-sis"></i> Digitalización
       </a>
       <ul class="collapse list-unstyled" id="submenuDigitalizar">
-        <?php HTML::li("menu_digitalizar", "Gestión de Documentos"); ?>
+        <?php require_once "template/digitalizacion/sidebar_dig.php"; ?>
       </ul>
     </li>
     <?php } ?>

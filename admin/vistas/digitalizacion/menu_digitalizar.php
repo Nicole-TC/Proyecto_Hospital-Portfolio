@@ -5,7 +5,7 @@
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
         <!-- Tarjeta Cargar Nuevo Documento -->
-        <div class="col-md-6 col-lg-4 mb-4">
+        <div class="col-md-6 col-lg-3 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -13,7 +13,7 @@
                     </div>
                     <h3 class="card-title fw-bold mb-3">Cargar Nuevo Documento</h3>
                     <p class="card-text text-muted mb-4">Sube un nuevo documento al sistema de digitalización. Asigna sus datos y etiquetas correspondientes para un fácil acceso posterior.</p>
-                    <a href="index.php?modulo=menu_digitalizar&accion=nuevo_documento" class="btn btn-primary btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow">
+                    <a href="index.php?modulo=menu_digitalizar&accion=nuevo_documento" class="btn btn-primary btn-lg rounded-pill mt-auto align-self-center shadow btn-menu">
                         <i class="fa-solid fa-plus me-2"></i> Nuevo Documento
                     </a>
                 </div>
@@ -21,7 +21,7 @@
         </div>
 
         <!-- Tarjeta Administrar Etiquetas -->
-        <div class="col-md-6 col-lg-4 mb-4">
+        <div class="col-md-6 col-lg-3 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -29,15 +29,31 @@
                     </div>
                     <h3 class="card-title fw-bold mb-3">Administrar Etiquetas</h3>
                     <p class="card-text text-muted mb-4">Gestiona las etiquetas disponibles en el sistema para organizar y categorizar los documentos de forma eficiente.</p>
-                    <a href="index.php?modulo=menu_digitalizar&accion=etiquetas_digitalizar" class="btn btn-warning btn-lg rounded-pill px-4 py-2 mt-auto align-self-center shadow text-white">
+                    <a href="index.php?modulo=menu_digitalizar&accion=etiquetas_digitalizar" class="btn btn-warning btn-lg rounded-pill mt-auto align-self-center shadow text-white btn-menu">
                         <i class="fa-solid fa-tag me-2"></i> Administrar Etiquetas
                     </a>
                 </div>
             </div>
         </div>
 
+        <!-- Tarjeta Administrar Tipos de Documentos -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-file-signature text-success" style="font-size: 4.5rem;"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Tipos de Documentos</h3>
+                    <p class="card-text text-muted mb-4">Administra los diferentes tipos de documentos que se pueden subir al sistema (Recetas, Informes, Historias Clínicas, etc).</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=tipos_documentos" class="btn btn-success btn-lg rounded-pill mt-auto align-self-center shadow text-white btn-menu">
+                        <i class="fa-solid fa-list me-2"></i> Administrar Tipos
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Tarjeta Buscar Documento -->
-        <div class="col-md-12 col-lg-4 mb-4">
+        <div class="col-md-6 col-lg-3 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body p-4 p-xl-5 d-flex flex-column">
                     <div class="text-center mb-4">
@@ -62,8 +78,8 @@
                             </select>
                         </div>
                         
-                        <div class="d-grid mt-3">
-                            <button type="submit" class="btn btn-info btn-lg text-white rounded-pill shadow-sm">
+                        <div class="d-flex justify-content-center mt-3">
+                            <button type="submit" class="btn btn-info btn-lg text-white rounded-pill shadow-sm btn-menu">
                                 <i class="fa-solid fa-search me-2"></i> Buscar
                             </button>
                         </div>
@@ -79,6 +95,14 @@
 .bg-light { background-color: #f8f9fa !important; }
 .menu-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
 .menu-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.15)!important; }
+.btn-menu {
+    min-width: 260px;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>
 
 <script>

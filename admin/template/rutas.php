@@ -67,7 +67,7 @@ switch (@$_GET["modulo"]) {
     case 'menu_circuitoquirurgico':
         // Delegamos las rutas a un archivo propio del grupo
         require_once "template/circuitoquirurgico/rutas_cq.php";
-
+        break;
 // DIGITALIZAR
     case 'menu_digitalizar':
         //delegamos las rutas a un archivo propio del modulo digtalizar

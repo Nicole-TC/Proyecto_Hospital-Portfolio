@@ -6,6 +6,32 @@ require_once __DIR__ . '/../php/admision-b.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+if ($method === 'GET' && ($_GET['action'] ?? '') === 'obtener_catalogos') {
+    try {
+        $cirugias = ConsultasAdmision::obtenerCatalogoCirugias();
+        echo json_encode([
+            'ok' => true,
+            'cirugias' => $cirugias
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['ok' => false, 'error' => 'Error al obtener catálogos: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($method === 'GET' && ($_GET['action'] ?? '') === 'obtener_cirujanos') {
+    try {
+        $cirujanos = ConsultasAdmision::obtenerCirujanos();
+        echo json_encode([
+            'ok' => true,
+            'cirujanos' => $cirujanos
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['ok' => false, 'error' => 'Error al obtener cirujanos: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($method === 'GET' && ($_GET['action'] ?? '') === 'buscar_dni') {
     $dni = $_GET['dni'] ?? '';
 

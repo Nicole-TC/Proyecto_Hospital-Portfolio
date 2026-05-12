@@ -57,7 +57,7 @@
             <input type="text" class="form-control" id="telefono" name="telefono" placeholder="Ej: 11-2345-6789" required disabled>
           </div>
 
-          <!-- Tipo de cirugía y Tipo de cirujano -->
+          <!-- Tipo de cirugía y Cirujano -->
           <div class="row mb-3">
             <div class="col-md-6">
               <label for="tipoCirugia" class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
@@ -65,21 +65,14 @@
               </label>
               <select class="form-select select-boton" id="tipoCirugia" name="tipoCirugia" required disabled>
                 <option value="">Seleccione tipo de cirugía</option>
-                <option>Cardíaca</option>
-                <option>Ortopédica</option>
-                <option>Neurológica</option>
-                <option>General</option>
               </select>
             </div>
             <div class="col-md-6">
-              <label for="tipoCirujano" class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
-                Tipo de cirujano
+              <label for="cirujano" class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
+                Cirujano
               </label>
-              <select class="form-select select-boton" id="tipoCirujano" name="tipoCirujano" required disabled>
-                <option value="">Seleccione tipo de cirujano</option>
-                <option>Cirujano General</option>
-                <option>Cirujano Cardiovascular</option>
-                <option>Neurocirujano</option>
+              <select class="form-select select-boton" id="cirujano" name="cirujano" required disabled>
+                <option value="">Seleccione cirujano</option>
               </select>
             </div>
           </div>

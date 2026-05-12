@@ -7,22 +7,25 @@ const camposPaciente = [
 
 const inputDni = document.getElementById('dni');
 const selectCirugia = document.getElementById('tipoCirugia');
-const selectCirujano = document.getElementById('tipoCirujano');
 const form = document.getElementById('form-admision');
 
+function el(id) {
+  return document.getElementById(id);
+}
+
 function deshabilitarCamposPaciente(disabled) {
-  camposPaciente.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = disabled;
+  camposPaciente.forEach(function(id) {
+    var e = el(id);
+    if (e) e.disabled = disabled;
   });
 }
 
 function limpiarCamposPaciente() {
-  camposPaciente.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      if (el.type === 'date') el.value = '';
-      else el.value = '';
+  camposPaciente.forEach(function(id) {
+    var e = el(id);
+    if (e) {
+      if (e.type === 'date') e.value = '';
+      else e.value = '';
     }
   });
 }
@@ -32,25 +35,30 @@ function habilitarCirugia(disabled) {
 }
 
 function habilitarCirujano(disabled) {
-  selectCirujano.disabled = disabled;
+  var s = el('cirujano');
+  if (s) s.disabled = disabled;
+}
+
+function habilitarSelects(disabled) {
+  habilitarCirugia(disabled);
+  habilitarCirujano(disabled);
 }
 
 function reiniciarFormulario() {
   limpiarCamposPaciente();
   inputDni.value = '';
   selectCirugia.value = '';
-  selectCirujano.value = '';
+  var s = el('cirujano');
+  if (s) s.value = '';
   deshabilitarCamposPaciente(true);
-  habilitarCirugia(true);
-  habilitarCirujano(true);
+  habilitarSelects(true);
 }
 
 function buscarPaciente(dni) {
   if (!dni || dni.length < 8) {
     limpiarCamposPaciente();
     deshabilitarCamposPaciente(true);
-    habilitarCirugia(true);
-    habilitarCirujano(true);
+    habilitarSelects(true);
     return;
   }
 
@@ -59,28 +67,25 @@ function buscarPaciente(dni) {
     .then(function(data) {
       if (data.ok && data.encontrado && data.paciente) {
         var p = data.paciente;
-        document.getElementById('apellido').value = p.apellido || '';
-        document.getElementById('nombre').value = p.nombre || '';
-        document.getElementById('fechaNacimiento').value = p.fecha_nacimiento || '';
-        document.getElementById('direccion').value = p.direccion || '';
-        document.getElementById('codigoPostal').value = p.codigo_postal || '';
-        document.getElementById('email').value = p.email || '';
-        document.getElementById('telefono').value = p.telefono || '';
+        el('apellido').value = p.apellido || '';
+        el('nombre').value = p.nombre || '';
+        el('fechaNacimiento').value = p.fecha_nacimiento || '';
+        el('direccion').value = p.direccion || '';
+        el('codigoPostal').value = p.codigo_postal || '';
+        el('email').value = p.email || '';
+        el('telefono').value = p.telefono || '';
         deshabilitarCamposPaciente(true);
-        habilitarCirugia(false);
-        habilitarCirujano(false);
+        habilitarSelects(false);
       } else {
         limpiarCamposPaciente();
         deshabilitarCamposPaciente(false);
-        habilitarCirugia(false);
-        habilitarCirujano(false);
+        habilitarSelects(false);
       }
     })
     .catch(function() {
       limpiarCamposPaciente();
       deshabilitarCamposPaciente(true);
-      habilitarCirugia(true);
-      habilitarCirujano(true);
+      habilitarSelects(true);
     });
 }
 
@@ -88,10 +93,11 @@ function serializarFormulario() {
   var datos = {};
   datos.dni = inputDni.value.trim();
   camposPaciente.forEach(function(id) {
-    datos[id] = document.getElementById(id).value;
+    datos[id] = el(id).value;
   });
   datos.tipoCirugia = selectCirugia.value;
-  datos.tipoCirujano = selectCirujano.value;
+  var s = el('cirujano');
+  datos.cirujano = s ? s.value : '';
   return datos;
 }
 
@@ -135,6 +141,63 @@ form.addEventListener('submit', function(e) {
     });
 });
 
+function cargarCatalogos() {
+  fetch(ENDPOINT + '?action=obtener_catalogos')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.ok) {
+        console.error('Error al cargar catálogos:', data.error);
+        return;
+      }
+      if (data.cirugias && data.cirugias.length > 0) {
+        selectCirugia.innerHTML = '<option value="">Seleccione tipo de cirugía</option>';
+        data.cirugias.forEach(function(nombre) {
+          var opt = document.createElement('option');
+          opt.value = nombre;
+          opt.textContent = nombre;
+          selectCirugia.appendChild(opt);
+        });
+      }
+
+    })
+    .catch(function(err) {
+      console.error('Error en fetch de catálogos:', err);
+    });
+}
+
+function cargarCirujanos() {
+  fetch(ENDPOINT + '?action=obtener_cirujanos')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.ok) {
+        console.error('Error al cargar cirujanos:', data.error);
+        return;
+      }
+      var s = el('cirujano');
+      if (!s) return;
+      if (data.cirujanos && data.cirujanos.length > 0) {
+        s.innerHTML = '<option value="">Seleccione cirujano</option>';
+        data.cirujanos.forEach(function(c) {
+          var opt = document.createElement('option');
+          opt.value = c.id_persona;
+          opt.textContent = c.apellido + ', ' + c.nombre;
+          s.appendChild(opt);
+        });
+      }
+    })
+    .catch(function(err) {
+      console.error('Error en fetch de cirujanos:', err);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  cargarCatalogos();
+  cargarCirujanos();
+  var hoy = new Date().toISOString().split('T')[0];
+  var fechaInput = document.getElementById('fechaNacimiento');
+  if (fechaInput) fechaInput.setAttribute('max', hoy);
+});
+
 inputDni.addEventListener('blur', function() {
   buscarPaciente(this.value.trim());
 });
@@ -144,7 +207,8 @@ inputDni.addEventListener('input', function() {
   if (val === '') {
     limpiarCamposPaciente();
     deshabilitarCamposPaciente(true);
-    habilitarCirugia(true);
-    habilitarCirujano(true);
+    habilitarSelects(true);
+    var s = el('cirujano');
+    if (s) s.value = '';
   }
 });

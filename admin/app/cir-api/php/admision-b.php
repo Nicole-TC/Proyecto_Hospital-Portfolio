@@ -29,19 +29,12 @@ class ConsultasAdmision {
         $errores = [];
 
         $dni = $input['dni'] ?? '';
-        $tipoCirugia = $input['tipoCirugia'] ?? '';
-        $tipoCirujano = $input['tipoCirujano'] ?? '';
-
-        if (!preg_match('/^\d{2}\.?\d{3}\.?\d{3}$/', $dni)) {
-            $errores[] = 'El formato del DNI no es válido.';
+        if (!preg_match('/^\d{7,8}$/', $dni)) {
+            $errores[] = 'El DNI debe contener entre 7 y 8 dígitos numéricos.';
         }
-
+        $tipoCirugia = $input['tipoCirugia'] ?? '';
         if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirugia)) {
             $errores[] = 'El tipo de cirugía no es válido.';
-        }
-
-        if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirujano)) {
-            $errores[] = 'El tipo de cirujano no es válido.';
         }
 
         if (!$paciente_existente) {
@@ -69,6 +62,8 @@ class ConsultasAdmision {
                 $parts = explode('-', $fechaNacimiento);
                 if (!checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0])) {
                     $errores[] = 'La fecha de nacimiento no es una fecha real.';
+                } elseif ($fechaNacimiento > date('Y-m-d')) {
+                    $errores[] = 'La fecha de nacimiento no puede ser posterior al día de hoy.';
                 }
             }
 
@@ -90,6 +85,31 @@ class ConsultasAdmision {
         }
 
         return $errores;
+    }
+
+    public static function obtenerCatalogoCirugias() {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT nombre FROM catalogo_cirugia ORDER BY nombre";
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    public static function obtenerCirujanos() {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $sqlRol = "SELECT id_rol FROM rol WHERE LOWER(nombre) = 'cirujano' LIMIT 1";
+        $stmtRol = $pdo->query($sqlRol);
+        $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+
+        if (!$idRol) {
+            return [];
+        }
+
+        $sqlPersonas = "SELECT id_persona, nombre, apellido FROM persona WHERE id_rol = :id_rol ORDER BY apellido, nombre";
+        $stmtPersonas = $pdo->prepare($sqlPersonas);
+        $stmtPersonas->bindParam(':id_rol', $idRol, PDO::PARAM_INT);
+        $stmtPersonas->execute();
+        return $stmtPersonas->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function registrarAdmision($datos) {

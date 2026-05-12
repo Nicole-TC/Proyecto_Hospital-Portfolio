@@ -29,6 +29,9 @@ class ConsultasAdmision {
         $errores = [];
 
         $dni = $input['dni'] ?? '';
+        if (!preg_match('/^\d{7,8}$/', $dni)) {
+            $errores[] = 'El DNI debe contener entre 7 y 8 dígitos numéricos.';
+        }
         $tipoCirugia = $input['tipoCirugia'] ?? '';
         if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirugia)) {
             $errores[] = 'El tipo de cirugía no es válido.';

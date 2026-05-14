@@ -1,9 +1,13 @@
 <div class="col-12 mb-5">
     <div class="card">
         <div class="card-header">
+            <button id="btn-ver-inactivos" class="btn btn-info">
+                <i class="fa-solid fa-eye"></i>
+                <span class="text-white ml-1">Ver inactivos</span>
+            </button>
             <a href="index.php?modulo=menu_digitalizar&accion=nueva_etiqueta" class="btn btn-success float-right">
-                <i class="fa-solid fa-user-plus fa-bounce white fs-3"></i>
-                <span class="float-right fs-6 text-white ml-1">Nueva etiqueta</span>
+                <i class="fa-solid fa-tag"></i>
+                <span class="text-white ml-1">Nueva etiqueta</span>
             </a>
         </div>
 
@@ -76,16 +80,20 @@ $(document).ready(function() {
                 className: 'text-center',
                 orderable: false,
                 searchable: false,
-                render: function(data) {
-                    return `
+                render: function(data, type, row) {
+                    let html = `
                         <a class="text-success" href="index.php?modulo=menu_digitalizar&accion=editar_etiqueta&id=${data}">
                             <i class="bi bi-pencil-square"></i>
                         </a>
-                        <a onclick="eliminarEtiqueta(${data})" class="text-danger" href="#">
-                            <i class="bi bi-trash ml-1"></i>
-                        </a>
-                        
                     `;
+                    if (row.estado == 1) {
+                        html += `
+                            <a onclick="eliminarEtiqueta(${data})" class="text-danger" href="#">
+                                <i class="bi bi-trash ml-1"></i>
+                            </a>
+                        `;
+                    }
+                    return html;
                 }
             }
         ],
@@ -108,6 +116,18 @@ $(document).ready(function() {
                 next: 'Siguiente',
                 previous: 'Anterior'
             }
+        }
+    });
+
+    $('#btn-ver-inactivos').on('click', function() {
+        const table = $('#tabla-etiquetas').DataTable();
+        const mostrandoInactivos = table.ajax.url().includes('mostrar=inactivos');
+        if (mostrandoInactivos) {
+            table.ajax.url('api/digitalizar/api_etiquetas_dig.php').load();
+            $(this).html('<i class="fa-solid fa-eye"></i> <span class="text-white ml-1">Ver inactivos</span>');
+        } else {
+            table.ajax.url('api/digitalizar/api_etiquetas_dig.php?mostrar=inactivos').load();
+            $(this).html('<i class="fa-solid fa-eye-slash"></i> <span class="text-white ml-1">Ver activos</span>');
         }
     });
 

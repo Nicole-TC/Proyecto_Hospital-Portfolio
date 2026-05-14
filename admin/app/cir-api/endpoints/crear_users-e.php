@@ -32,70 +32,114 @@ try {
     // VALIDACIÓN DE DATOS (BACKEND)
     $errores = [];
 
-    $dni = trim($data['dni'] ?? '');
-    $nombre = trim($data['nombre'] ?? '');
-    $apellido = trim($data['apellido'] ?? '');
+    $dni              = trim($data['dni'] ?? '');
+    $nombre           = mb_strtoupper(trim($data['nombre']   ?? ''), 'UTF-8');
+    $apellido         = mb_strtoupper(trim($data['apellido'] ?? ''), 'UTF-8');
     $fecha_nacimiento = trim($data['fecha_nacimiento'] ?? '');
-    $email = trim($data['email'] ?? '');
-    $telefono = trim($data['telefono'] ?? '');
-    $direccion = trim($data['direccion'] ?? '');
-    $codigo_postal = trim($data['codigo_postal'] ?? '');
-    $rol_id = $data['rol'] ?? '';
-    
+    $email            = trim($data['email'] ?? '');
+    $telefono         = trim($data['telefono'] ?? '');
+    $direccion        = mb_strtoupper(trim($data['direccion']     ?? ''), 'UTF-8');
+    $codigo_postal    = mb_strtoupper(trim($data['codigo_postal'] ?? ''), 'UTF-8');
+    $rol_id           = $data['rol'] ?? '';
+
     // Datos específicos de cirujano (opcionales dependiendo del rol)
-    $especialidad_id = $data['especialidad'] ?? null;
+    $especialidad_id  = $data['especialidad'] ?? null;
     $numero_matricula = trim($data['numero_matricula'] ?? '');
-    $tipo_matricula = $data['tipo_matricula'] ?? '';
+    $tipo_matricula   = $data['tipo_matricula'] ?? '';
+
     
+    // ── DNI: solo dígitos, entre 6 y 8 caracteres ─────────────────────────────
     if (empty($dni)) {
         $errores[] = "El DNI es obligatorio.";
-    } elseif (!preg_match('/^\d{7,10}$/', $dni)) {
-        $errores[] = "El DNI debe contener entre 7 y 10 números válidos.";
+    } elseif (!preg_match('/^\d{6,8}$/', $dni)) {
+        $errores[] = "El DNI debe contener entre 6 y 8 dígitos numéricos, sin puntos ni espacios.";
     } elseif (ConsultasUsers::existeDNI($dni)) {
         $errores[] = "El DNI ingresado ya se encuentra registrado en el sistema.";
     }
 
+    // ── NOMBRE: solo letras mayúsculas (acentos y Ñ), mínimo 2 caracteres, un espacio entre palabras ──
     if (empty($nombre)) {
         $errores[] = "El nombre es obligatorio.";
-    } elseif (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $nombre)) {
-        $errores[] = "El nombre solo puede contener letras y espacios.";
+    } elseif (mb_strlen($nombre, 'UTF-8') < 2) {
+        $errores[] = "El nombre debe tener al menos 2 caracteres.";
+    } elseif (preg_match('/[0-9]/', $nombre)) {
+        $errores[] = "El nombre no puede contener números.";
+    } elseif (!preg_match('/^[A-ZÁÉÍÓÚÜÑ]+( [A-ZÁÉÍÓÚÜÑ]+)*$/u', $nombre)) {
+        $errores[] = "El nombre solo puede contener letras mayúsculas, acentos, Ñ y un espacio entre palabras.";
     }
 
+    // ── APELLIDO: mismas reglas que nombre ──────────────────────────────────────
     if (empty($apellido)) {
         $errores[] = "El apellido es obligatorio.";
-    } elseif (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $apellido)) {
-        $errores[] = "El apellido solo puede contener letras y espacios.";
+    } elseif (mb_strlen($apellido, 'UTF-8') < 2) {
+        $errores[] = "El apellido debe tener al menos 2 caracteres.";
+    } elseif (preg_match('/[0-9]/', $apellido)) {
+        $errores[] = "El apellido no puede contener números.";
+    } elseif (!preg_match('/^[A-ZÁÉÍÓÚÜÑ]+( [A-ZÁÉÍÓÚÜÑ]+)*$/u', $apellido)) {
+        $errores[] = "El apellido solo puede contener letras mayúsculas, acentos, Ñ y un espacio entre palabras.";
     }
 
+
+    // ── FECHA DE NACIMIENTO: obligatoria, mayor de 18 años ─────────────────────
     if (empty($fecha_nacimiento)) {
         $errores[] = "La fecha de nacimiento es obligatoria.";
     } else {
         $fecha = DateTime::createFromFormat('Y-m-d', $fecha_nacimiento);
-        $hoy = new DateTime();
-        $limite_edad = (new DateTime())->modify('-100 years');
-        
+        $hoy   = new DateTime();
+
         if (!$fecha || $fecha->format('Y-m-d') !== $fecha_nacimiento) {
             $errores[] = "La fecha de nacimiento tiene un formato inválido.";
-        } elseif ($fecha > $hoy) {
-            $errores[] = "La fecha de nacimiento no puede ser en el futuro.";
-        } elseif ($fecha < $limite_edad) {
-            $errores[] = "La fecha de nacimiento excede la edad coherente permitida.";
+        } else {
+            $edad = $hoy->diff($fecha)->y;
+            if ($edad < 18) {
+                $errores[] = "El usuario debe ser mayor de 18 años.";
+            } elseif ($edad > 110) {
+                $errores[] = "La fecha de nacimiento excede la edad coherente permitida (máx. 110 años).";
+            }
         }
     }
 
-    if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    // ── EMAIL: obligatorio, sin espacios, formato válido ──────────────────────
+    if (empty($email)) {
+        $errores[] = "El correo electrónico es obligatorio.";
+    } elseif (preg_match('/\s/', $email)) {
+        $errores[] = "El correo electrónico no puede contener espacios.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errores[] = "El formato del correo electrónico no es válido.";
     }
 
+    // ── TELÉFONO: obligatorio, solo dígitos, entre 7 y 15 caracteres ───────────
+    if (empty($telefono)) {
+        $errores[] = "El teléfono es obligatorio.";
+    } elseif (preg_match('/\s/', $telefono)) {
+        $errores[] = "El teléfono no puede contener espacios.";
+    } elseif (!preg_match('/^\d+$/', $telefono)) {
+        $errores[] = "El teléfono solo puede contener números, sin guiones ni símbolos.";
+    } elseif (mb_strlen($telefono) < 7 || mb_strlen($telefono) > 15) {
+        $errores[] = "El teléfono debe tener entre 7 y 15 dígitos.";
+    }
+
+    // ── ROL ────────────────────────────────────────────────────────────────────
     if (empty($rol_id)) {
         $errores[] = "Debe seleccionar un rol para el usuario.";
     }
 
-    // Si se enviaron datos de matrícula, validamos que estén completos
+    // ── CÓDIGO POSTAL: opcional, alfanumérico sin espacios, 4-8 caracteres ─────
+    if (!empty($codigo_postal)) {
+        if (preg_match('/\s/', $codigo_postal)) {
+            $errores[] = "El código postal no puede contener espacios.";
+        } elseif (!preg_match('/^[a-zA-Z0-9]+$/', $codigo_postal)) {
+            $errores[] = "El código postal solo puede contener letras y números, sin símbolos.";
+        } elseif (mb_strlen($codigo_postal) < 4 || mb_strlen($codigo_postal) > 8) {
+            $errores[] = "El código postal debe tener entre 4 y 8 caracteres.";
+        }
+    }
+
+    // ── DATOS DE CIRUJANO: validar si se enviaron ──────────────────────────────
     if (!empty($numero_matricula) || !empty($especialidad_id) || !empty($tipo_matricula)) {
-        if (empty($especialidad_id)) $errores[] = "Si es profesional, debe seleccionar una especialidad.";
-        if (empty($numero_matricula)) $errores[] = "Si es profesional, el número de matrícula es obligatorio.";
-        if (empty($tipo_matricula)) $errores[] = "Si es profesional, el tipo de matrícula es obligatorio.";
+        if (empty($especialidad_id))   $errores[] = "Si es profesional, debe seleccionar una especialidad.";
+        if (empty($numero_matricula))  $errores[] = "Si es profesional, el número de matrícula es obligatorio.";
+        if (empty($tipo_matricula))    $errores[] = "Si es profesional, el tipo de matrícula es obligatorio.";
     }
 
     if (!empty($errores)) {

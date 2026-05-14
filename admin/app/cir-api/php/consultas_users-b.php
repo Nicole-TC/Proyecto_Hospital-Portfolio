@@ -105,5 +105,85 @@ class ConsultasUsers {
         
         return $stmt->fetchAll();
     }
+
+    // Obtener datos completos de una persona para el formulario de edición
+    public static function obtenerPersonaCompleta($id_persona) {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT p.id_persona, p.dni, p.nombre, p.apellido, p.fecha_nacimiento,
+                       p.email, p.telefono, p.direccion, p.codigo_postal, p.id_rol,
+                       r.nombre AS rol_nombre,
+                       prof.id_profesional,
+                       pe.id_especialidad,
+                       m.numero AS numero_matricula,
+                       m.tipo   AS tipo_matricula
+                FROM persona p
+                LEFT JOIN rol r ON p.id_rol = r.id_rol
+                LEFT JOIN profesional prof ON prof.id_persona = p.id_persona
+                LEFT JOIN profesional_especialidad pe ON pe.id_profesional = prof.id_profesional
+                LEFT JOIN matricula m ON m.id_profesional = prof.id_profesional
+                WHERE p.id_persona = :id_persona
+                LIMIT 1";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id_persona', $id_persona, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Actualizar datos de una persona existente
+    public static function actualizarPersona($id_persona, $datos) {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "UPDATE persona
+                SET nombre          = :nombre,
+                    apellido        = :apellido,
+                    fecha_nacimiento = :fecha_nacimiento,
+                    email           = :email,
+                    telefono        = :telefono,
+                    direccion       = :direccion,
+                    codigo_postal   = :codigo_postal,
+                    id_rol          = :id_rol
+                WHERE id_persona = :id_persona";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':nombre',           $datos['nombre']);
+        $stmt->bindParam(':apellido',          $datos['apellido']);
+        $stmt->bindParam(':fecha_nacimiento',  $datos['fecha_nacimiento']);
+        $stmt->bindParam(':email',             $datos['email']);
+        $stmt->bindParam(':telefono',          $datos['telefono']);
+        $stmt->bindParam(':direccion',         $datos['direccion']);
+        $stmt->bindParam(':codigo_postal',     $datos['codigo_postal']);
+        $stmt->bindParam(':id_rol',            $datos['id_rol']);
+        $stmt->bindParam(':id_persona',        $id_persona, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Eliminar todos los datos de cirujano para una persona
+    // (matricula y profesional_especialidad se eliminan en cascada si la FK lo permite,
+    //  si no, los borramos explícitamente en orden)
+    public static function eliminarDatosCirujano($id_persona) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        // 1. Obtener id_profesional
+        $stmt = $pdo->prepare("SELECT id_profesional FROM profesional WHERE id_persona = :id");
+        $stmt->bindParam(':id', $id_persona, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return true; // No era cirujano, nada que borrar
+
+        $idProf = $row['id_profesional'];
+
+        // 2. Borrar matrículas
+        $stmt = $pdo->prepare("DELETE FROM matricula WHERE id_profesional = :id");
+        $stmt->bindParam(':id', $idProf, PDO::PARAM_INT);
+        $stmt->execute();
+
+        // 3. Borrar vínculos con especialidad
+        $stmt = $pdo->prepare("DELETE FROM profesional_especialidad WHERE id_profesional = :id");
+        $stmt->bindParam(':id', $idProf, PDO::PARAM_INT);
+        $stmt->execute();
+
+        // 4. Borrar el registro profesional
+        $stmt = $pdo->prepare("DELETE FROM profesional WHERE id_persona = :id");
+        $stmt->bindParam(':id', $id_persona, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
 }
 ?>

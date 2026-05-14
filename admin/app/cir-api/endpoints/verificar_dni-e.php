@@ -22,7 +22,7 @@ if (empty($dni)) {
     exit;
 }
 
-if (!preg_match('/^\d{7,10}$/', $dni)) {
+if (!preg_match('/^\d{6,8}$/', $dni)) {
     echo json_encode(["status" => "error", "message" => "Formato de DNI inválido."]);
     exit;
 }

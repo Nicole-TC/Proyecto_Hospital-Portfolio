@@ -6,18 +6,7 @@ $tituloForm = $modoEditar ? 'Editar usuario' : 'Cargar nuevo usuario';
 $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios';
 ?>
 <div class="col-12 px-3 pb-5">
-    <!-- encabezado -->
-    <div class="card shadow-sm mb-3" style="border: 1px solid #e0e0e0; border-radius: 4px;">
-        <div class="card-body py-3 d-flex justify-content-between align-items-center bg-white">
-            <a href="index.php?modulo=menu_circuitoquirurgico" class="text-info text-decoration-none">
-                <i class="bi bi-house"></i>
-            </a>
-            <h6 class="mb-0 fw-bold text-dark mx-auto"><?= htmlspecialchars($tituloForm) ?></h6>
-            <a href="<?= $urlVolver ?>" class="text-info text-decoration-none">
-                <i class="bi bi-arrow-left-circle"></i>
-            </a>
-        </div>
-    </div>
+
 
     <!-- formulario -->
     <div class="card shadow-sm bg-white" style="border: 1px solid #e0e0e0; border-radius: 4px;">

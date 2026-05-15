@@ -28,12 +28,12 @@ function clearField(inputId, feedbackId) {
 // ============================================================
 // ESTADO GLOBAL
 // ============================================================
-var dniVerificado  = false;
+var dniVerificado = false;
 var camposFieldset = null;
-var btnGuardar     = null;
-var dniInput       = null;
-var icoDni         = null;
-var dniTimer       = null;
+var btnGuardar = null;
+var dniInput = null;
+var icoDni = null;
+var dniTimer = null;
 
 // ============================================================
 // BLOQUEO / DESBLOQUEO DEL FORMULARIO
@@ -41,25 +41,25 @@ var dniTimer       = null;
 function bloquearFormulario() {
     dniVerificado = false;
     if (camposFieldset) camposFieldset.disabled = true;
-    if (btnGuardar)     btnGuardar.disabled = true;
+    if (btnGuardar) btnGuardar.disabled = true;
     mostrarAviso('bloqueo');
 }
 function desbloquearFormulario() {
     dniVerificado = true;
     if (camposFieldset) camposFieldset.disabled = false;
-    if (btnGuardar)     btnGuardar.disabled = false;
+    if (btnGuardar) btnGuardar.disabled = false;
     mostrarAviso('ok');
 }
 function mostrarAviso(tipo) {
     var avisoBloqueo = document.getElementById('dni-aviso-bloqueo');
-    var avisoOk      = document.getElementById('dni-aviso-ok');
-    var avisoExiste  = document.getElementById('dni-aviso-existe');
-    [avisoBloqueo, avisoOk, avisoExiste].forEach(function(a) {
+    var avisoOk = document.getElementById('dni-aviso-ok');
+    var avisoExiste = document.getElementById('dni-aviso-existe');
+    [avisoBloqueo, avisoOk, avisoExiste].forEach(function (a) {
         if (a) a.style.setProperty('display', 'none', 'important');
     });
     if (tipo === 'bloqueo' && avisoBloqueo) avisoBloqueo.style.setProperty('display', 'flex', 'important');
-    if (tipo === 'ok'      && avisoOk)      avisoOk.style.setProperty('display', 'flex', 'important');
-    if (tipo === 'existe'  && avisoExiste)  avisoExiste.style.setProperty('display', 'flex', 'important');
+    if (tipo === 'ok' && avisoOk) avisoOk.style.setProperty('display', 'flex', 'important');
+    if (tipo === 'existe' && avisoExiste) avisoExiste.style.setProperty('display', 'flex', 'important');
 }
 
 // ============================================================
@@ -67,10 +67,10 @@ function mostrarAviso(tipo) {
 // ============================================================
 function bindDni() {
     dniInput = document.getElementById('dni');
-    icoDni   = document.getElementById('ico-dni');
+    icoDni = document.getElementById('ico-dni');
     if (!dniInput) return;
 
-    dniInput.addEventListener('input', function() {
+    dniInput.addEventListener('input', function () {
         // Filtrar solo dígitos
         this.value = this.value.replace(/[^0-9]/g, '');
         clearField('dni', 'dni-feedback');
@@ -88,10 +88,10 @@ function bindDni() {
         }
         if (icoDni) icoDni.className = 'bi bi-hourglass-split text-warning';
         clearTimeout(dniTimer);
-        dniTimer = setTimeout(function() { verificarDNI(dniInput.value); }, 600);
+        dniTimer = setTimeout(function () { verificarDNI(dniInput.value); }, 600);
     });
 
-    dniInput.addEventListener('blur', function() {
+    dniInput.addEventListener('blur', function () {
         clearTimeout(dniTimer);
         var val = this.value;
         if (val.length === 0) return;
@@ -104,7 +104,7 @@ function bindDni() {
         verificarDNI(val);
     });
 
-    dniInput.addEventListener('paste', function(e) {
+    dniInput.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
         this.value = texto.replace(/[^0-9]/g, '').slice(0, 8);
@@ -122,7 +122,7 @@ async function verificarDNI(val) {
     if (icoDni) icoDni.className = 'bi bi-hourglass-split text-warning';
     try {
         var response = await fetch('app/cir-api/endpoints/verificar_dni-e.php?dni=' + val);
-        var result   = await response.json();
+        var result = await response.json();
         if (result.status === 'success') {
             if (result.existe === true) {
                 setFieldError('dni', 'dni-feedback', 'Este DNI ya está registrado en el sistema.');
@@ -142,8 +142,7 @@ async function verificarDNI(val) {
             bloquearFormulario();
             if (icoDni) icoDni.className = 'bi bi-exclamation-triangle text-warning';
         }
-    } catch(err) {
-        console.error('Error verificando DNI:', err);
+    } catch (err) {
         setFieldError('dni', 'dni-feedback', 'No se pudo verificar el DNI. Revisá tu conexión.');
         if (icoDni) icoDni.className = 'bi bi-wifi-off text-danger';
     }
@@ -158,7 +157,7 @@ var RE_NOMBRE_VALIDO = new RegExp('^[' + LETRAS_OK + ']+( [' + LETRAS_OK + ']+)*
 var RE_CHAR_INVALIDO = new RegExp('[^' + LETRAS_OK + ' ]', 'g');
 
 function validarNombreApellido(inputId, feedbackId, etiqueta) {
-    var el  = document.getElementById(inputId);
+    var el = document.getElementById(inputId);
     if (!el) return true;
     var val = el.value;
 
@@ -194,8 +193,8 @@ function bindNombreApellido(inputId, feedbackId, etiqueta) {
 
     el.style.textTransform = 'uppercase';
 
-    el.addEventListener('input', function() {
-        var pos    = this.selectionStart;
+    el.addEventListener('input', function () {
+        var pos = this.selectionStart;
         var newVal = this.value.toUpperCase().replace(RE_CHAR_INVALIDO, '').replace(/ {2,}/g, ' ');
         if (newVal !== this.value) {
             this.value = newVal;
@@ -208,11 +207,11 @@ function bindNombreApellido(inputId, feedbackId, etiqueta) {
         }
     });
 
-    el.addEventListener('blur', function() {
+    el.addEventListener('blur', function () {
         validarNombreApellido(inputId, feedbackId, etiqueta);
     });
 
-    el.addEventListener('paste', function(e) {
+    el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
         this.value = texto.toUpperCase().replace(RE_CHAR_INVALIDO, '').replace(/ {2,}/g, ' ').trim();
@@ -230,16 +229,16 @@ function configurarFecha() {
     if (!el) return;
 
     // Limitar el input: máximo = hace 18 años, mínimo = hace 110 años
-    var hoy    = new Date();
-    var max18  = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+    var hoy = new Date();
+    var max18 = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
     var min110 = new Date(hoy.getFullYear() - 110, hoy.getMonth(), hoy.getDate());
 
-    var toISO = function(d) { return d.toISOString().split('T')[0]; };
+    var toISO = function (d) { return d.toISOString().split('T')[0]; };
     el.setAttribute('max', toISO(max18));
     el.setAttribute('min', toISO(min110));
 
     el.addEventListener('change', validarFecha);
-    el.addEventListener('blur',   validarFecha);
+    el.addEventListener('blur', validarFecha);
 }
 
 function validarFecha() {
@@ -252,9 +251,9 @@ function validarFecha() {
         return false;
     }
 
-    var fecha  = new Date(val + 'T00:00:00');
-    var hoy    = new Date();
-    var limite18  = new Date(hoy.getFullYear() - 18,  hoy.getMonth(), hoy.getDate());
+    var fecha = new Date(val + 'T00:00:00');
+    var hoy = new Date();
+    var limite18 = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
     var limite110 = new Date(hoy.getFullYear() - 110, hoy.getMonth(), hoy.getDate());
 
     if (fecha > hoy) {
@@ -279,17 +278,16 @@ function validarFecha() {
 function validarEmail() {
     var el = document.getElementById('email');
     if (!el) return true;
-    var val = el.value;
-    if (val.trim().length === 0) {
+    var val = el.value.trim();
+    if (val.length === 0) {
         setFieldError('email', 'email-feedback', 'El correo electrónico es obligatorio.');
         return false;
     }
-    if (/\s/.test(val)) {
-        setFieldError('email', 'email-feedback', 'El correo no puede contener espacios.');
-        return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-        setFieldError('email', 'email-feedback', 'Formato inválido. Ej: usuario@dominio.com');
+    // Regex fuerte: letras minúsculas, números, punto, guion y guion bajo
+    // Formato: usuario@dominio.tld
+    var re = /^[a-z0-9._-]+@[a-z0-9._-]+\.[a-z]{2,}$/;
+    if (!re.test(val)) {
+        setFieldError('email', 'email-feedback', 'Formato inválido. Use solo minúsculas, números y símbolos permitidos (._-).');
         return false;
     }
     setFieldOk('email', 'email-feedback');
@@ -299,16 +297,26 @@ function validarEmail() {
 function bindEmail() {
     var el = document.getElementById('email');
     if (!el) return;
-    el.addEventListener('input', function() {
-        this.value = this.value.replace(/\s/g, '');
+    el.addEventListener('input', function () {
+        // Forzar minúsculas y filtrar caracteres permitidos: a-z, 0-9, @, ., _, -
+        var pos = this.selectionStart;
+        var valOriginal = this.value;
+        var valFiltrado = valOriginal.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+        
+        if (valOriginal !== valFiltrado) {
+            this.value = valFiltrado;
+            // Intentar mantener la posición del cursor
+            this.setSelectionRange(pos, pos);
+        }
+        
         if (this.value.length > 0) validarEmail();
         else clearField('email', 'email-feedback');
     });
     el.addEventListener('blur', validarEmail);
-    el.addEventListener('paste', function(e) {
+    el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
-        this.value = texto.replace(/\s/g, '');
+        this.value = texto.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
         this.dispatchEvent(new Event('input'));
     });
 }
@@ -343,13 +351,13 @@ function validarTelefono() {
 function bindTelefono() {
     var el = document.getElementById('telefono');
     if (!el) return;
-    el.addEventListener('input', function() {
+    el.addEventListener('input', function () {
         this.value = this.value.replace(/[^0-9]/g, '');
         if (this.value.length > 0) validarTelefono();
         else clearField('telefono', 'telefono-feedback');
     });
     el.addEventListener('blur', validarTelefono);
-    el.addEventListener('paste', function(e) {
+    el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
         this.value = texto.replace(/[^0-9]/g, '').slice(0, 15);
@@ -398,16 +406,16 @@ function bindCodigoPostal() {
     var el = document.getElementById('codigo_postal');
     if (!el) return;
     el.style.textTransform = 'uppercase';
-    el.addEventListener('input', function() {
+    el.addEventListener('input', function () {
         // Convertir a mayúsculas y eliminar caracteres inválidos en tiempo real
         this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (this.value.length > 0) validarCodigoPostal();
         else clearField('codigo_postal', 'cp-feedback');
     });
-    el.addEventListener('blur', function() {
+    el.addEventListener('blur', function () {
         if (this.value.length > 0) validarCodigoPostal();
     });
-    el.addEventListener('paste', function(e) {
+    el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
         this.value = texto.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
@@ -422,15 +430,15 @@ function bindDireccion() {
     var el = document.getElementById('direccion');
     if (!el) return;
     el.style.textTransform = 'uppercase';
-    el.addEventListener('input', function() {
-        var pos    = this.selectionStart;
+    el.addEventListener('input', function () {
+        var pos = this.selectionStart;
         var newVal = this.value.toUpperCase();
         if (newVal !== this.value) {
             this.value = newVal;
             this.setSelectionRange(Math.min(pos, newVal.length), Math.min(pos, newVal.length));
         }
     });
-    el.addEventListener('paste', function(e) {
+    el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
         this.value = texto.toUpperCase();
@@ -477,13 +485,13 @@ function validarTipoMatricula() {
 // LÓGICA ROL — mostrar sección cirujano + validaciones obligatorias
 // ============================================================
 function bindRol() {
-    var rolSelect     = document.getElementById('rol');
+    var rolSelect = document.getElementById('rol');
     var datosCirujano = document.getElementById('datos_cirujano');
     if (!rolSelect || !datosCirujano) return;
 
-    rolSelect.addEventListener('change', function() {
+    rolSelect.addEventListener('change', function () {
         validarRol();
-        var textoRol   = this.options[this.selectedIndex].text.toLowerCase();
+        var textoRol = this.options[this.selectedIndex].text.toLowerCase();
         var esCirujano = textoRol.indexOf('cirujano') !== -1;
 
         if (esCirujano) {
@@ -497,11 +505,11 @@ function bindRol() {
             if (esp) {
                 esp.setAttribute('required', 'required');
                 esp.addEventListener('change', validarEspecialidad);
-                esp.addEventListener('blur',   validarEspecialidad);
+                esp.addEventListener('blur', validarEspecialidad);
             }
             if (mat) {
                 mat.setAttribute('required', 'required');
-                mat.addEventListener('input', function() {
+                mat.addEventListener('input', function () {
                     if (this.value.trim().length > 0) validarNumeroMatricula();
                     else clearField('numero_matricula', 'matricula-feedback');
                 });
@@ -510,11 +518,11 @@ function bindRol() {
             if (tip) {
                 tip.setAttribute('required', 'required');
                 tip.addEventListener('change', validarTipoMatricula);
-                tip.addEventListener('blur',   validarTipoMatricula);
+                tip.addEventListener('blur', validarTipoMatricula);
             }
         } else {
             datosCirujano.style.display = 'none';
-            ['especialidad', 'numero_matricula', 'tipo_matricula'].forEach(function(id) {
+            ['especialidad', 'numero_matricula', 'tipo_matricula'].forEach(function (id) {
                 var campo = document.getElementById(id);
                 if (campo) {
                     campo.removeAttribute('required');
@@ -522,7 +530,7 @@ function bindRol() {
                     campo.classList.remove('is-valid', 'is-invalid');
                 }
             });
-            ['especialidad-feedback', 'matricula-feedback', 'tipo-matricula-feedback'].forEach(function(fbId) {
+            ['especialidad-feedback', 'matricula-feedback', 'tipo-matricula-feedback'].forEach(function (fbId) {
                 var fb = document.getElementById(fbId);
                 if (fb) fb.innerHTML = '';
             });
@@ -537,122 +545,36 @@ function bindRol() {
 async function cargarSelects() {
     try {
         var response = await fetch('app/cir-api/endpoints/obtener_roles_especialidades-e.php');
-        var result   = await response.json();
+        var result = await response.json();
         if (result.status === 'success') {
             var rolSelect = document.getElementById('rol');
             var espSelect = document.getElementById('especialidad');
             if (rolSelect && result.roles) {
-                result.roles.forEach(function(rol) {
-                    var opt   = document.createElement('option');
+                result.roles.forEach(function (rol) {
+                    var opt = document.createElement('option');
                     opt.value = rol.id_rol;
-                    opt.text  = rol.nombre;
+                    opt.text = rol.nombre;
                     rolSelect.add(opt);
                 });
             }
             if (espSelect && result.especialidades) {
-                result.especialidades.forEach(function(esp) {
-                    var opt   = document.createElement('option');
+                result.especialidades.forEach(function (esp) {
+                    var opt = document.createElement('option');
                     opt.value = esp.id_especialidad;
-                    opt.text  = esp.nombre;
+                    opt.text = esp.nombre;
                     espSelect.add(opt);
                 });
             }
-        } else {
-            console.warn('API roles/especialidades devolvió error:', result.message);
         }
-    } catch(err) {
-        console.error('Error al cargar roles/especialidades:', err);
+    } catch (err) {
+        // Error silencioso en UI
     }
 }
 
 // ============================================================
 // SUBMIT — validar todo antes de enviar al servidor
 // ============================================================
-function bindSubmit() {
-    var form = document.getElementById('formUsuario');
-    if (!form) return;
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        if (!dniVerificado) {
-            mostrarAviso('bloqueo');
-            if (dniInput) dniInput.focus();
-            return;
-        }
-
-        var ok = true;
-        if (!dniInput || !dniInput.classList.contains('is-valid')) ok = false;
-        if (!validarNombreApellido('nombre',   'nombre-feedback',   'nombre'))   ok = false;
-        if (!validarNombreApellido('apellido', 'apellido-feedback', 'apellido')) ok = false;
-        if (!validarFecha())         ok = false;
-        if (!validarEmail())         ok = false;
-        if (!validarTelefono())      ok = false;
-        if (!validarRol())           ok = false;
-        if (!validarCodigoPostal())  ok = false;
-
-        // Validar campos de cirujano si están visibles
-        var datosCirujano = document.getElementById('datos_cirujano');
-        if (datosCirujano && datosCirujano.style.display !== 'none') {
-            var esp = document.getElementById('especialidad');
-            var mat = document.getElementById('numero_matricula');
-            var tip = document.getElementById('tipo_matricula');
-            if (esp && !esp.value)      { setFieldError('especialidad',    'especialidad-feedback',    'Seleccioná una especialidad.'); ok = false; }
-            if (mat && !mat.value.trim()){ setFieldError('numero_matricula', 'matricula-feedback',      'El número de matrícula es obligatorio.'); ok = false; }
-            if (tip && !tip.value)       { setFieldError('tipo_matricula',   'tipo-matricula-feedback', 'Seleccioná el tipo de matrícula.'); ok = false; }
-        }
-
-        if (!ok) {
-            var primerError = form.querySelector('.is-invalid');
-            if (primerError) primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-
-        // Preparar y enviar
-        var formData = new FormData(form);
-        var data     = Object.fromEntries(formData.entries());
-        var btnText  = btnGuardar.textContent;
-        btnGuardar.disabled    = true;
-        btnGuardar.textContent = 'Guardando...';
-
-        try {
-            var res    = await fetch('app/cir-api/endpoints/crear_users-e.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            var result = await res.json();
-
-            if (result.status === 'success') {
-                alert('✅ ' + result.message);
-                form.reset();
-                form.querySelectorAll('.is-valid, .is-invalid').forEach(function(el) {
-                    el.classList.remove('is-valid', 'is-invalid');
-                });
-                form.querySelectorAll('[id$="-feedback"]').forEach(function(fb) { fb.innerHTML = ''; });
-                bloquearFormulario();
-                mostrarAviso('bloqueo');
-                clearField('dni', 'dni-feedback');
-                if (icoDni) icoDni.className = 'bi bi-search text-secondary';
-                var dc = document.getElementById('datos_cirujano');
-                if (dc) dc.style.display = 'none';
-            } else {
-                var msg = 'Error: ' + result.message;
-                if (result.errores && result.errores.length) {
-                    msg += '\n\n' + result.errores.join('\n');
-                }
-                alert(msg);
-                btnGuardar.disabled    = false;
-                btnGuardar.textContent = btnText;
-            }
-        } catch(err) {
-            console.error('Error al enviar:', err);
-            alert('Error al conectar con el servidor. Intentá nuevamente.');
-            btnGuardar.disabled    = false;
-            btnGuardar.textContent = btnText;
-        }
-    });
-}
 
 // ============================================================
 // INIT — punto de entrada principal
@@ -660,9 +582,9 @@ function bindSubmit() {
 // ============================================================
 function init() {
     camposFieldset = document.getElementById('campos-principal');
-    btnGuardar     = document.getElementById('btn-guardar');
+    btnGuardar = document.getElementById('btn-guardar');
 
-    var form      = document.getElementById('formUsuario');
+    var form = document.getElementById('formUsuario');
     var modoEditar = form && form.getAttribute('data-modo') === 'editar';
 
     if (modoEditar) {
@@ -671,7 +593,7 @@ function init() {
         dniVerificado = true;
 
         // Cargar selects primero, luego pre-llenar con los datos del usuario
-        cargarSelects().then(function() {
+        cargarSelects().then(function () {
             var idPersona = form.getAttribute('data-id');
             if (idPersona) preLlenarFormulario(idPersona);
         });
@@ -684,7 +606,7 @@ function init() {
 
     // Bind de validaciones (siempre, en ambos modos)
     configurarFecha();
-    bindNombreApellido('nombre',   'nombre-feedback',   'nombre');
+    bindNombreApellido('nombre', 'nombre-feedback', 'nombre');
     bindNombreApellido('apellido', 'apellido-feedback', 'apellido');
     bindEmail();
     bindTelefono();
@@ -697,34 +619,39 @@ function init() {
 // Pre-llenar formulario con datos del usuario a editar
 async function preLlenarFormulario(idPersona) {
     try {
-        var res    = await fetch('app/cir-api/endpoints/obtener_usuario-e.php?id=' + idPersona);
+        var res = await fetch('app/cir-api/endpoints/obtener_usuario-e.php?id=' + idPersona);
         var result = await res.json();
 
         if (result.status !== 'success' || !result.persona) {
-            alert('No se pudieron cargar los datos del usuario.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudieron cargar los datos del usuario.',
+                confirmButtonColor: '#ff6b81'
+            });
             return;
         }
 
         var p = result.persona;
 
         // Campos simples
-        var setVal = function(id, val) {
+        var setVal = function (id, val) {
             var el = document.getElementById(id);
             if (el && val != null) el.value = val;
         };
 
-        setVal('dni',              p.dni);
-        setVal('nombre',           (p.nombre        || '').toUpperCase());
-        setVal('apellido',         (p.apellido      || '').toUpperCase());
+        setVal('dni', p.dni);
+        setVal('nombre', (p.nombre || '').toUpperCase());
+        setVal('apellido', (p.apellido || '').toUpperCase());
         setVal('fecha_nacimiento', p.fecha_nacimiento);
-        setVal('email',            p.email);
-        setVal('telefono',         p.telefono);
-        setVal('direccion',        (p.direccion     || '').toUpperCase());
-        setVal('codigo_postal',    (p.codigo_postal || '').toUpperCase());
+        setVal('email', p.email);
+        setVal('telefono', p.telefono);
+        setVal('direccion', (p.direccion || '').toUpperCase());
+        setVal('codigo_postal', (p.codigo_postal || '').toUpperCase());
 
 
         // Aplicar estilo uppercase a nombre y apellido
-        ['nombre','apellido','direccion','codigo_postal'].forEach(function(id) {
+        ['nombre', 'apellido', 'direccion', 'codigo_postal'].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.style.textTransform = 'uppercase';
         });
@@ -741,14 +668,14 @@ async function preLlenarFormulario(idPersona) {
         if (p.id_profesional) {
             var datosCirujano = document.getElementById('datos_cirujano');
             if (datosCirujano) datosCirujano.style.display = 'block';
-            setVal('especialidad',    p.id_especialidad);
+            setVal('especialidad', p.id_especialidad);
             setVal('numero_matricula', p.numero_matricula);
-            setVal('tipo_matricula',  p.tipo_matricula);
+            setVal('tipo_matricula', p.tipo_matricula);
         }
 
         // Validar cada campo después de pre-llenar para establecer estado correcto
         // (esto evita que un blur posterior los muestre como inválidos)
-        validarNombreApellido('nombre',   'nombre-feedback',   'nombre');
+        validarNombreApellido('nombre', 'nombre-feedback', 'nombre');
         validarNombreApellido('apellido', 'apellido-feedback', 'apellido');
         validarFecha();
         validarEmail();
@@ -756,9 +683,13 @@ async function preLlenarFormulario(idPersona) {
         validarRol();
         if (p.codigo_postal) validarCodigoPostal();
 
-    } catch(err) {
-        console.error('Error al pre-llenar formulario:', err);
-        alert('Error al cargar los datos del usuario.');
+    } catch (err) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Error al cargar los datos del usuario.',
+            confirmButtonColor: '#ff6b81'
+        });
     }
 }
 
@@ -767,7 +698,7 @@ function bindSubmit(modoEditar) {
     var form = document.getElementById('formUsuario');
     if (!form) return;
 
-    form.addEventListener('submit', async function(e) {
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         // En modo nuevo verificar que el DNI fue validado
@@ -780,12 +711,12 @@ function bindSubmit(modoEditar) {
         // Ejecutar todas las validaciones
         var ok = true;
         if (!modoEditar && (!dniInput || !dniInput.classList.contains('is-valid'))) ok = false;
-        if (!validarNombreApellido('nombre',   'nombre-feedback',   'nombre'))   ok = false;
+        if (!validarNombreApellido('nombre', 'nombre-feedback', 'nombre')) ok = false;
         if (!validarNombreApellido('apellido', 'apellido-feedback', 'apellido')) ok = false;
-        if (!validarFecha())        ok = false;
-        if (!validarEmail())        ok = false;
-        if (!validarTelefono())     ok = false;
-        if (!validarRol())          ok = false;
+        if (!validarFecha()) ok = false;
+        if (!validarEmail()) ok = false;
+        if (!validarTelefono()) ok = false;
+        if (!validarRol()) ok = false;
         if (!validarCodigoPostal()) ok = false;
 
         // Validar campos de cirujano si están visibles
@@ -794,9 +725,9 @@ function bindSubmit(modoEditar) {
             var esp = document.getElementById('especialidad');
             var mat = document.getElementById('numero_matricula');
             var tip = document.getElementById('tipo_matricula');
-            if (esp && !esp.value)       { setFieldError('especialidad',    'especialidad-feedback',    'Seleccioná una especialidad.'); ok = false; }
-            if (mat && !mat.value.trim()){ setFieldError('numero_matricula', 'matricula-feedback',      'El número de matrícula es obligatorio.'); ok = false; }
-            if (tip && !tip.value)       { setFieldError('tipo_matricula',   'tipo-matricula-feedback', 'Seleccioná el tipo de matrícula.'); ok = false; }
+            if (esp && !esp.value) { setFieldError('especialidad', 'especialidad-feedback', 'Seleccioná una especialidad.'); ok = false; }
+            if (mat && !mat.value.trim()) { setFieldError('numero_matricula', 'matricula-feedback', 'El número de matrícula es obligatorio.'); ok = false; }
+            if (tip && !tip.value) { setFieldError('tipo_matricula', 'tipo-matricula-feedback', 'Seleccioná el tipo de matrícula.'); ok = false; }
         }
 
         if (!ok) {
@@ -807,7 +738,7 @@ function bindSubmit(modoEditar) {
 
         // Preparar datos
         var formData = new FormData(form);
-        var data     = Object.fromEntries(formData.entries());
+        var data = Object.fromEntries(formData.entries());
 
         // En modo editar: agregar id_persona al payload
         if (modoEditar) {
@@ -815,7 +746,7 @@ function bindSubmit(modoEditar) {
         }
 
         var btnText = btnGuardar.textContent;
-        btnGuardar.disabled    = true;
+        btnGuardar.disabled = true;
         btnGuardar.textContent = 'Guardando...';
 
         // Elegir endpoint según modo
@@ -824,7 +755,7 @@ function bindSubmit(modoEditar) {
             : 'app/cir-api/endpoints/crear_users-e.php';
 
         try {
-            var res    = await fetch(endpoint, {
+            var res = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -832,18 +763,24 @@ function bindSubmit(modoEditar) {
             var result = await res.json();
 
             if (result.status === 'success') {
-                alert('✅ ' + result.message);
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: result.message,
+                    confirmButtonColor: '#00cec9'
+                }).then(() => {
+                    if (modoEditar) {
+                        window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios';
+                    }
+                });
 
-                if (modoEditar) {
-                    // Volver a la lista después de editar
-                    window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios';
-                } else {
+                if (!modoEditar) {
                     // Modo nuevo: resetear el formulario
                     form.reset();
-                    form.querySelectorAll('.is-valid, .is-invalid').forEach(function(el) {
+                    form.querySelectorAll('.is-valid, .is-invalid').forEach(function (el) {
                         el.classList.remove('is-valid', 'is-invalid');
                     });
-                    form.querySelectorAll('[id$="-feedback"]').forEach(function(fb) { fb.innerHTML = ''; });
+                    form.querySelectorAll('[id$="-feedback"]').forEach(function (fb) { fb.innerHTML = ''; });
                     bloquearFormulario();
                     mostrarAviso('bloqueo');
                     clearField('dni', 'dni-feedback');
@@ -852,18 +789,27 @@ function bindSubmit(modoEditar) {
                     if (dc) dc.style.display = 'none';
                 }
             } else {
-                var msg = 'Error: ' + result.message;
+                var msg = result.message;
                 if (result.errores && result.errores.length) {
-                    msg += '\n\n' + result.errores.join('\n');
+                    msg += '\n' + result.errores.join('\n');
                 }
-                alert(msg);
-                btnGuardar.disabled    = false;
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: msg,
+                    confirmButtonColor: '#ff6b81'
+                });
+                btnGuardar.disabled = false;
                 btnGuardar.textContent = btnText;
             }
-        } catch(err) {
-            console.error('Error al enviar:', err);
-            alert('Error al conectar con el servidor. Intentá nuevamente.');
-            btnGuardar.disabled    = false;
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'No se pudo conectar con el servidor. Intentá nuevamente.',
+                confirmButtonColor: '#ff6b81'
+            });
+            btnGuardar.disabled = false;
             btnGuardar.textContent = btnText;
         }
     });

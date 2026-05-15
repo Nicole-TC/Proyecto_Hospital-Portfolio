@@ -99,13 +99,16 @@ try {
         }
     }
 
-    // ── EMAIL: obligatorio, sin espacios, formato válido ──────────────────────
+    // ── EMAIL: obligatorio, minúsculas, sin espacios, formato fuerte ──────────
     if (empty($email)) {
         $errores[] = "El correo electrónico es obligatorio.";
-    } elseif (preg_match('/\s/', $email)) {
-        $errores[] = "El correo electrónico no puede contener espacios.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errores[] = "El formato del correo electrónico no es válido.";
+    } else {
+        $email = strtolower($email);
+        if (preg_match('/\s/', $email)) {
+            $errores[] = "El correo electrónico no puede contener espacios.";
+        } elseif (!preg_match('/^[a-z0-9._-]+@[a-z0-9._-]+\.[a-z]{2,}$/', $email)) {
+            $errores[] = "El formato del correo electrónico no es válido (solo minúsculas, números y ._-).";
+        }
     }
 
     // ── TELÉFONO: obligatorio, solo dígitos, entre 7 y 15 caracteres ───────────

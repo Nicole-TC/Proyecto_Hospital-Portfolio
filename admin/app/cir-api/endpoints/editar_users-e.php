@@ -92,13 +92,16 @@ try {
         }
     }
 
-    // EMAIL
+    // EMAIL (estándar fuerte)
     if (empty($email)) {
         $errores[] = "El correo electrónico es obligatorio.";
-    } elseif (preg_match('/\s/', $email)) {
-        $errores[] = "El correo electrónico no puede contener espacios.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errores[] = "El formato del correo electrónico no es válido.";
+    } else {
+        $email = strtolower($email);
+        if (preg_match('/\s/', $email)) {
+            $errores[] = "El correo electrónico no puede contener espacios.";
+        } elseif (!preg_match('/^[a-z0-9._-]+@[a-z0-9._-]+\.[a-z]{2,}$/', $email)) {
+            $errores[] = "El formato del correo electrónico no es válido (solo minúsculas, números y ._-).";
+        }
     }
 
     // TELÉFONO
@@ -136,20 +139,23 @@ try {
         exit;
     }
 
-    // ── ACTUALIZAR PERSONA ────────────────────────────────────────────────────
-    $actualizado = ConsultasUsers::actualizarPersona($id_persona, [
-        'nombre'           => $nombre,
-        'apellido'         => $apellido,
-        'fecha_nacimiento' => $fecha_nacimiento,
-        'email'            => $email,
-        'telefono'         => $telefono,
-        'direccion'        => $direccion,
-        'codigo_postal'    => $codigo_postal,
-        'id_rol'           => $rol_id,
-    ]);
+    // ── IDENTIFICAR CAMBIOS (PARA AUDITORÍA Y PERFORMANCE) ─────────────────────
+    $camposAActualizar = [];
+    if ($nombre           !== ($personaActual['nombre']           ?? '')) $camposAActualizar['nombre']           = $nombre;
+    if ($apellido         !== ($personaActual['apellido']         ?? '')) $camposAActualizar['apellido']         = $apellido;
+    if ($fecha_nacimiento !== ($personaActual['fecha_nacimiento'] ?? '')) $camposAActualizar['fecha_nacimiento'] = $fecha_nacimiento;
+    if ($email            !== ($personaActual['email']            ?? '')) $camposAActualizar['email']            = $email;
+    if ($telefono         !== ($personaActual['telefono']         ?? '')) $camposAActualizar['telefono']         = $telefono;
+    if ($direccion        !== ($personaActual['direccion']        ?? '')) $camposAActualizar['direccion']        = $direccion;
+    if ($codigo_postal    !== ($personaActual['codigo_postal']    ?? '')) $camposAActualizar['codigo_postal']    = $codigo_postal;
+    if ($rol_id           !=  ($personaActual['id_rol']           ?? '')) $camposAActualizar['id_rol']           = $rol_id;
 
-    if (!$actualizado) {
-        throw new Exception("No se pudo actualizar la persona en la base de datos.");
+    // ── ACTUALIZAR SOLO SI HAY CAMBIOS ─────────────────────────────────────────
+    if (!empty($camposAActualizar)) {
+        $actualizado = ConsultasUsers::actualizarPersonaParcial($id_persona, $camposAActualizar);
+        if (!$actualizado) {
+            throw new Exception("No se pudo actualizar la persona en la base de datos.");
+        }
     }
 
     // ── MANEJAR CAMBIO DE ROL CIRUJANO ───────────────────────────────────────

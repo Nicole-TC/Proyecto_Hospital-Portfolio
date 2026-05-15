@@ -130,29 +130,27 @@ class ConsultasUsers {
     }
 
     // Actualizar datos de una persona existente
-    public static function actualizarPersona($id_persona, $datos) {
+    /**
+     * Actualización parcial de una persona (solo los campos que cambiaron)
+     * @param int $id_persona
+     * @param array $campos Array asociativo ['columna' => 'valor']
+     * @return bool
+     */
+    public static function actualizarPersonaParcial($id_persona, $campos) {
+        if (empty($campos)) return true; // Nada que actualizar
+        
         $pdo = conexionCircuitoQuirurgico();
-        $sql = "UPDATE persona
-                SET nombre          = :nombre,
-                    apellido        = :apellido,
-                    fecha_nacimiento = :fecha_nacimiento,
-                    email           = :email,
-                    telefono        = :telefono,
-                    direccion       = :direccion,
-                    codigo_postal   = :codigo_postal,
-                    id_rol          = :id_rol
-                WHERE id_persona = :id_persona";
+        $sets = [];
+        $params = [':id_persona' => $id_persona];
+        
+        foreach ($campos as $columna => $valor) {
+            $sets[] = "$columna = :$columna";
+            $params[":$columna"] = $valor;
+        }
+        
+        $sql = "UPDATE persona SET " . implode(", ", $sets) . " WHERE id_persona = :id_persona";
         $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':nombre',           $datos['nombre']);
-        $stmt->bindParam(':apellido',          $datos['apellido']);
-        $stmt->bindParam(':fecha_nacimiento',  $datos['fecha_nacimiento']);
-        $stmt->bindParam(':email',             $datos['email']);
-        $stmt->bindParam(':telefono',          $datos['telefono']);
-        $stmt->bindParam(':direccion',         $datos['direccion']);
-        $stmt->bindParam(':codigo_postal',     $datos['codigo_postal']);
-        $stmt->bindParam(':id_rol',            $datos['id_rol']);
-        $stmt->bindParam(':id_persona',        $id_persona, PDO::PARAM_INT);
-        return $stmt->execute();
+        return $stmt->execute($params);
     }
 
     // Eliminar todos los datos de cirujano para una persona
@@ -183,6 +181,30 @@ class ConsultasUsers {
         // 4. Borrar el registro profesional
         $stmt = $pdo->prepare("DELETE FROM profesional WHERE id_persona = :id");
         $stmt->bindParam(':id', $id_persona, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+    // Baja lógica: busca el id_estado INACTIVO para USUARIO y lo aplica
+    public static function desactivarPersona($id_persona) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        // Buscar el estado INA de entidad USUARIO (sin hardcodear el ID)
+        $stmt = $pdo->prepare(
+            "SELECT id_estado FROM estado WHERE entidad = 'USUARIO' AND codigo = 'INA' LIMIT 1"
+        );
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            throw new Exception("No se encontró el estado INACTIVO para USUARIO en la tabla estado.");
+        }
+
+        $idEstadoIna = (int)$row['id_estado'];
+
+        $stmt = $pdo->prepare(
+            "UPDATE persona SET id_estado = :id_estado WHERE id_persona = :id_persona"
+        );
+        $stmt->bindParam(':id_estado',  $idEstadoIna,  PDO::PARAM_INT);
+        $stmt->bindParam(':id_persona', $id_persona,   PDO::PARAM_INT);
         return $stmt->execute();
     }
 }

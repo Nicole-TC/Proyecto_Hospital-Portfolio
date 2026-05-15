@@ -80,4 +80,73 @@
     </div>
 </div>
 
+<!-- ========== MODAL CONFIRMAR BAJA LÓGICA ========== -->
+<div class="modal fade" id="modalConfirmarBaja" tabindex="-1" aria-labelledby="modalBajaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 0.75rem; overflow: hidden;">
+
+            <!-- Cabecera -->
+            <div class="modal-header border-0 pb-0" style="background: #fff3f5;">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:40px;height:40px;background:#ff6b81;">
+                        <i class="bi bi-person-x-fill text-white" style="font-size:1.2rem;"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title mb-0 fw-bold" id="modalBajaLabel" style="color:#c0392b;">
+                            Dar de baja usuario
+                        </h6>
+                        <small class="text-secondary">Esta acción es reversible desde la administración</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <!-- Cuerpo -->
+            <div class="modal-body px-4 pt-3 pb-2">
+                <p class="text-secondary mb-3" style="font-size:0.9rem;">
+                    ¿Estás seguro que querés dar de baja al siguiente usuario? El usuario <strong>no podrá acceder al sistema</strong> mientras esté inactivo.
+                </p>
+
+                <!-- Datos del usuario -->
+                <div class="rounded-3 p-3 mb-1" style="background:#f8f9fa; border:1px solid #e9ecef;">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <span class="text-secondary d-block" style="font-size:0.75rem;">DNI</span>
+                            <strong id="modal-baja-dni" class="text-dark" style="font-size:0.95rem;">—</strong>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-secondary d-block" style="font-size:0.75rem;">Rol</span>
+                            <strong id="modal-baja-rol" class="text-dark" style="font-size:0.95rem;">—</strong>
+                        </div>
+                        <div class="col-12 mt-1">
+                            <span class="text-secondary d-block" style="font-size:0.75rem;">Nombre completo</span>
+                            <strong id="modal-baja-nombre" class="text-dark" style="font-size:0.95rem;">—</strong>
+                        </div>
+                    </div>
+                </div>
+                <!-- ID oculto -->
+                <input type="hidden" id="modal-baja-id" value="">
+            </div>
+
+            <!-- Pie -->
+            <div class="modal-footer border-0 pt-0 px-4 pb-4 gap-2 justify-content-center">
+                <button type="button" class="btn border-0 shadow-sm px-4"
+                        data-bs-dismiss="modal"
+                        style="background:#e9ecef; color:#555; border-radius:4px; font-size:0.9rem;">
+                    Cancelar
+                </button>
+                <button type="button" class="btn border-0 shadow-sm px-4" id="btn-confirmar-baja"
+                        onclick="confirmarBaja()"
+                        style="background:#ff6b81; color:#fff; border-radius:4px; font-size:0.9rem;">
+                    <i class="bi bi-person-dash me-1"></i> Confirmar baja
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== TOAST NOTIFICACIÓN ========== -->
+
+
 <script src="js/circuitoquirurgico/gestion_usuarios.js"></script>

@@ -41,6 +41,24 @@ docs/digitalizar/evidencias/
 | Área | Estado |
 |---|---|
 | Preparación QA | EN PROCESO |
-| Casos de prueba | PENDIENTE |
-| Testing endpoints | PENDIENTE |
-| Testing integración | PENDIENTE |
+| Casos de prueba | EN PROCESO |
+| Testing endpoints | EN PROCESO |
+| Testing integración | EN PROCESO |
+
+---
+
+## Casos de prueba ejecutados
+
+| ID | Caso | Resultado esperado | Estado |
+|---|---|---|---|
+| CP-08 | Mostrar etiquetas inactivas | Debe listar solo etiquetas inactivas | PASS |
+| CP-09 | Alternar activos/inactivos | Debe actualizar tabla correctamente | PASS |
+| CP-10 | Editar etiquetas inactivas | Debe permitir edición correctamente | FAIL |
+
+---
+
+## Bugs detectados
+
+| ID | Descripción | Severidad | Estado |
+|---|---|---|---|
+| DIG-145 | Error al editar etiquetas inactivas | Media | OPEN |

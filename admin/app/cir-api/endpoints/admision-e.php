@@ -9,9 +9,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET' && ($_GET['action'] ?? '') === 'obtener_catalogos') {
     try {
         $cirugias = ConsultasAdmision::obtenerCatalogoCirugias();
+        $estudiosPorCirugia = ConsultasAdmision::obtenerEstudiosPorCirugia();
         echo json_encode([
             'ok' => true,
-            'cirugias' => $cirugias
+            'cirugias' => $cirugias,
+            'estudiosPorCirugia' => $estudiosPorCirugia
         ]);
     } catch (Exception $e) {
         echo json_encode(['ok' => false, 'error' => 'Error al obtener catálogos: ' . $e->getMessage()]);

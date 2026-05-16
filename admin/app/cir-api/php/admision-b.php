@@ -71,8 +71,8 @@ class ConsultasAdmision {
                 $errores[] = 'El formato de la dirección no es válido.';
             }
 
-            if (!preg_match('/^\d{4}$/', $codigoPostal)) {
-                $errores[] = 'El código postal debe tener 4 dígitos.';
+            if (!preg_match('/^[a-zA-Z0-9]{1,8}$/', $codigoPostal)) {
+                $errores[] = 'El código postal debe tener hasta 8 caracteres (letras y números).';
             }
 
             if (!preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
@@ -94,6 +94,28 @@ class ConsultasAdmision {
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
+    public static function obtenerEstudiosPorCirugia() {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT cc.nombre AS cirugia, e.nombre AS estudio
+                FROM catalogo_cirugia cc
+                JOIN combo_cirugia co ON co.id_cirugia_catalogo = cc.id_cirugia_catalogo
+                JOIN estudio e ON e.id_estudio = co.id_estudio
+                ORDER BY cc.nombre, e.nombre";
+        $stmt = $pdo->query($sql);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $estudiosPorCirugia = [];
+        foreach ($rows as $row) {
+            $cirugia = $row['cirugia'];
+            $estudio = $row['estudio'];
+            if (!isset($estudiosPorCirugia[$cirugia])) {
+                $estudiosPorCirugia[$cirugia] = [];
+            }
+            $estudiosPorCirugia[$cirugia][] = $estudio;
+        }
+        return $estudiosPorCirugia;
+    }
+
     public static function obtenerCirujanos() {
         $pdo = conexionCircuitoQuirurgico();
 
@@ -105,18 +127,37 @@ class ConsultasAdmision {
             return [];
         }
 
-        $sqlPersonas = "SELECT id_persona, nombre, apellido FROM persona WHERE id_rol = :id_rol ORDER BY apellido, nombre";
+        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'ACT' AND entidad = 'USUARIO' LIMIT 1";
+        $stmtEstado = $pdo->query($sqlEstado);
+        $idEstado = $stmtEstado->fetch(PDO::FETCH_COLUMN);
+
+        $sqlPersonas = "SELECT id_persona, nombre, apellido FROM persona WHERE id_rol = :id_rol";
+        $params = [':id_rol' => $idRol];
+
+        if ($idEstado) {
+            $sqlPersonas .= " AND id_estado = :id_estado";
+            $params[':id_estado'] = $idEstado;
+        }
+
+        $sqlPersonas .= " ORDER BY apellido, nombre";
         $stmtPersonas = $pdo->prepare($sqlPersonas);
-        $stmtPersonas->bindParam(':id_rol', $idRol, PDO::PARAM_INT);
-        $stmtPersonas->execute();
+        $stmtPersonas->execute($params);
         return $stmtPersonas->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function registrarAdmision($datos) {
         $pdo = conexionCircuitoQuirurgico();
 
-        $sql = "INSERT INTO persona (dni, nombre, apellido, fecha_nacimiento, email, telefono, direccion, codigo_postal) 
-                VALUES (:dni, :nombre, :apellido, :fecha_nacimiento, :email, :telefono, :direccion, :codigo_postal)
+        $sqlRol = "SELECT id_rol FROM rol WHERE LOWER(nombre) = 'paciente' LIMIT 1";
+        $stmtRol = $pdo->query($sqlRol);
+        $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+
+        if (!$idRol) {
+            return false;
+        }
+
+        $sql = "INSERT INTO persona (dni, nombre, apellido, fecha_nacimiento, email, telefono, direccion, codigo_postal, id_rol) 
+                VALUES (:dni, :nombre, :apellido, :fecha_nacimiento, :email, :telefono, :direccion, :codigo_postal, :id_rol)
                 RETURNING id_persona";
 
         $stmt = $pdo->prepare($sql);
@@ -128,6 +169,7 @@ class ConsultasAdmision {
         $stmt->bindParam(':telefono', $datos['telefono']);
         $stmt->bindParam(':direccion', $datos['direccion']);
         $stmt->bindParam(':codigo_postal', $datos['codigo_postal']);
+        $stmt->bindParam(':id_rol', $idRol, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $resultado = $stmt->fetch(PDO::FETCH_ASSOC);

@@ -43,7 +43,7 @@
           <div class="row mb-3">
             <div class="col-md-6">
               <label for="codigoPostal" class="form-label">Código Postal*</label>
-              <input type="text" class="form-control" id="codigoPostal" name="codigoPostal" placeholder="Ej: 1406" required disabled>
+              <input type="text" class="form-control" id="codigoPostal" name="codigoPostal" placeholder="Ej: 1406A" required disabled>
             </div>
             <div class="col-md-6">
               <label for="email" class="form-label">Email*</label>
@@ -77,6 +77,16 @@
             </div>
           </div>
 
+          <!-- Estudios asociados -->
+          <div class="row mb-3" id="contenedorEstudios" style="display:none;">
+            <div class="col-md-12">
+              <label class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
+                Estudios requeridos
+              </label>
+              <div id="listaEstudios" class="d-flex flex-wrap gap-2"></div>
+            </div>
+          </div>
+
           <div class="alert alert-info mt-3">
             <strong>Importante:</strong> Al confirmar el ingreso, el paciente será registrado en el sistema y se generarán automáticamente las órdenes para todas las postas del circuito quirúrgico (Laboratorio, Cardiología, Imágenes y Pre-Anestesia).
           </div>
@@ -86,4 +96,5 @@
       </div>
     </div>
   </main>
+
 <script src="js/circuitoquirurgico/admision.js"></script>

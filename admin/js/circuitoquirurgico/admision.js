@@ -9,6 +9,8 @@ const inputDni = document.getElementById('dni');
 const selectCirugia = document.getElementById('tipoCirugia');
 const form = document.getElementById('form-admision');
 
+var estudiosPorCirugia = {};
+
 function el(id) {
   return document.getElementById(id);
 }
@@ -39,9 +41,31 @@ function habilitarCirujano(disabled) {
   if (s) s.disabled = disabled;
 }
 
+function mostrarEstudios() {
+  var cont = el('contenedorEstudios');
+  var lista = el('listaEstudios');
+  if (!cont || !lista) return;
+  var cirugia = selectCirugia.value;
+  if (!cirugia) {
+    cont.style.display = 'none';
+    lista.innerHTML = '';
+    return;
+  }
+  var estudios = estudiosPorCirugia[cirugia] || [];
+  lista.innerHTML = '';
+  estudios.forEach(function(nombre) {
+    var badge = document.createElement('span');
+    badge.className = 'badge bg-info fs-6 px-3 py-2';
+    badge.textContent = nombre;
+    lista.appendChild(badge);
+  });
+  cont.style.display = '';
+}
+
 function habilitarSelects(disabled) {
   habilitarCirugia(disabled);
   habilitarCirujano(disabled);
+  mostrarEstudios();
 }
 
 function reiniciarFormulario() {
@@ -98,6 +122,8 @@ function serializarFormulario() {
   datos.tipoCirugia = selectCirugia.value;
   var s = el('cirujano');
   datos.cirujano = s ? s.value : '';
+  var estudios = estudiosPorCirugia[selectCirugia.value] || [];
+  datos.tipoEstudio = estudios.join(', ');
   return datos;
 }
 
@@ -118,9 +144,14 @@ form.addEventListener('submit', function(e) {
           icon: 'success',
           title: 'Operación exitosa',
           text: data.mensaje,
-          confirmButtonColor: '#3085d6'
+          confirmButtonText: 'Ir a agenda',
+          confirmButtonColor: '#3085d6',
+        }).then(function(result) {
+          if (result.isConfirmed) {
+            reiniciarFormulario();
+            window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda_quirurgica';
+          }
         });
-        reiniciarFormulario();
       } else {
         var msg = data.errores ? data.errores.join('\n') : (data.error || 'Error desconocido');
         Swal.fire({
@@ -148,6 +179,9 @@ function cargarCatalogos() {
       if (!data.ok) {
         console.error('Error al cargar catálogos:', data.error);
         return;
+      }
+      if (data.estudiosPorCirugia) {
+        estudiosPorCirugia = data.estudiosPorCirugia;
       }
       if (data.cirugias && data.cirugias.length > 0) {
         selectCirugia.innerHTML = '<option value="">Seleccione tipo de cirugía</option>';
@@ -196,6 +230,35 @@ document.addEventListener('DOMContentLoaded', function() {
   var hoy = new Date().toISOString().split('T')[0];
   var fechaInput = document.getElementById('fechaNacimiento');
   if (fechaInput) fechaInput.setAttribute('max', hoy);
+
+  function filtrarInput(e) {
+    if (e.target.id === 'dni') {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
+    }
+    if (e.target.id === 'nombre' || e.target.id === 'apellido') {
+      e.target.value = e.target.value.replace(/[0-9]/g, '').toUpperCase();
+    }
+    if (e.target.id === 'direccion') {
+      e.target.value = e.target.value.toUpperCase();
+    }
+    if (e.target.id === 'codigoPostal') {
+      e.target.value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8);
+    }
+    if (e.target.id === 'telefono') {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    }
+  }
+
+  document.getElementById('dni').addEventListener('input', filtrarInput);
+  document.getElementById('nombre').addEventListener('input', filtrarInput);
+  document.getElementById('apellido').addEventListener('input', filtrarInput);
+  document.getElementById('direccion').addEventListener('input', filtrarInput);
+  document.getElementById('codigoPostal').addEventListener('input', filtrarInput);
+  document.getElementById('telefono').addEventListener('input', filtrarInput);
+});
+
+selectCirugia.addEventListener('change', function() {
+  mostrarEstudios();
 });
 
 inputDni.addEventListener('blur', function() {

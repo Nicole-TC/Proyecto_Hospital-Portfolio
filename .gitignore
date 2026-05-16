@@ -1,5 +1,5 @@
 .env
 .env.local
 
-/uploads/digitalizar/
-!/uploads/digitalizar/.gitkeep
+/admin/uploads/*
+!/admin/uploads/.gitkeep

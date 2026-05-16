@@ -92,6 +92,12 @@ $(document).ready(function() {
                                 <i class="bi bi-trash ml-1"></i>
                             </a>
                         `;
+                    } else {
+                        html += `
+                            <a onclick="activarEtiqueta(${data})" class="text-primary" href="#">
+                                <i class="bi bi-check-circle ml-1"></i>
+                            </a>
+                        `;
                     }
                     return html;
                 }
@@ -130,6 +136,34 @@ $(document).ready(function() {
             $(this).html('<i class="fa-solid fa-eye-slash"></i> <span class="text-white ml-1">Ver activos</span>');
         }
     });
+
+    window.activarEtiqueta = function(id) {
+        Swal.fire({
+            title: '¿Activar etiqueta?',
+            text: 'Se activará la etiqueta',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, activar',
+            cancelButtonText: 'Cancelar'
+        }).then(result => {
+            if (result.isConfirmed) {
+                fetch('api/digitalizar/api_etiquetas_dig.php', {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({id: id})
+                })
+                    .then(r => r.json())
+                    .then(r => {
+                        if (r.success) {
+                            Swal.fire({icon:'success', title:'Activada', text:'Etiqueta activada', timer:1500, showConfirmButton:false});
+                            $('#tabla-etiquetas').DataTable().ajax.reload();
+                        } else {
+                            Swal.fire({icon:'error', title:'Error', text: r.error || 'No se pudo activar'});
+                        }
+                    });
+            }
+        });
+    };
 
     window.eliminarEtiqueta = function(id) {
         Swal.fire({

@@ -37,7 +37,7 @@
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
-fetch('api/digitalizar/api_etiquetas_dig.php')
+fetch('api/digitalizar/api_etiquetas_dig.php?mostrar=todos')
     .then(r => r.json())
     .then(etiquetas => {
         const etiqueta = etiquetas.find(e => e.id == id);

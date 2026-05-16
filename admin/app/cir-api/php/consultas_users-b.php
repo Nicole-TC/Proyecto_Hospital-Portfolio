@@ -90,20 +90,63 @@ class ConsultasUsers {
         return $stmt->execute();
     }
 
-    // Método para listar todas las personas registradas (con su rol)
-    public static function listarPersonas() {
+    // Método para listar todas las personas registradas (con su rol) con paginación
+    // Se excluyen los usuarios con rol 'Paciente' y se permite filtrar por DNI, Nombre o Apellido
+    public static function listarPersonas($filtro = null, $valor = null, $pagina = 1, $limite = 10) {
         $pdo = conexionCircuitoQuirurgico();
         
-        // JOIN con la tabla rol para obtener el nombre del rol asignado
+        $offset = ($pagina - 1) * $limite;
+        
+        // Base de la consulta: JOIN con la tabla rol y exclusión de 'Paciente'
+        $where = "WHERE (r.nombre IS NULL OR r.nombre != 'Paciente')";
+        
+        $params = [];
+        if (!empty($filtro) && !empty($valor)) {
+            $valorBusqueda = "%" . trim($valor) . "%";
+            if ($filtro === 'dni') {
+                $where .= " AND p.dni LIKE :valor";
+            } elseif ($filtro === 'apellido') {
+                $where .= " AND p.apellido ILIKE :valor";
+            } elseif ($filtro === 'nombre') {
+                $where .= " AND p.nombre ILIKE :valor";
+            } elseif ($filtro === 'email') {
+                $where .= " AND p.email ILIKE :valor";
+            }
+            $params[':valor'] = $valorBusqueda;
+        }
+
+        // 1. Contar total para el paginador
+        $sqlCount = "SELECT COUNT(*) FROM persona p LEFT JOIN rol r ON p.id_rol = r.id_rol $where";
+        $stmtCount = $pdo->prepare($sqlCount);
+        foreach ($params as $key => $val) {
+            $stmtCount->bindValue($key, $val);
+        }
+        $stmtCount->execute();
+        $total = (int)$stmtCount->fetchColumn();
+
+        // 2. Obtener los registros de la página actual
         $sql = "SELECT p.id_persona, p.dni, p.nombre, p.apellido, p.email, p.telefono, 
                        r.nombre AS rol_nombre
                 FROM persona p
                 LEFT JOIN rol r ON p.id_rol = r.id_rol
-                ORDER BY p.id_persona DESC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
+                $where
+                ORDER BY p.id_persona DESC
+                LIMIT :limite OFFSET :offset";
         
-        return $stmt->fetchAll();
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->bindValue(':limite', (int)$limite, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            "usuarios" => $usuarios,
+            "total" => $total
+        ];
     }
 
     // Obtener datos completos de una persona para el formulario de edición
@@ -206,6 +249,24 @@ class ConsultasUsers {
         $stmt->bindParam(':id_estado',  $idEstadoIna,  PDO::PARAM_INT);
         $stmt->bindParam(':id_persona', $id_persona,   PDO::PARAM_INT);
         return $stmt->execute();
+    }
+
+    // Método para obtener estadísticas de usuarios (excluyendo Pacientes)
+    public static function obtenerEstadisticas() {
+        $pdo = conexionCircuitoQuirurgico();
+        
+        $sql = "SELECT 
+                    COUNT(*) as total,
+                    COUNT(*) FILTER (WHERE r.nombre ILIKE '%admin%') as admins,
+                    COUNT(*) FILTER (WHERE r.nombre ILIKE '%cirujano%') as cirujanos,
+                    COUNT(*) FILTER (WHERE r.nombre ILIKE '%recepcionista%' OR r.nombre ILIKE '%admision%') as recepcionistas
+                FROM persona p
+                LEFT JOIN rol r ON p.id_rol = r.id_rol
+                WHERE (r.nombre IS NULL OR r.nombre != 'Paciente')";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
 ?>

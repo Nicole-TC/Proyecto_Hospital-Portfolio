@@ -29,6 +29,9 @@
 
             <!-- Auditoría Global -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Auditoría Global", "Registros de sistema", "fa-solid fa-shield-halved", "dark", "index.php?modulo=menu_circuitoquirurgico&accion=auditoria_global"); ?>
+
+            <!-- Gestion Pacientes -->
+            <?php HTML::tarjeta("menu_circuitoquirurgico", "Pacientes", "Gestion y edicion", "fa-solid fa-users", "blue", "index.php?modulo=menu_circuitoquirurgico&accion=gestion_pacientes"); ?>
         </div>
     </section>
 </div>

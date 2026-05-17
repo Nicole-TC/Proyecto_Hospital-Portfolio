@@ -43,6 +43,16 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/form_users.php"; // Archivo físico a cargar
         break;
 
+    case 'gestion_pacientes':
+        $menu = 'Gestion de Pacientes (CQ)'; // Título en la barra de navegación superior
+        $require = "vistas/circuitoquirurgico/gestion_pacientes.php"; // Archivo físico a cargar
+        break;
+
+    case 'form_pacientes':
+        $menu = 'Formulario de Pacientes (CQ)';
+        $require = "vistas/circuitoquirurgico/form_pacientes.php";
+        break;
+
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*
     case 'programar_cirugia':

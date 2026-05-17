@@ -2,17 +2,57 @@
   <div class="card shadow-sm border-0" style="border-radius: 1rem;">
     <div class="card-body p-4">
  
-      <!-- ── Encabezado ── -->
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
-        <div>
-          <h1 class="fw-bold mb-2">Agenda-Turnos</h1>
-          <p class="text-secondary mb-0">Programación semanal</p>
+<!-- ── Encabezado ── -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <h1 class="fw-bold mb-2">Agenda-Turnos</h1>
+    <p class="text-secondary mb-0">Programación semanal</p>
+  </div>
+  <div class="d-flex flex-column align-items-end gap-1">
+    <div class="fw-bold fs-4 font-monospace" id="clockTime">--:--:--</div>
+    <small class="text-secondary" id="clockDate">--</small>
+
+    <!-- Botón + dropdown de cupos -->
+    <div class="position-relative" id="wrapperCupos">
+      <button class="btn btn-sm btn-outline-primary mt-1" type="button" id="btnToggleCupos">
+        <i class="bi bi-sliders me-1"></i> Configurar Cupos
+      </button>
+      <div id="panelDropdownCupos" style="
+        display: none;
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        width: 340px;
+        background: white;
+        border-radius: 0.85rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        z-index: 1050;
+        padding: 1.25rem;
+        opacity: 0;
+        transform: translateY(-8px);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      ">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="fw-bold">Configurar Cupos</span>
+          <button type="button" class="btn-close btn-sm" id="btnCerrarCupos"></button>
         </div>
-        <div class="text-end">
-          <div class="fw-bold fs-4 font-monospace" id="clockTime">--:--:--</div>
-          <small class="text-secondary" id="clockDate">--</small>
+        <p class="text-secondary small mb-3">
+          Cupos disponibles por semana para los estudios
+        </p>
+        <div id="panelCupos"></div>
+        <div class="alert alert-success small mt-3 d-none" id="alertCuposGuardados">
+          <i class="bi bi-check-circle me-1"></i> Cupos guardados correctamente.
+        </div>
+        <div class="d-grid mt-3">
+          <button class="btn btn-primary btn-sm" id="btnGuardarCupos">
+            <i class="bi bi-save me-1"></i> Guardar cambios
+          </button>
         </div>
       </div>
+    </div><!-- ← cierre wrapperCupos -->
+
+  </div><!-- ← cierre d-flex flex-column align-items-end  !-->
+</div><!-- ← cierre encabezado -->
  
       <!-- ── Calendario Semanal ── -->
       <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.85rem;">
@@ -39,7 +79,6 @@
  
         </div>
       </div>
- 
       <!-- ── Programación Detallada ── -->
       <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.85rem;">
         <div class="card-body p-4">

@@ -11,7 +11,8 @@
 
             <?php HTML::tarjeta("menu_digitalizar", "Digitalizacion", "Beta", "fa-solid fa-users-gear", "info", "index.php?modulo=menu_digitalizar"); ?>
 
-            <?php HTML::tarjeta("menu_usuarios", "Circuito Quirurgico", "Beta", "fa-solid fa-users-gear", "info", "index.php?modulo=menu_usuarios"); ?>
+            <!-- Circuito Quirúrgico -->
+            <?php HTML::tarjeta("menu_circuitoquirurgico", "Circuito Quirúrgico", "Beta", "fa-solid fa-heart-pulse", "danger", "index.php?modulo=menu_circuitoquirurgico"); ?>
 
 
 

@@ -84,9 +84,7 @@ $(document).ready(function() {
                         <a onclick="eliminarEtiqueta(${data})" class="text-danger" href="#">
                             <i class="bi bi-trash ml-1"></i>
                         </a>
-                        <a href="https://api.whatsapp.com/send?text=Te comparto la página de SITT. Entra en https://sitt.ar/admin">
-                            <i class="bi bi-whatsapp ml-1"></i>
-                        </a>
+                        
                     `;
                 }
             }

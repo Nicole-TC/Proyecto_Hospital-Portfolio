@@ -62,6 +62,13 @@ switch (@$_GET["modulo"]) {
         $modal = TRUE;
         $require = "vistas/notas.php";
         break;
+    
+    // CIRCUITO QUIRURGICO
+    case 'menu_circuitoquirurgico':
+        // Delegamos las rutas a un archivo propio del grupo
+        require_once "template/circuitoquirurgico/rutas_cq.php";
+        break;
+        
 
 // DIGITALIZAR
     case 'menu_digitalizar':

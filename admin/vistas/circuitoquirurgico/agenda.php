@@ -173,4 +173,4 @@
   </div>
 </div>
 
-<script src="js/circuitoquirurgico/agenda_quirurgica.js"></script>
+<script src="js/circuitoquirurgico/agenda.js"></script>

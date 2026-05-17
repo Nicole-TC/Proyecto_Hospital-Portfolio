@@ -19,7 +19,7 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/admision.php"; // Archivo físico a cargar
         break;
 
-    case 'agenda_quirurgica':
+    case 'agenda':
         $menu = 'Agenda  (CQ)'; // Título en la barra de navegación superior
         $require = "vistas/circuitoquirurgico/agenda.php"; // Archivo físico a cargar
         break;

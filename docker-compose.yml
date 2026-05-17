@@ -9,6 +9,3 @@ services:
       - ./uploads_data:/var/www/html/admin/uploads
     restart: always
     env_file: .env
-
-volumes:
-  uploads_data:

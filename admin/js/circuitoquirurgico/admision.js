@@ -16,14 +16,14 @@ function el(id) {
 }
 
 function deshabilitarCamposPaciente(disabled) {
-  camposPaciente.forEach(function(id) {
+  camposPaciente.forEach(function (id) {
     var e = el(id);
     if (e) e.disabled = disabled;
   });
 }
 
 function limpiarCamposPaciente() {
-  camposPaciente.forEach(function(id) {
+  camposPaciente.forEach(function (id) {
     var e = el(id);
     if (e) {
       if (e.type === 'date') e.value = '';
@@ -53,7 +53,7 @@ function mostrarEstudios() {
   }
   var estudios = estudiosPorCirugia[cirugia] || [];
   lista.innerHTML = '';
-  estudios.forEach(function(nombre) {
+  estudios.forEach(function (nombre) {
     var badge = document.createElement('span');
     badge.className = 'badge bg-info fs-6 px-3 py-2';
     badge.textContent = nombre;
@@ -87,8 +87,8 @@ function buscarPaciente(dni) {
   }
 
   fetch(ENDPOINT + '?action=buscar_dni&dni=' + encodeURIComponent(dni))
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
       if (data.ok && data.encontrado && data.paciente) {
         var p = data.paciente;
         el('apellido').value = p.apellido || '';
@@ -106,7 +106,7 @@ function buscarPaciente(dni) {
         habilitarSelects(false);
       }
     })
-    .catch(function() {
+    .catch(function () {
       limpiarCamposPaciente();
       deshabilitarCamposPaciente(true);
       habilitarSelects(true);
@@ -116,7 +116,7 @@ function buscarPaciente(dni) {
 function serializarFormulario() {
   var datos = {};
   datos.dni = inputDni.value.trim();
-  camposPaciente.forEach(function(id) {
+  camposPaciente.forEach(function (id) {
     datos[id] = el(id).value;
   });
   datos.tipoCirugia = selectCirugia.value;
@@ -127,7 +127,7 @@ function serializarFormulario() {
   return datos;
 }
 
-form.addEventListener('submit', function(e) {
+form.addEventListener('submit', function (e) {
   e.preventDefault();
 
   var datos = serializarFormulario();
@@ -137,8 +137,8 @@ form.addEventListener('submit', function(e) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(datos)
   })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
       if (data.ok) {
         Swal.fire({
           icon: 'success',
@@ -146,10 +146,10 @@ form.addEventListener('submit', function(e) {
           text: data.mensaje,
           confirmButtonText: 'Ir a agenda',
           confirmButtonColor: '#3085d6',
-        }).then(function(result) {
+        }).then(function (result) {
           if (result.isConfirmed) {
             reiniciarFormulario();
-            window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda_quirurgica';
+            window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
           }
         });
       } else {
@@ -162,7 +162,7 @@ form.addEventListener('submit', function(e) {
         });
       }
     })
-    .catch(function() {
+    .catch(function () {
       Swal.fire({
         icon: 'error',
         title: 'Error de conexión',
@@ -174,8 +174,8 @@ form.addEventListener('submit', function(e) {
 
 function cargarCatalogos() {
   fetch(ENDPOINT + '?action=obtener_catalogos')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
       if (!data.ok) {
         console.error('Error al cargar catálogos:', data.error);
         return;
@@ -185,7 +185,7 @@ function cargarCatalogos() {
       }
       if (data.cirugias && data.cirugias.length > 0) {
         selectCirugia.innerHTML = '<option value="">Seleccione tipo de cirugía</option>';
-        data.cirugias.forEach(function(nombre) {
+        data.cirugias.forEach(function (nombre) {
           var opt = document.createElement('option');
           opt.value = nombre;
           opt.textContent = nombre;
@@ -194,15 +194,15 @@ function cargarCatalogos() {
       }
 
     })
-    .catch(function(err) {
+    .catch(function (err) {
       console.error('Error en fetch de catálogos:', err);
     });
 }
 
 function cargarCirujanos() {
   fetch(ENDPOINT + '?action=obtener_cirujanos')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
       if (!data.ok) {
         console.error('Error al cargar cirujanos:', data.error);
         return;
@@ -211,7 +211,7 @@ function cargarCirujanos() {
       if (!s) return;
       if (data.cirujanos && data.cirujanos.length > 0) {
         s.innerHTML = '<option value="">Seleccione cirujano</option>';
-        data.cirujanos.forEach(function(c) {
+        data.cirujanos.forEach(function (c) {
           var opt = document.createElement('option');
           opt.value = c.id_persona;
           opt.textContent = c.apellido + ', ' + c.nombre;
@@ -219,12 +219,12 @@ function cargarCirujanos() {
         });
       }
     })
-    .catch(function(err) {
+    .catch(function (err) {
       console.error('Error en fetch de cirujanos:', err);
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   cargarCatalogos();
   cargarCirujanos();
   var hoy = new Date().toISOString().split('T')[0];
@@ -257,15 +257,15 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('telefono').addEventListener('input', filtrarInput);
 });
 
-selectCirugia.addEventListener('change', function() {
+selectCirugia.addEventListener('change', function () {
   mostrarEstudios();
 });
 
-inputDni.addEventListener('blur', function() {
+inputDni.addEventListener('blur', function () {
   buscarPaciente(this.value.trim());
 });
 
-inputDni.addEventListener('input', function() {
+inputDni.addEventListener('input', function () {
   var val = this.value.trim();
   if (val === '') {
     limpiarCamposPaciente();

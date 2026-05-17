@@ -22,7 +22,7 @@
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Lista de Espera", "Pacientes aguardando", "fa-solid fa-clipboard-list", "secondary", "index.php?modulo=menu_circuitoquirurgico&accion=lista_espera"); ?>
 
             <!-- Agenda Quirúrgica -->
-            <?php HTML::tarjeta("menu_circuitoquirurgico", "Agenda", "Programación de turnos", "fa-solid fa-calendar-days", "danger", "index.php?modulo=menu_circuitoquirurgico&accion=agenda_quirurgica"); ?>
+            <?php HTML::tarjeta("menu_circuitoquirurgico", "Agenda", "Programación de turnos", "fa-solid fa-calendar-days", "danger", "index.php?modulo=menu_circuitoquirurgico&accion=agenda"); ?>
 
             <!-- Usuarios -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Usuarios", "Gestión y roles", "fa-solid fa-users", "success", "index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios"); ?>

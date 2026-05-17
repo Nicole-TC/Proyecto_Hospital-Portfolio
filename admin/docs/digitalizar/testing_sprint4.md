@@ -61,4 +61,4 @@ docs/digitalizar/evidencias/
 
 | ID | Descripción | Severidad | Estado |
 |---|---|---|---|
-| DIG-145 | Error al editar etiquetas inactivas | Media | OPEN |
+| DIG-145 | Error al editar etiquetas inactivas | Media | CLOSED |

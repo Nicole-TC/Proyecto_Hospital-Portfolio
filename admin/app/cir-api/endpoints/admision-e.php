@@ -83,27 +83,24 @@ try {
         exit;
     }
 
+    $datos = [
+        'dni' => $dni_clean,
+        'nombre' => $input['nombre'] ?? '',
+        'apellido' => $input['apellido'] ?? '',
+        'fecha_nacimiento' => $input['fechaNacimiento'] ?? '',
+        'email' => $input['email'] ?? '',
+        'telefono' => $input['telefono'] ?? '',
+        'direccion' => $input['direccion'] ?? '',
+        'codigo_postal' => $input['codigoPostal'] ?? '',
+        'tipoCirugia' => $input['tipoCirugia'] ?? '',
+        'cirujano' => $input['cirujano'] ?? ''
+    ];
+
+    ConsultasAdmision::procesarAdmision($datos, $paciente_existente);
+
     if ($paciente_existente) {
         $mensaje = "Cirugía de {$input['tipoCirugia']} registrada para el paciente.";
     } else {
-        $datos = [
-            'dni' => $dni_clean,
-            'nombre' => $input['nombre'] ?? '',
-            'apellido' => $input['apellido'] ?? '',
-            'fecha_nacimiento' => $input['fechaNacimiento'] ?? '',
-            'email' => $input['email'] ?? '',
-            'telefono' => $input['telefono'] ?? '',
-            'direccion' => $input['direccion'] ?? '',
-            'codigo_postal' => $input['codigoPostal'] ?? '',
-        ];
-
-        $id = ConsultasAdmision::registrarAdmision($datos);
-
-        if (!$id) {
-            echo json_encode(['ok' => false, 'error' => 'No se pudo registrar el paciente.']);
-            exit;
-        }
-
         $mensaje = "Paciente {$input['apellido']}, {$input['nombre']} registrado correctamente con cirugía de {$input['tipoCirugia']}.";
     }
 

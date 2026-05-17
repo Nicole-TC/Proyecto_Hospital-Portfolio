@@ -1,6 +1,19 @@
 <?php
 declare(strict_types=1);
 
+// Cargar variables de entorno desde .env si no están definidas
+$envPath = __DIR__ . '/../../.env';
+if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
+    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue;
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            putenv(trim($parts[0]) . '=' . trim($parts[1]));
+        }
+    }
+}
+
 /**
  * Conexion reutilizable para Circuito Quirurgico (PostgreSQL)
  * Lee variables desde entorno:

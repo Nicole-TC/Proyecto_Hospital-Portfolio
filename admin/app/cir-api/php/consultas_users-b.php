@@ -1,18 +1,6 @@
 <?php
-// Cargar variables de entorno antes de llamar al archivo de conexión
-$envPath = __DIR__ . '/../../../../.env';
-if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
-    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        $parts = explode('=', $line, 2);
-        if (count($parts) === 2) {
-            putenv(trim($parts[0]) . '=' . trim($parts[1]));
-        }
-    }
-}
-
 require_once __DIR__ . '/../../../model/cir_conexion.php';
+require_once __DIR__ . '/funciones.php';
 
 class ConsultasUsers {
     
@@ -197,8 +185,6 @@ class ConsultasUsers {
     }
 
     // Eliminar todos los datos de cirujano para una persona
-    // (matricula y profesional_especialidad se eliminan en cascada si la FK lo permite,
-    //  si no, los borramos explícitamente en orden)
     public static function eliminarDatosCirujano($id_persona) {
         $pdo = conexionCircuitoQuirurgico();
 
@@ -207,41 +193,20 @@ class ConsultasUsers {
         $stmt->bindParam(':id', $id_persona, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) return true; // No era cirujano, nada que borrar
+        if (!$row) return true; // No era cirujano, nada que desactivar
 
         $idProf = $row['id_profesional'];
 
-        // 2. Borrar matrículas
-        $stmt = $pdo->prepare("DELETE FROM matricula WHERE id_profesional = :id");
-        $stmt->bindParam(':id', $idProf, PDO::PARAM_INT);
-        $stmt->execute();
-
-        // 3. Borrar vínculos con especialidad
-        $stmt = $pdo->prepare("DELETE FROM profesional_especialidad WHERE id_profesional = :id");
-        $stmt->bindParam(':id', $idProf, PDO::PARAM_INT);
-        $stmt->execute();
-
-        // 4. Borrar el registro profesional
-        $stmt = $pdo->prepare("DELETE FROM profesional WHERE id_persona = :id");
-        $stmt->bindParam(':id', $id_persona, PDO::PARAM_INT);
-        return $stmt->execute();
+        // 2. Realizar la baja lógica (UPDATE activo = FALSE) en lugar de un borrado físico con DELETE
+        $stmtUpdate = $pdo->prepare("UPDATE profesional SET activo = FALSE WHERE id_profesional = :id_prof");
+        $stmtUpdate->bindParam(':id_prof', $idProf, PDO::PARAM_INT);
+        return $stmtUpdate->execute();
     }
-    // Baja lógica: busca el id_estado INACTIVO para USUARIO y lo aplica
     public static function desactivarPersona($id_persona) {
         $pdo = conexionCircuitoQuirurgico();
 
-        // Buscar el estado INA de entidad USUARIO (sin hardcodear el ID)
-        $stmt = $pdo->prepare(
-            "SELECT id_estado FROM estado WHERE entidad = 'USUARIO' AND codigo = 'INA' LIMIT 1"
-        );
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) {
-            throw new Exception("No se encontró el estado INACTIVO para USUARIO en la tabla estado.");
-        }
-
-        $idEstadoIna = (int)$row['id_estado'];
+        // Buscar el estado INA de entidad USUARIO usando la función utilitaria
+        $idEstadoIna = id_estado('USUARIO', 'INA');
 
         $stmt = $pdo->prepare(
             "UPDATE persona SET id_estado = :id_estado WHERE id_persona = :id_persona"

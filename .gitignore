@@ -1,5 +1,9 @@
 .env
 .env.local
+
+/admin/uploads/*
+!/admin/uploads/.gitkeep
+
 ./uploads_data/
 /uploads/digitalizar/
 !/uploads/digitalizar/.gitkeep

@@ -62,15 +62,11 @@
 
                         <h5 class="mt-4 mb-3 border-bottom pb-2 text-primary">Clasificación</h5>
                         <div class="row">
-                            <div class="form-group col-md-6 mb-3">
+                            <div class="form-group col-md-12 mb-3">
                                 <label for="id_tipo_documento">Tipo de Documento <span class="text-danger">*</span></label>
                                 <select class="form-control" id="id_tipo_documento" name="id_tipo_documento" required>
                                     <option value="">-- Seleccionar Tipo --</option>
                                 </select>
-                            </div>
-                            <div class="form-group col-md-6 mb-3">
-                                <label for="fecha_documento">Fecha del Documento <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control" id="fecha_documento" name="fecha_documento" required>
                             </div>
                         </div>
 
@@ -184,9 +180,6 @@ let tagChoices;
 let modalConfirmacion;
 
 document.addEventListener("DOMContentLoaded", async function() {
-    const hoy = new Date().toISOString().split("T")[0];
-    document.getElementById("fecha_documento").setAttribute("max", hoy);
-
     // Inicializar modal
     modalConfirmacion = new bootstrap.Modal(document.getElementById('modalConfirmacion'));
 

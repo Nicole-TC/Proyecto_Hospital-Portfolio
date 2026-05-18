@@ -14,6 +14,7 @@ try {
         $contrasena_dig
     );
     $bd_dig->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $bd_dig->exec("SET TIME ZONE 'America/Argentina/Buenos_Aires'");
     // echo "Conexión exitosa";
 } catch (Exception $e) {
     error_log("Problema con la conexion de digitalización: " . $e->getMessage());

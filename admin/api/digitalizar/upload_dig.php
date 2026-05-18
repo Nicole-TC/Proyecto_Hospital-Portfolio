@@ -36,20 +36,18 @@ try {
     $id_usuario = $_SESSION['id'] ?? null;
     
     // Nuevos campos del documento
-    $fecha_documento = trim($_POST['fecha_documento'] ?? '');
     $id_servicio = filter_var($_POST['id_servicio'] ?? '', FILTER_VALIDATE_INT);
     $prioridad = trim($_POST['prioridad'] ?? 'Media');
     $estado_documento = trim($_POST['estado_documento'] ?? 'Activo');
     $forzar_subida = isset($_POST['forzar_subida']) && $_POST['forzar_subida'] == '1';
 
-    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo || !$fecha_documento || !$id_servicio) {
+    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo || !$id_servicio) {
         $missing = [];
         if (!$dni) $missing[] = "DNI";
         if (!$nombre) $missing[] = "Nombre";
         if (!$apellido) $missing[] = "Apellido";
         if (!$id_tipo_documento) $missing[] = "Tipo Documento";
         if (!$titulo) $missing[] = "Título";
-        if (!$fecha_documento) $missing[] = "Fecha";
         if (!$id_servicio) $missing[] = "Sector";
         throw new Exception("Faltan datos requeridos: " . implode(", ", $missing));
     }
@@ -63,9 +61,6 @@ try {
     }
     if (strlen($apellido) > 20) {
         throw new Exception("El apellido no puede superar los 20 caracteres.");
-    }
-    if ($fecha_documento > date('Y-m-d')) {
-        throw new Exception("La fecha del documento no puede ser superior a la del día actual.");
     }
 
     // 2. Gestionar la Persona (Buscar en `personal` o insertar paciente)
@@ -109,9 +104,9 @@ try {
             SELECT id FROM documentos 
             WHERE id_persona = ? 
             AND id_tipo_documento = ? 
-            AND DATE(fecha_subido) = ?
+            AND DATE(fecha_subido) = CURRENT_DATE
         ");
-        $stmt_dup->execute([$id_persona, $id_tipo_documento, $fecha_documento]);
+        $stmt_dup->execute([$id_persona, $id_tipo_documento]);
         if ($stmt_dup->fetch()) {
             echo json_encode([
                 "status" => "duplicate",
@@ -169,7 +164,7 @@ try {
         $rutaRelativa, 
         trim($comentario_final), 
         $id_usuario,
-        $fecha_documento, 
+        date('Y-m-d H:i:s'), 
         $codigo_unico,
         $prioridad,
         $estado_documento

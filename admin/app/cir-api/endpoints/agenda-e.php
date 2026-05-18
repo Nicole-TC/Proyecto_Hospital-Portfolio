@@ -67,6 +67,19 @@ if ($method === 'POST' && $action === 'programar_turno') {
     exit;
 }
 
+// ── GET: obtener turnos ────────────────────────────────────────────────
+if ($method === 'GET' && $action === 'obtener_turnos') {
+    $fecha = $_GET['fecha'] ?? null;
+    if ($fecha && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+        echo json_encode(['ok' => false, 'error' => 'Fecha inválida.']); exit;
+    }
+    try {
+        $turnos = ConsultasAgenda::obtenerTurnos($fecha ?: null);
+        echo json_encode(['ok' => true, 'turnos' => $turnos]);
+    } catch (Exception $e) { echo json_encode(['ok' => false, 'error' => $e->getMessage()]); }
+    exit;
+}
+
 // ── Método no permitido ────────────────────────────────────────────────
 http_response_code(405);
 echo json_encode(['ok' => false, 'error' => 'Método o acción no permitidos.']);

@@ -164,4 +164,36 @@ class ConsultasAgenda {
 
         return ['ok' => true, 'id_turno' => $id_turno];
     }
+
+    // ── Obtener turnos para la tabla Programación Detallada ────────────
+    public static function obtenerTurnos($fecha = null) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $where = $fecha ? "WHERE DATE(t.fecha_hora) = :fecha" : "";
+
+        $sql = "
+            SELECT
+                t.id_turno,
+                p.nombre,
+                p.apellido,
+                p.dni,
+                t.fecha_hora,
+                tt.descripcion  AS tipo_turno,
+                e.descripcion   AS estado,
+                e.codigo        AS estado_codigo
+            FROM turno t
+            JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
+            JOIN persona p          ON p.id_persona         = pa.id_persona
+            JOIN tipo_turno tt      ON tt.id_tipo_turno     = t.id_tipo_turno
+            JOIN estado e           ON e.id_estado          = t.id_estado
+            $where
+            ORDER BY t.fecha_hora DESC
+            LIMIT 100
+        ";
+
+        $stmt = $pdo->prepare($sql);
+        if ($fecha) $stmt->bindParam(':fecha', $fecha);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

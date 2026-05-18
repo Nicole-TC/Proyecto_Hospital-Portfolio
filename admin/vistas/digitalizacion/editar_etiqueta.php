@@ -40,6 +40,7 @@ const id = params.get('id');
 fetch('api/digitalizar/api_etiquetas_dig.php?mostrar=todos')
     .then(r => r.json())
     .then(etiquetas => {
+        
         const etiqueta = etiquetas.find(e => e.id == id);
         if (!etiqueta) {
             Swal.fire({icon:'error', title:'Error', text:'La etiqueta no existe'})

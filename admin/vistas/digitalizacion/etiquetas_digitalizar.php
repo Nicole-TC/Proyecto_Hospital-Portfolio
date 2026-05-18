@@ -125,6 +125,7 @@ $(document).ready(function() {
         }
     });
 
+
     $('#btn-ver-inactivos').on('click', function() {
         const table = $('#tabla-etiquetas').DataTable();
         const mostrandoInactivos = table.ajax.url().includes('mostrar=inactivos');

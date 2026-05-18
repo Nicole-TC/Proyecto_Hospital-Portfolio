@@ -13,7 +13,8 @@ switch ($method) {
         $mostrar = $_GET['mostrar'] ?? 'activos';
         if ($mostrar === 'inactivos') {
             $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas WHERE estado = false ORDER BY id ASC");
-        } elseif ($mostrar === 'todos') {
+        } elseif ($mostrar === 'todos') { 
+            
             $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas ORDER BY id ASC");
         } else {
             $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas WHERE estado = true ORDER BY id ASC");

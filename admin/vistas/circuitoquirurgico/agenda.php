@@ -90,6 +90,8 @@
                   <th class="text-secondary small text-uppercase fw-semibold">DNI</th>
                   <th class="text-secondary small text-uppercase fw-semibold">Fecha</th>
                   <th class="text-secondary small text-uppercase fw-semibold">Hora</th>
+                  <th class="text-secondary small text-uppercase fw-semibold">Tipo</th>
+                  <th class="text-secondary small text-uppercase fw-semibold">Estado</th>
                 </tr>
               </thead>
               <tbody id="tbodyCirugias"></tbody>
@@ -101,6 +103,7 @@
           </div>
         </div>
       </div>
+
 
     </div>
   </div>

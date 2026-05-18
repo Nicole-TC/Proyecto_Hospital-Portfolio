@@ -220,6 +220,52 @@ document.getElementById('btnToggleCupos').addEventListener('click', function (e)
     else cerrarPanelCupos();
 });
 
+/* ── Programación Detallada ── */
+function cargarTurnos(fecha) {
+    var url = ENDPOINT_AGENDA + '?action=obtener_turnos';
+    if (fecha) url += '&fecha=' + fecha;
+
+    fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var tbody = document.getElementById('tbodyCirugias');
+            var empty = document.getElementById('emptyCirugias');
+            tbody.innerHTML = '';
+
+            if (!data.ok || !data.turnos || data.turnos.length === 0) {
+                empty.style.display = '';
+                return;
+            }
+            empty.style.display = 'none';
+
+            data.turnos.forEach(function (t) {
+                var dt = new Date(t.fecha_hora);
+                var fecha = dt.toLocaleDateString('es-AR');
+                var hora = dt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+                var badgeClass = t.estado_codigo === 'PROG' ? 'bg-primary-subtle text-primary'
+                    : t.estado_codigo === 'CONF' ? 'bg-success-subtle text-success'
+                        : t.estado_codigo === 'AUS' ? 'bg-warning-subtle text-warning'
+                            : t.estado_codigo === 'CANC' ? 'bg-danger-subtle text-danger'
+                                : t.estado_codigo === 'FIN' ? 'bg-secondary-subtle text-secondary'
+                                    : 'bg-secondary-subtle text-secondary';
+
+                var tr = document.createElement('tr');
+                tr.innerHTML =
+                    '<td class="fw-semibold">' + t.apellido + ', ' + t.nombre + '</td>' +
+                    '<td class="text-secondary font-monospace">' + t.dni + '</td>' +
+                    '<td>' + fecha + '</td>' +
+                    '<td>' + hora + '</td>' +
+                    '<td class="text-secondary small">' + t.tipo_turno + '</td>' +
+                    '<td><span class="badge ' + badgeClass + '">' + t.estado + '</span></td>';
+                tbody.appendChild(tr);
+            });
+        })
+        .catch(function () {
+            document.getElementById('emptyCirugias').style.display = '';
+        });
+}
+
 /* ── Modal Nuevo Turno ── */
 function cargarTiposTurno() {
     fetch(ENDPOINT_AGENDA + '?action=obtener_tipos_turno')
@@ -529,3 +575,4 @@ if (pacienteGuardado) {
     });
 }
 cargarTiposTurno();
+cargarTurnos();

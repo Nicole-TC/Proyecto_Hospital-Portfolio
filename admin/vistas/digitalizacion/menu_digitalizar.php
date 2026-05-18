@@ -52,38 +52,18 @@
             </div>
         </div>
 
-        <!-- Tarjeta Buscar Documento -->
+                <!-- Tarjeta Buscar Documento -->
         <div class="col-md-6 col-lg-3 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
-                <div class="card-body p-4 p-xl-5 d-flex flex-column">
-                    <div class="text-center mb-4">
-                        <i class="fa-solid fa-magnifying-glass text-info" style="font-size: 3rem;"></i>
-                        <h3 class="card-title fw-bold mt-3 mb-2">Buscar Documento</h3>
-                        <p class="card-text text-muted">Encuentra documentos utilizando palabras clave y filtros.</p>
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-magnifying-glass text-info" style="font-size: 4.5rem;"></i>
                     </div>
-                    
-                    <form action="index.php" method="GET" class="mt-auto">
-                        <!-- Redirigir a un futuro modulo de busqueda -->
-                        <input type="hidden" name="modulo" value="buscar_documentos">
-                        
-                        <div class="mb-3">
-                            <label for="palabra_clave" class="form-label fw-bold"><i class="fa-solid fa-keyboard me-2 text-muted"></i>Palabra Clave</label>
-                            <input type="text" class="form-control bg-light border-0" id="palabra_clave" name="q" placeholder="Ej: informe, receta...">
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="tag_id" class="form-label fw-bold"><i class="fa-solid fa-tags me-2 text-muted"></i>Etiqueta (Tag)</label>
-                            <select class="form-select bg-light border-0" id="tag_id" name="tag_id">
-                                <option value="">-- Seleccionar Etiqueta --</option>
-                            </select>
-                        </div>
-                        
-                        <div class="d-flex justify-content-center mt-3">
-                            <button type="submit" class="btn btn-info btn-lg text-white rounded-pill shadow-sm btn-menu">
-                                <i class="fa-solid fa-search me-2"></i> Buscar
-                            </button>
-                        </div>
-                    </form>
+                    <h3 class="card-title fw-bold mb-3">Buscar Documento</h3>
+                    <p class="card-text text-muted mb-4">Encuentra documentos utilizando palabras clave y filtros.</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=buscar_documentos" class="btn btn-info btn-lg rounded-pill mt-auto align-self-center shadow text-white btn-menu">
+                        <i class="fa-solid fa-search me-2"></i> Buscar Documento
+                    </a>
                 </div>
             </div>
         </div>

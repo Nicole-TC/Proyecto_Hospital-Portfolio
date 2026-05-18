@@ -492,17 +492,40 @@ if (pacienteGuardado) {
     var p = JSON.parse(pacienteGuardado);
     sessionStorage.removeItem('pacienteAgenda');
     window.addEventListener('DOMContentLoaded', function () {
+
+        // Mostrar datos visuales inmediatamente
         document.getElementById('tDni').value = p.dni || '';
-        document.getElementById('tEmail').readOnly = true;
-        document.getElementById('tEmail').value = p.email || '';
         document.getElementById('tNombre').value = p.nombre || '';
         document.getElementById('tApellido').value = p.apellido || '';
+        document.getElementById('tEmail').readOnly = true;
+        document.getElementById('tEmail').value = p.email || '';
         document.getElementById('infoPacienteNombre').textContent = (p.apellido || '') + ', ' + (p.nombre || '');
         document.getElementById('infoPacienteCirugia').textContent = '';
         document.getElementById('infoPaciente').classList.remove('d-none');
-        document.getElementById('btnGuardarTurno').disabled = false;
+
+        // Buscar en DB para obtener id_orden e id_persona_asiste
+        fetch(ENDPOINT_AGENDA + '?action=buscar_paciente&dni=' + p.dni)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.ok && data.encontrado) {
+                    var pac = data.paciente;
+                    document.getElementById('id_orden').value = pac.id_orden;
+                    document.getElementById('id_persona_asiste').value = pac.id_persona_asiste;
+                    document.getElementById('infoPacienteCirugia').textContent =
+                        'Cirugía: ' + pac.tipo_cirugia + ' — ' + pac.estado_orden;
+                    document.getElementById('btnGuardarTurno').disabled = false;
+                } else {
+                    // La orden todavía no está disponible
+                    document.getElementById('dniFeedback').innerHTML =
+                        '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>No se encontró una orden médica para este paciente.</span>';
+                }
+            })
+            .catch(function () {
+                document.getElementById('dniFeedback').innerHTML =
+                    '<span class="text-danger"><i class="bi bi-x-circle me-1"></i>Error al conectar con el servidor.</span>';
+            });
+
         new bootstrap.Modal(document.getElementById('modalNuevoTurno')).show();
     });
 }
-
 cargarTiposTurno();

@@ -148,6 +148,14 @@ form.addEventListener('submit', function (e) {
           confirmButtonColor: '#3085d6',
         }).then(function (result) {
           if (result.isConfirmed) {
+            // ── Guardar datos del paciente para Agenda ──
+            var datos = serializarFormulario();
+            sessionStorage.setItem('pacienteAgenda', JSON.stringify({
+              dni: datos.dni,
+              nombre: datos.nombre,
+              apellido: datos.apellido,
+              email: datos.email
+            }));
             reiniciarFormulario();
             window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
           }

@@ -32,6 +32,8 @@ try {
     $fecha_fin = trim($_GET['fecha_fin'] ?? '');
     $etiquetas = isset($_GET['etiquetas']) && is_array($_GET['etiquetas']) ? $_GET['etiquetas'] : [];
     $etiquetas = array_filter(array_map('intval', $etiquetas));
+    $pagina = max(1, filter_var($_GET['pagina'] ?? 1, FILTER_VALIDATE_INT) ?: 1);
+    $limite = max(1, min(100, filter_var($_GET['limite'] ?? 50, FILTER_VALIDATE_INT) ?: 50));
 
     // Consulta SQL base
     $query = "
@@ -39,7 +41,8 @@ try {
             d.id, d.codigo_unico, d.ruta_archivo, d.comentario, d.fecha_subido, 
             d.prioridad, d.estado_documento,
             p.dni, p.apellidoynombre AS paciente,
-            td.nombre AS tipo_documento
+            td.nombre AS tipo_documento,
+            COUNT(*) OVER() AS total_count
         FROM documentos d
         JOIN personal p ON d.id_persona = p.id
         LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
@@ -93,12 +96,24 @@ try {
     // Ordenamiento por defecto (más recientes primero)
     $query .= " ORDER BY d.fecha_subido DESC";
 
+    // Paginación
+    $offset = ($pagina - 1) * $limite;
+    $query .= " LIMIT " . (int)$limite . " OFFSET " . (int)$offset;
+
     // Preparar y ejecutar la consulta
     $stmt = $bd_dig->prepare($query);
     $stmt->execute($params);
 
     // Obtener los resultados
     $documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $total_registros = count($documentos) > 0 ? (int)$documentos[0]['total_count'] : 0;
+    $total_paginas = ceil($total_registros / $limite);
+
+    // Remover 'total_count' de los resultados para limpiar la respuesta
+    foreach ($documentos as &$doc) {
+        unset($doc['total_count']);
+    }
 
     // Respuesta JSON
     http_response_code(200);
@@ -106,15 +121,30 @@ try {
         "status" => "success",
         "message" => "Búsqueda completada",
         "data" => [
-            "total" => count($documentos),
+            "paginacion" => [
+                "total_registros" => $total_registros,
+                "total_paginas" => $total_paginas,
+                "pagina_actual" => $pagina,
+                "limite" => $limite
+            ],
             "documentos" => $documentos
         ]
     ], JSON_UNESCAPED_UNICODE);
 
-} catch (Exception $e) {
+} catch (PDOException $e) {
+    error_log("Error DB en buscar_documentos: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => "error",
-        "message" => "Error interno del servidor: " . $e->getMessage()
+        "message" => "Error en la base de datos. Por favor, intente nuevamente.",
+        "error_code" => "DB_ERROR"
+    ], JSON_UNESCAPED_UNICODE);
+} catch (Exception $e) {
+    $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
+    http_response_code($code);
+    echo json_encode([
+        "status" => "error",
+        "message" => $e->getMessage(),
+        "error_code" => "SERVER_ERROR"
     ], JSON_UNESCAPED_UNICODE);
 }

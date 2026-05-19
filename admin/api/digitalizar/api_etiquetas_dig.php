@@ -10,7 +10,15 @@ switch ($method) {
 
     // LISTAR
     case 'GET':
-        $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas ORDER BY id ASC");
+        $mostrar = $_GET['mostrar'] ?? 'activos';
+        if ($mostrar === 'inactivos') {
+            $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas WHERE estado = false ORDER BY id ASC");
+        } elseif ($mostrar === 'todos') { 
+            
+            $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas ORDER BY id ASC");
+        } else {
+            $stmt = $bd_dig->query("SELECT id, nombre_etiqueta, color_hex, estado::int as estado FROM etiquetas WHERE estado = true ORDER BY id ASC");
+        }
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         break;
 
@@ -113,6 +121,36 @@ switch ($method) {
             "UPDATE etiquetas SET nombre_etiqueta = ?, color_hex = ?, estado = ? WHERE id = ?"
         );
         $stmt->execute([$nombre, $color, $estado, $id]);
+
+        echo json_encode(['success' => true]);
+        break;
+
+    // ACTIVAR (reversa de baja lógica)
+    case 'PATCH':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $id = $data['id'] ?? null;
+
+        if (!$id) {
+            echo json_encode(['success' => false, 'error' => 'ID no proporcionado']);
+            break;
+        }
+
+        $check = $bd_dig->prepare("SELECT estado FROM etiquetas WHERE id = ?");
+        $check->execute([$id]);
+        $row = $check->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            echo json_encode(['success' => false, 'error' => 'La etiqueta no existe']);
+            break;
+        }
+
+        if ($row['estado'] === 't' || $row['estado'] === true) {
+            echo json_encode(['success' => false, 'error' => 'La etiqueta ya está activa']);
+            break;
+        }
+
+        $stmt = $bd_dig->prepare("UPDATE etiquetas SET estado = true WHERE id = ?");
+        $stmt->execute([$id]);
 
         echo json_encode(['success' => true]);
         break;

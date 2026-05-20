@@ -32,6 +32,9 @@
 
             <!-- Gestion Pacientes -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Pacientes", "Gestion y edicion", "fa-solid fa-users", "blue", "index.php?modulo=menu_circuitoquirurgico&accion=gestion_pacientes"); ?>
+
+            <!-- Especialidades y Subespecialidades -->
+            <?php HTML::tarjeta("menu_circuitoquirurgico", "Especialidades", "Especialidades y subespecialidades", "fa-solid fa-stethoscope", "purple", "index.php?modulo=menu_circuitoquirurgico&accion=especialidades"); ?>
         </div>
     </section>
 </div>

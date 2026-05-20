@@ -53,6 +53,11 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/form_pacientes.php";
         break;
 
+    case 'especialidades':
+        $menu    = 'Especialidades y Subespecialidades (CQ)';
+        $require = "vistas/circuitoquirurgico/especialidad.php";
+        break;
+
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*
     case 'programar_cirugia':

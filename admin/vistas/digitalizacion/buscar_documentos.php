@@ -152,7 +152,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             { 
                 data: null,
                 render: function(data, type, row) {
-                    return `<button class="btn btn-sm btn-info text-white" data-id="${row.id}"><i class="fa-solid fa-eye"></i> Ver</button>`;
+                    return `<a href="${row.ruta_archivo}" target="_blank" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-eye"></i> Ver</a>`;
                 }
             }
         ],

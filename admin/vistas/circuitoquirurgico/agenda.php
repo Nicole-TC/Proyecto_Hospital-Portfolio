@@ -5,7 +5,7 @@
       <!-- ── Encabezado ── -->
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4">
         <div>
-          <h1 class="fw-bold mb-2">Agenda-Turnos</h1>
+          <h1 class="fw-bold mb-2">Agenda de Turnos</h1>
           <p class="text-secondary mb-0">Programación semanal · Pre-quirúrgico</p>
         </div>
         <div class="d-flex flex-column align-items-end gap-1">

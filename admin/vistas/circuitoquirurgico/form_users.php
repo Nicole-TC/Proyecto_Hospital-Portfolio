@@ -187,13 +187,13 @@ $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios'
                                 </select>
                                 <div id="especialidad-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4" id="wrap_numero_matricula">
                                 <label for="numero_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Número de Matrícula <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control text-secondary" id="numero_matricula"
                                        name="numero_matricula" placeholder="Ej: 12345" maxlength="50">
                                 <div id="matricula-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4" id="wrap_tipo_matricula">
                                 <label for="tipo_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Tipo de Matrícula <span class="text-danger">*</span></label>
                                 <select class="form-select text-secondary" id="tipo_matricula" name="tipo_matricula">
                                     <option value="" selected disabled>Seleccionar tipo...</option>
@@ -206,11 +206,24 @@ $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios'
 
                         <!-- Contenedor subespecialidades: aparece cuando la especialidad padre tiene hijos -->
                         <div id="contenedor_subespecialidades" style="display: none;">
-                            <h6 class="text-secondary mt-3 mb-2" style="font-size: 0.9rem;">
-                                <i class="bi bi-diagram-3 me-1"></i>
-                                Subespecialidades — seleccioná las que apliquen e ingresá su matrícula
-                            </h6>
-                            <div class="card border-0 bg-light p-3" style="border-radius: 6px;">
+                            <div class="d-flex align-items-center gap-2 mt-4 mb-2">
+                                <span style="display:inline-flex; align-items:center; justify-content:center;
+                                             width:28px; height:28px; border-radius:50%;
+                                             background: linear-gradient(135deg,#00cec9,#00b5ad);
+                                             color:#fff; font-size:0.8rem;">
+                                    <i class="bi bi-diagram-3-fill"></i>
+                                </span>
+                                <span class="text-secondary fw-semibold" style="font-size:0.9rem;">
+                                    Subespecialidades
+                                </span>
+                                <small class="text-muted" style="font-size:0.78rem;">
+                                    — seleccioná las que apliquen e ingresá su matrícula
+                                </small>
+                            </div>
+                            <div class="card border-0 shadow-sm p-3"
+                                 style="border-radius:8px;
+                                        border-left: 3px solid #00cec9 !important;
+                                        background-color: #f8fdfd;">
                                 <div id="lista_subespecialidades">
                                     <!-- Checkboxes generados dinámicamente por JS -->
                                 </div>

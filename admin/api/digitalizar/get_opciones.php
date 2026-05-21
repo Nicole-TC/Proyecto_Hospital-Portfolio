@@ -71,6 +71,28 @@ try {
         // En caso de error de permisos, devolver array vacío para no romper el resto
         error_log("Error al obtener tipos de identificacion: " . $e->getMessage());
     }
+    // Obtener configuraciones
+    $configuraciones = [];
+    try {
+        $stmtConf = $bd_dig->prepare("
+            SELECT clave, valor
+            FROM configuraciones
+        ");
+        if ($stmtConf) {
+            $stmtConf->execute();
+            $confResults = $stmtConf->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($confResults as $c) {
+                $configuraciones[$c['clave']] = $c['valor'];
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Error al obtener configuraciones: " . $e->getMessage());
+    }
+    
+    // Fallback por defecto si no existe
+    if (!isset($configuraciones['max_peso_archivo_mb'])) {
+        $configuraciones['max_peso_archivo_mb'] = '5';
+    }
 
     http_response_code(200);
 
@@ -80,7 +102,8 @@ try {
             "tipos_documentos" => $tipos_documentos,
             "etiquetas" => $etiquetas,
             "servicios" => $servicios,
-            "tipos_identificacion" => $tipos_identificacion
+            "tipos_identificacion" => $tipos_identificacion,
+            "configuraciones" => $configuraciones
         ]
     ], JSON_UNESCAPED_UNICODE);
 

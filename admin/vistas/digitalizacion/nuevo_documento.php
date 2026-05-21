@@ -131,7 +131,7 @@
                             <div class="form-group col-md-12 mb-3">
                                 <label for="archivo">Seleccionar Archivo <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
-                                <small class="text-muted d-block mt-1">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 5MB</small>
+                                <small class="text-muted d-block mt-1" id="file_size_helper">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 5MB</small>
                             </div>
                         </div>
 
@@ -193,6 +193,7 @@
 <script>
 let tagChoices;
 let modalConfirmacion;
+let maxFileSizeMB = 5; // Default
 
 document.addEventListener("DOMContentLoaded", async function() {
     // Inicializar modal
@@ -239,6 +240,11 @@ document.addEventListener("DOMContentLoaded", async function() {
             
             const etiquetasArr = json.data.etiquetas.map(e => ({ value: e.id, label: e.name }));
             tagChoices.setChoices(etiquetasArr, 'value', 'label', true);
+            
+            if (json.data.configuraciones && json.data.configuraciones.max_peso_archivo_mb) {
+                maxFileSizeMB = parseInt(json.data.configuraciones.max_peso_archivo_mb);
+                document.getElementById('file_size_helper').innerText = `Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: ${maxFileSizeMB}MB`;
+            }
         }
     } catch(error) {
         console.error("Error al cargar las opciones del formulario:", error);
@@ -288,8 +294,8 @@ document.getElementById('archivo').addEventListener('change', function(e) {
         return;
     }
     
-    if(file.size > 5 * 1024 * 1024) {
-        alert("El archivo excede los 5MB permitidos.");
+    if(file.size > maxFileSizeMB * 1024 * 1024) {
+        alert(`El archivo excede los ${maxFileSizeMB}MB permitidos.`);
         this.value = '';
         previewContainer.classList.add('d-none');
         return;

@@ -128,6 +128,24 @@ try {
         throw new Exception("Formato no permitido. Solo PDF, JPG o PNG.");
     }
 
+    // Validar peso del archivo
+    $maxPesoMb = 5; // Fallback
+    try {
+        $stmtConf = $bd_dig->prepare("SELECT valor FROM configuraciones WHERE clave = 'max_peso_archivo_mb'");
+        $stmtConf->execute();
+        $dbVal = $stmtConf->fetchColumn();
+        if ($dbVal) {
+            $maxPesoMb = $dbVal;
+        }
+    } catch (PDOException $e) {
+        error_log("No se pudo leer configuraciones (peso maximo): " . $e->getMessage());
+    }
+    
+    $maxBytes = $maxPesoMb * 1024 * 1024;
+    if ($archivo['size'] > $maxBytes) {
+        throw new Exception("El archivo excede el límite permitido de " . $maxPesoMb . "MB.");
+    }
+
     // Carpeta destino
     $carpetaDestino = __DIR__ . '/../../uploads/';
     if (!is_dir($carpetaDestino)) {

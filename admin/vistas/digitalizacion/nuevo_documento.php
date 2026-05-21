@@ -33,12 +33,22 @@
                                 <label for="numero_identificacion">Nro Documento <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="numero_identificacion" name="numero_identificacion" placeholder="Ingrese el Número" required>
                             </div>
+                            <div class="form-group col-md-2 mb-3 d-none" id="div_genero">
+                                <label for="genero">Género <span class="text-danger">*</span></label>
+                                <select class="form-control" id="genero" name="genero">
+                                    <option value="">Seleccione</option>
+                                    <option value="Femenino">Femenino</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Binario">Binario</option>
+                                    <option value="Otro">Otro</option>
+                                </select>
+                            </div>
                             <div class="form-group col-md-2 mb-3">
                                 <button type="button" class="btn btn-secondary w-100" id="btnBuscarDni">
                                     <i class="fa-solid fa-search me-1"></i> Buscar
                                 </button>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-12 mb-3">
                                 <div id="mensaje_persona" class="small mt-2"></div>
                             </div>
                         </div>
@@ -255,8 +265,23 @@ document.getElementById('numero_identificacion').addEventListener('input', funct
 });
 
 document.getElementById('id_tipo_identificacion').addEventListener('change', function(e) {
+    const tipoSelected = this.options[this.selectedIndex]?.text.toUpperCase();
+    
     document.getElementById('numero_identificacion').value = '';
     document.getElementById('numero_identificacion').focus();
+
+    // Mostrar/ocultar género si es LC o LE
+    const divGenero = document.getElementById('div_genero');
+    const selectGenero = document.getElementById('genero');
+    
+    if (tipoSelected === 'LC' || tipoSelected === 'LE') {
+        divGenero.classList.remove('d-none');
+        selectGenero.setAttribute('required', 'required');
+    } else {
+        divGenero.classList.add('d-none');
+        selectGenero.removeAttribute('required');
+        selectGenero.value = '';
+    }
 });
 
 // Vista previa de Archivo
@@ -304,6 +329,7 @@ document.getElementById('archivo').addEventListener('change', function(e) {
 document.getElementById("btnBuscarDni").addEventListener("click", async function() {
     const tipo_identificacion = document.getElementById("id_tipo_identificacion").value;
     const numero_identificacion = document.getElementById("numero_identificacion").value;
+    const genero = document.getElementById("genero").value;
     
     if(!tipo_identificacion) {
         Swal.fire({icon: 'warning', title: 'Atención', text: 'Por favor seleccione un Tipo de Identificación.'});
@@ -313,6 +339,12 @@ document.getElementById("btnBuscarDni").addEventListener("click", async function
         Swal.fire({icon: 'warning', title: 'Atención', text: 'Por favor ingrese el número de documento primero.'});
         return;
     }
+    
+    const divGenero = document.getElementById('div_genero');
+    if (!divGenero.classList.contains('d-none') && !genero) {
+        Swal.fire({icon: 'warning', title: 'Atención', text: 'Por favor seleccione el género.'});
+        return;
+    }
 
     const btnBuscar = this;
     const originalText = btnBuscar.innerHTML;
@@ -320,7 +352,12 @@ document.getElementById("btnBuscarDni").addEventListener("click", async function
     btnBuscar.disabled = true;
 
     try {
-        const response = await fetch(`api/digitalizar/buscar_persona.php?tipo=${tipo_identificacion}&numero=${numero_identificacion}`);
+        const urlParams = new URLSearchParams({
+            tipo: tipo_identificacion,
+            numero: numero_identificacion,
+            genero: genero
+        });
+        const response = await fetch(`api/digitalizar/buscar_persona.php?${urlParams.toString()}`);
         const data = await response.json();
 
         const inputNombre = document.getElementById("nombre");

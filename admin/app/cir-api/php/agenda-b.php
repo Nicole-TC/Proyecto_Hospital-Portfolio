@@ -13,10 +13,58 @@ require_once __DIR__ . '/../../../model/cir_conexion.php';
 
 class ConsultasAgenda {
 
-    // ── Obtener turnos ─────────────────────────────────────────────────
-    public static function obtenerTurnos($fecha = null) {
+    // ── Obtener turnos por fecha ────────────────────────────────────────
+    public static function obtenerTurnosPorFecha($fecha) {
         $pdo = conexionCircuitoQuirurgico();
-        $where = $fecha ? "WHERE DATE(t.fecha_hora) = :fecha" : "";
+        $sql = "
+            SELECT
+                t.id_turno,
+                p.nombre,
+                p.apellido,
+                p.dni,
+                t.fecha_hora,
+                tt.descripcion  AS tipo_turno,
+                e.descripcion   AS estado,
+                e.codigo        AS estado_codigo,
+                pr.nombre       AS medico_nombre,
+                pr.apellido     AS medico_apellido
+            FROM turno t
+            JOIN persona_asiste pa  ON pa.id_persona_asiste = t.id_persona_asiste
+            JOIN persona p          ON p.id_persona         = pa.id_persona
+            JOIN tipo_turno tt      ON tt.id_tipo_turno     = t.id_tipo_turno
+            JOIN estado e           ON e.id_estado          = t.id_estado
+            LEFT JOIN orden_medica om ON om.id_orden        = t.id_orden
+            LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
+            LEFT JOIN persona pr      ON pr.id_persona      = prf.id_persona
+            WHERE DATE(t.fecha_hora) = :fecha
+            ORDER BY t.fecha_hora ASC
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':fecha', $fecha);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ── Buscar turnos (buscador) ────────────────────────────────────────
+    public static function buscarTurnos($filtro, $query) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        if ($filtro === 'nombre') {
+            $campo = 'LOWER(p.nombre)';
+        } elseif ($filtro === 'dni') {
+            $campo = 'p.dni';
+        } else {
+            $campo = 'LOWER(p.apellido)';
+        }
+
+        $where = '';
+        $params = [];
+        if (!empty($query) && strlen($query) >= 2) {
+            $like = '%' . strtolower($query) . '%';
+            $where = "WHERE $campo LIKE :like";
+            $params[':like'] = $like;
+        }
+
         $sql = "
             SELECT
                 t.id_turno,
@@ -37,56 +85,210 @@ class ConsultasAgenda {
             LIMIT 100
         ";
         $stmt = $pdo->prepare($sql);
-        if ($fecha) $stmt->bindParam(':fecha', $fecha);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ── Buscar turnos ──────────────────────────────────────────────────
-    public static function buscarTurnos($filtro, $query) {
-    $pdo = conexionCircuitoQuirurgico();
+    // ── Buscar paciente y validar circuito ──────────────────────
 
-    if ($filtro === 'nombre') {
-        $campo = 'LOWER(p.nombre)';
-    } elseif ($filtro === 'dni') {
-        $campo = 'p.dni';
-    } else {
-        $campo = 'LOWER(p.apellido)';
+    public static function buscarPacienteConValidacion($dni, $id_tipo_turno) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        // 1. Buscar persona y su orden médica más reciente
+        $sql = "
+            SELECT
+                p.id_persona,
+                p.dni,
+                p.nombre,
+                p.apellido,
+                pa.id_persona_asiste,
+                om.id_orden,
+                om.id_estado        AS id_estado_orden,
+                eo.codigo           AS codigo_estado_orden,
+                eo.descripcion      AS desc_estado_orden,
+                prf.id_profesional,
+                pr.nombre           AS medico_nombre,
+                pr.apellido         AS medico_apellido
+            FROM persona p
+            JOIN persona_asiste pa  ON pa.id_persona      = p.id_persona
+            JOIN orden_medica om    ON om.id_persona_asiste = pa.id_persona_asiste
+            JOIN estado eo          ON eo.id_estado        = om.id_estado
+            LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
+            LEFT JOIN persona pr    ON pr.id_persona       = prf.id_persona
+            WHERE p.dni = :dni
+            ORDER BY om.id_orden DESC
+            LIMIT 1
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':dni', $dni);
+        $stmt->execute();
+        $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$paciente) {
+            return [
+                'ok'        => true,
+                'encontrado' => false,
+                'motivo'    => 'sin_admision',
+                'mensaje'   => 'El paciente no tiene una orden médica registrada. Debe pasar primero por Admisión.'
+            ];
+        }
+
+        // 2. Validar estado de la orden
+        $codigosBloqueo = ['FIN', 'CANC', 'RECH'];
+        if (in_array($paciente['codigo_estado_orden'], $codigosBloqueo)) {
+            $descripciones = [
+                'FIN'  => 'La orden médica del paciente ya fue finalizada.',
+                'CANC' => 'La orden médica del paciente fue cancelada.',
+                'RECH' => 'La orden médica del paciente fue rechazada.',
+            ];
+            return [
+                'ok'        => true,
+                'encontrado' => false,
+                'motivo'    => 'orden_bloqueada',
+                'mensaje'   => $descripciones[$paciente['codigo_estado_orden']] . ' No es posible asignar un nuevo turno.'
+            ];
+        }
+
+        // 3. Validar turno activo del mismo tipo
+        $sqlTurno = "
+            SELECT t.id_turno
+            FROM turno t
+            JOIN estado et ON et.id_estado = t.id_estado
+            WHERE t.id_persona_asiste = :id_persona_asiste
+              AND t.id_tipo_turno     = :id_tipo_turno
+              AND et.codigo IN ('PROG', 'CONF', 'AUS')
+            LIMIT 1
+        ";
+        $stmtT = $pdo->prepare($sqlTurno);
+        $stmtT->bindParam(':id_persona_asiste', $paciente['id_persona_asiste'], PDO::PARAM_INT);
+        $stmtT->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmtT->execute();
+        $turnoActivo = $stmtT->fetch(PDO::FETCH_ASSOC);
+
+        if ($turnoActivo) {
+            return [
+                'ok'        => true,
+                'encontrado' => false,
+                'motivo'    => 'turno_duplicado',
+                'mensaje'   => 'El paciente ya tiene un turno prequirúrgico activo. No se puede asignar otro.'
+            ];
+        }
+
+        // 4. Todo OK
+        return [
+            'ok'              => true,
+            'encontrado'      => true,
+            'id_persona_asiste' => (int)$paciente['id_persona_asiste'],
+            'id_orden'        => (int)$paciente['id_orden'],
+            'nombre'          => $paciente['nombre'],
+            'apellido'        => $paciente['apellido'],
+            'dni'             => $paciente['dni'],
+            'medico'          => trim($paciente['medico_apellido'] . ', ' . $paciente['medico_nombre']),
+        ];
     }
 
-    // Si hay query filtrar, si no traer todos
-    $where = '';
-    $params = [];
-    if (!empty($query) && strlen($query) >= 2) {
-        $like = '%' . strtolower($query) . '%';
-        $where = "WHERE $campo LIKE :like";
-        $params[':like'] = $like;
+    // Programar turno con validación completa ────────────────
+    public static function programarTurno($datos) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        // Validación básica
+        $errores = [];
+        if (empty($datos['id_persona_asiste']) || !is_numeric($datos['id_persona_asiste']))
+            $errores[] = 'Paciente inválido.';
+        if (empty($datos['id_orden']) || !is_numeric($datos['id_orden']))
+            $errores[] = 'Orden médica inválida.';
+        if (empty($datos['id_tipo_turno']) || !is_numeric($datos['id_tipo_turno']))
+            $errores[] = 'Tipo de turno inválido.';
+        if (empty($datos['fecha_hora']))
+            $errores[] = 'La fecha es obligatoria.';
+        if (!empty($errores))
+            return ['ok' => false, 'errores' => $errores];
+
+        // Re-validar circuito en backend 
+        $validacion = self::buscarPacienteConValidacion(
+            // buscar DNI desde id_persona_asiste
+            self::_getDniPorPersonaAsiste((int)$datos['id_persona_asiste'], $pdo),
+            (int)$datos['id_tipo_turno']
+        );
+        if (!$validacion['encontrado']) {
+            return ['ok' => false, 'errores' => [$validacion['mensaje']]];
+        }
+
+        // Obtener estado PROG para turno
+        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'PROG' AND entidad = 'TURNO' LIMIT 1";
+        $id_estado = $pdo->query($sqlEstado)->fetchColumn();
+        if (!$id_estado) {
+            return ['ok' => false, 'errores' => ['No se encontró el estado PROG para turno.']];
+        }
+
+        // Insertar turno
+        $sqlTurno = "
+            INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora)
+            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora)
+            RETURNING id_turno
+        ";
+        $stmt = $pdo->prepare($sqlTurno);
+        $stmt->bindParam(':id_persona_asiste', $datos['id_persona_asiste'], PDO::PARAM_INT);
+        $stmt->bindParam(':id_tipo_turno',     $datos['id_tipo_turno'],     PDO::PARAM_INT);
+        $stmt->bindParam(':id_orden',          $datos['id_orden'],          PDO::PARAM_INT);
+        $stmt->bindParam(':id_estado',         $id_estado,                  PDO::PARAM_INT);
+        $stmt->bindParam(':fecha_hora',        $datos['fecha_hora']);
+        $stmt->execute();
+        $id_turno = $stmt->fetch(PDO::FETCH_ASSOC)['id_turno'];
+
+        // Actualizar orden a PROC si estaba en PEND
+        $sqlActOrden = "
+            UPDATE orden_medica
+            SET id_estado = (SELECT id_estado FROM estado WHERE codigo = 'PROC' AND entidad = 'ORDEN' LIMIT 1)
+            WHERE id_orden = :id_orden
+              AND id_estado = (SELECT id_estado FROM estado WHERE codigo = 'PEND' AND entidad = 'ORDEN' LIMIT 1)
+        ";
+        $stmtAct = $pdo->prepare($sqlActOrden);
+        $stmtAct->bindParam(':id_orden', $datos['id_orden'], PDO::PARAM_INT);
+        $stmtAct->execute();
+
+        // Registrar evento clínico
+        $sqlEvento = "
+            INSERT INTO evento_clinico (id_tipo_evento, id_orden, id_turno, fecha_evento, descripcion)
+            VALUES (
+                (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'turno programado' LIMIT 1),
+                :id_orden, :id_turno, NOW(), 'Turno prequirúrgico programado desde Agenda'
+            )
+        ";
+        $stmtEv = $pdo->prepare($sqlEvento);
+        $stmtEv->bindParam(':id_orden',  $datos['id_orden'],  PDO::PARAM_INT);
+        $stmtEv->bindParam(':id_turno',  $id_turno,           PDO::PARAM_INT);
+        $stmtEv->execute();
+
+        return ['ok' => true, 'id_turno' => $id_turno];
     }
 
-    $sql = "
-        SELECT
-            t.id_turno,
-            p.nombre,
-            p.apellido,
-            p.dni,
-            t.fecha_hora,
-            tt.descripcion AS tipo_turno,
-            e.descripcion  AS estado,
-            e.codigo       AS estado_codigo
-        FROM turno t
-        JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
-        JOIN persona p          ON p.id_persona         = pa.id_persona
-        JOIN tipo_turno tt      ON tt.id_tipo_turno     = t.id_tipo_turno
-        JOIN estado e           ON e.id_estado          = t.id_estado
-        $where
-        ORDER BY t.fecha_hora DESC
-        LIMIT 100
-    ";
-    $stmt = $pdo->prepare($sql);
-    foreach ($params as $key => $val) {
-        $stmt->bindValue($key, $val);
+    // ── Helper interno ─────────────────────────────────────────────────
+    private static function _getDniPorPersonaAsiste($id_persona_asiste, $pdo) {
+        $sql = "
+            SELECT p.dni FROM persona p
+            JOIN persona_asiste pa ON pa.id_persona = p.id_persona
+            WHERE pa.id_persona_asiste = :id
+            LIMIT 1
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id', $id_persona_asiste, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchColumn();
     }
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+
+    // ── Obtener tipo_turno prequirúrgico ───────────────────────────────
+    public static function obtenerIdTipoTurnoPrequirurgico() {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT id_tipo_turno FROM tipo_turno WHERE LOWER(codigo) = 'pre' LIMIT 1";
+        $id = $pdo->query($sql)->fetchColumn();
+        // fallback: primer tipo_turno disponible
+        if (!$id) {
+            $id = $pdo->query("SELECT id_tipo_turno FROM tipo_turno ORDER BY id_tipo_turno LIMIT 1")->fetchColumn();
+        }
+        return $id ?: null;
+    }
 }

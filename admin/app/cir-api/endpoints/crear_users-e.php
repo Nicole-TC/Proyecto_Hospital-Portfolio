@@ -42,10 +42,12 @@ try {
     $codigo_postal    = mb_strtoupper(trim($data['codigo_postal'] ?? ''), 'UTF-8');
     $rol_id           = $data['rol'] ?? '';
 
-    // Datos específicos de cirujano (opcionales dependiendo del rol)
-    $especialidad_id  = $data['especialidad'] ?? null;
-    $numero_matricula = trim($data['numero_matricula'] ?? '');
-    $tipo_matricula   = $data['tipo_matricula'] ?? '';
+    // Datos específicos de cirujano
+    $especialidad_id   = $data['especialidad']    ?? null;
+    $numero_matricula  = trim($data['numero_matricula'] ?? '');
+    $tipo_matricula    = $data['tipo_matricula']   ?? '';
+    $subespecialidades = $data['subespecialidades'] ?? []; // array de IDs
+    $matricula_sub     = $data['matricula_sub']    ?? []; // ['id' => 'numero']
 
     
     // ── DNI: solo dígitos, entre 6 y 8 caracteres ─────────────────────────────
@@ -186,17 +188,43 @@ try {
     // PARTE 3: GUARDAR DATOS DE PROFESIONAL (SI CORRESPONDE)
     // =========================================================================
     if (!empty($especialidad_id)) {
-        // 1. Crear el registro en profesional
-        $idProfesional = ConsultasUsers::crearProfesional($idPersona);
-        
-        if ($idProfesional) {
-            // 2. Vincular con la especialidad (tabla intermedia)
-            ConsultasUsers::vincularEspecialidad($idProfesional, $especialidad_id);
-            
-            // 3. Crear la matrícula (incluye id_especialidad según README)
-            ConsultasUsers::crearMatricula($idProfesional, $especialidad_id, $numero_matricula, $tipo_matricula);
-        } else {
-            throw new Exception("Error al vincular la persona como profesional.");
+        $pdo = conexionCircuitoQuirurgico();
+        $pdo->beginTransaction();
+
+        try {
+            // Crear registro en la tabla profesional
+            $idProfesional = ConsultasUsers::crearProfesional($idPersona);
+            if (!$idProfesional) {
+                throw new Exception('Error al crear el registro de profesional.');
+            }
+
+            // Determinar si la especialidad elegida tiene subespecialidades seleccionadas
+            if (!empty($subespecialidades) && is_array($subespecialidades)) {
+                // CASO CIRUJANO CON SUBESPECIALIDADES
+                // Por cada subespecialidad: vincular + matrícula propia
+                foreach ($subespecialidades as $id_sub) {
+                    $id_sub = (int)$id_sub;
+                    if ($id_sub <= 0) continue;
+
+                    $numero_mat_sub = trim($matricula_sub[$id_sub] ?? '');
+                    if (empty($numero_mat_sub)) {
+                        throw new Exception('Falta el número de matrícula para la subespecialidad ID ' . $id_sub . '.');
+                    }
+
+                    ConsultasUsers::vincularEspecialidad($idProfesional, $id_sub);
+                    ConsultasUsers::crearMatricula($idProfesional, $id_sub, $numero_mat_sub, $tipo_matricula);
+                }
+            } else {
+                // CASO REGULAR: especialidad sin subespecialidades seleccionadas
+                ConsultasUsers::vincularEspecialidad($idProfesional, $especialidad_id);
+                ConsultasUsers::crearMatricula($idProfesional, $especialidad_id, $numero_matricula, $tipo_matricula);
+            }
+
+            $pdo->commit();
+
+        } catch (Exception $eProf) {
+            $pdo->rollBack();
+            throw new Exception('Error al registrar datos del profesional: ' . $eProf->getMessage());
         }
     }
 

@@ -34,6 +34,7 @@ var btnGuardar = null;
 var dniInput = null;
 var icoDni = null;
 var dniTimer = null;
+var idRolCirujano = null; // Se carga desde el servidor, sin hardcodeo
 
 // ============================================================
 // BLOQUEO / DESBLOQUEO DEL FORMULARIO
@@ -481,30 +482,58 @@ function validarTipoMatricula() {
     return true;
 }
 
+// Valida que cada subespecialidad tildada tenga su número de matrícula
+function validarSubespecialidades() {
+    var checkboxes = document.querySelectorAll('input[name="subespecialidades[]"]');
+    var ok = true;
+    var fb = document.getElementById('subesp-feedback');
+    if (fb) fb.innerHTML = '';
+
+    checkboxes.forEach(function (cb) {
+        if (cb.checked) {
+            var idSub = cb.value;
+            var inputMat = document.getElementById('mat_sub_' + idSub);
+            if (inputMat && !inputMat.value.trim()) {
+                inputMat.classList.add('is-invalid');
+                ok = false;
+            } else if (inputMat) {
+                inputMat.classList.remove('is-invalid');
+            }
+        }
+    });
+    if (!ok && fb) {
+        fb.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>Ingresá la matrícula para cada subespecialidad seleccionada.</span>';
+    }
+    return ok;
+}
+
 // ============================================================
 // LÓGICA ROL — mostrar sección cirujano + validaciones obligatorias
 // ============================================================
 function bindRol() {
-    var rolSelect = document.getElementById('rol');
+    var rolSelect    = document.getElementById('rol');
     var datosCirujano = document.getElementById('datos_cirujano');
     if (!rolSelect || !datosCirujano) return;
 
     rolSelect.addEventListener('change', function () {
         validarRol();
-        var textoRol = this.options[this.selectedIndex].text.toLowerCase();
-        var esCirujano = textoRol.indexOf('cirujano') !== -1;
+
+        // Comparar con el id_rol_cirujano obtenido del servidor
+        var esCirujano = idRolCirujano && parseInt(this.value) === parseInt(idRolCirujano);
 
         if (esCirujano) {
             datosCirujano.style.display = 'block';
 
-            // Hacer campos obligatorios y agregarles validación en tiempo real
             var esp = document.getElementById('especialidad');
             var mat = document.getElementById('numero_matricula');
             var tip = document.getElementById('tipo_matricula');
 
             if (esp) {
                 esp.setAttribute('required', 'required');
-                esp.addEventListener('change', validarEspecialidad);
+                esp.addEventListener('change', function () {
+                    validarEspecialidad();
+                    cargarSubespecialidades(this.value);
+                });
                 esp.addEventListener('blur', validarEspecialidad);
             }
             if (mat) {
@@ -522,6 +551,7 @@ function bindRol() {
             }
         } else {
             datosCirujano.style.display = 'none';
+            // Limpiar campos de cirujano
             ['especialidad', 'numero_matricula', 'tipo_matricula'].forEach(function (id) {
                 var campo = document.getElementById(id);
                 if (campo) {
@@ -534,8 +564,79 @@ function bindRol() {
                 var fb = document.getElementById(fbId);
                 if (fb) fb.innerHTML = '';
             });
+            // Ocultar subespecialidades
+            var contenedor = document.getElementById('contenedor_subespecialidades');
+            if (contenedor) contenedor.style.display = 'none';
+            var lista = document.getElementById('lista_subespecialidades');
+            if (lista) lista.innerHTML = '';
         }
     });
+}
+
+// Carga subespecialidades activas para la especialidad troncal elegida
+async function cargarSubespecialidades(idPadre) {
+    var contenedor = document.getElementById('contenedor_subespecialidades');
+    var lista      = document.getElementById('lista_subespecialidades');
+    if (!contenedor || !lista) return;
+
+    if (!idPadre) {
+        contenedor.style.display = 'none';
+        lista.innerHTML = '';
+        return;
+    }
+
+    try {
+        var res  = await fetch('app/cir-api/endpoints/subespecialidades_por_padre-e.php?id_padre=' + encodeURIComponent(idPadre));
+        var data = await res.json();
+
+        if (data.status !== 'success' || !data.subespecialidades || data.subespecialidades.length === 0) {
+            contenedor.style.display = 'none';
+            lista.innerHTML = '';
+            return;
+        }
+
+        lista.innerHTML = '';
+
+        data.subespecialidades.forEach(function (sub) {
+            var id   = sub.id_especialidad;
+            var nombre = sub.nombre;
+
+            var fila = document.createElement('div');
+            fila.className = 'row align-items-center mb-2';
+            fila.innerHTML =
+                '<div class="col-md-5 d-flex align-items-center">' +
+                    '<input class="form-check-input me-2" type="checkbox" ' +
+                            'name="subespecialidades[]" ' +
+                            'id="sub_' + id + '" value="' + id + '" ' +
+                            'onchange="toggleMatriculaSub(' + id + ', this.checked)">' +
+                    '<label class="form-check-label" for="sub_' + id + '" style="font-size:0.9rem;">' + nombre + '</label>' +
+                '</div>' +
+                '<div class="col-md-7" id="wrap_mat_sub_' + id + '" style="display:none;">' +
+                    '<input type="text" class="form-control form-control-sm" ' +
+                           'id="mat_sub_' + id + '" ' +
+                           'name="matricula_sub[' + id + ']" ' +
+                           'placeholder="N° matrícula subespecialidad" maxlength="50">' +
+                '</div>';
+
+            lista.appendChild(fila);
+        });
+
+        contenedor.style.display = 'block';
+    } catch (err) {
+        contenedor.style.display = 'none';
+        lista.innerHTML = '';
+    }
+}
+
+// Habilita/deshabilita el input de matrícula según el checkbox
+function toggleMatriculaSub(idSub, checked) {
+    var wrap  = document.getElementById('wrap_mat_sub_' + idSub);
+    var input = document.getElementById('mat_sub_' + idSub);
+    if (wrap)  wrap.style.display  = checked ? 'block' : 'none';
+    if (input) {
+        input.value = '';
+        if (!checked) input.classList.remove('is-invalid');
+    }
 }
 
 
@@ -545,23 +646,31 @@ function bindRol() {
 async function cargarSelects() {
     try {
         var response = await fetch('app/cir-api/endpoints/obtener_roles_especialidades-e.php');
-        var result = await response.json();
+        var result   = await response.json();
+
         if (result.status === 'success') {
             var rolSelect = document.getElementById('rol');
             var espSelect = document.getElementById('especialidad');
+
+            // Guardar el id del rol cirujano para comparar sin hardcodeo
+            if (result.id_rol_cirujano) {
+                idRolCirujano = result.id_rol_cirujano;
+            }
+
             if (rolSelect && result.roles) {
                 result.roles.forEach(function (rol) {
                     var opt = document.createElement('option');
                     opt.value = rol.id_rol;
-                    opt.text = rol.nombre;
+                    opt.text  = rol.nombre;
                     rolSelect.add(opt);
                 });
             }
+            // Solo especialidades troncales
             if (espSelect && result.especialidades) {
                 result.especialidades.forEach(function (esp) {
                     var opt = document.createElement('option');
                     opt.value = esp.id_especialidad;
-                    opt.text = esp.nombre;
+                    opt.text  = esp.nombre;
                     espSelect.add(opt);
                 });
             }
@@ -725,9 +834,11 @@ function bindSubmit(modoEditar) {
             var esp = document.getElementById('especialidad');
             var mat = document.getElementById('numero_matricula');
             var tip = document.getElementById('tipo_matricula');
-            if (esp && !esp.value) { setFieldError('especialidad', 'especialidad-feedback', 'Seleccioná una especialidad.'); ok = false; }
+            if (esp && !esp.value)        { setFieldError('especialidad', 'especialidad-feedback', 'Seleccioná una especialidad.'); ok = false; }
             if (mat && !mat.value.trim()) { setFieldError('numero_matricula', 'matricula-feedback', 'El número de matrícula es obligatorio.'); ok = false; }
-            if (tip && !tip.value) { setFieldError('tipo_matricula', 'tipo-matricula-feedback', 'Seleccioná el tipo de matrícula.'); ok = false; }
+            if (tip && !tip.value)        { setFieldError('tipo_matricula', 'tipo-matricula-feedback', 'Seleccioná el tipo de matrícula.'); ok = false; }
+            // Validar que las subespecialidades tildadas tengan matrícula
+            if (!validarSubespecialidades()) ok = false;
         }
 
         if (!ok) {
@@ -739,6 +850,21 @@ function bindSubmit(modoEditar) {
         // Preparar datos
         var formData = new FormData(form);
         var data = Object.fromEntries(formData.entries());
+
+        // Recolectar subespecialidades[] y matricula_sub manualmente
+        // (FormData.entries() no agrega arrays ni inputs ocultos de forma esperada)
+        var checkboxes = form.querySelectorAll('input[name="subespecialidades[]"]');
+        var subespecialidades = [];
+        var matriculas_sub    = {};
+        checkboxes.forEach(function (cb) {
+            if (cb.checked) {
+                subespecialidades.push(parseInt(cb.value));
+                var inputMat = document.getElementById('mat_sub_' + cb.value);
+                if (inputMat) matriculas_sub[cb.value] = inputMat.value.trim();
+            }
+        });
+        data.subespecialidades = subespecialidades;
+        data.matricula_sub     = matriculas_sub;
 
         // En modo editar: agregar id_persona al payload
         if (modoEditar) {

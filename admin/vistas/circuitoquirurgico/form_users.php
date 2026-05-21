@@ -178,20 +178,23 @@ $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios'
                         <h6 class="text-secondary mt-4 mb-3 border-bottom pb-2">Datos del Cirujano</h6>
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <label for="especialidad" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Especialidad</label>
+                                <label for="especialidad" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">
+                                    Especialidad Troncal <span class="text-danger">*</span>
+                                </label>
+                                <!-- Solo se cargan especialidades padre (id_especialidad_padre IS NULL) -->
                                 <select class="form-select text-secondary" id="especialidad" name="especialidad">
                                     <option value="" selected disabled>Seleccionar especialidad...</option>
                                 </select>
                                 <div id="especialidad-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                             </div>
                             <div class="col-md-4">
-                                <label for="numero_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Número de Matrícula</label>
+                                <label for="numero_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Número de Matrícula <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control text-secondary" id="numero_matricula"
                                        name="numero_matricula" placeholder="Ej: 12345" maxlength="50">
                                 <div id="matricula-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                             </div>
                             <div class="col-md-4">
-                                <label for="tipo_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Tipo de Matrícula</label>
+                                <label for="tipo_matricula" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Tipo de Matrícula <span class="text-danger">*</span></label>
                                 <select class="form-select text-secondary" id="tipo_matricula" name="tipo_matricula">
                                     <option value="" selected disabled>Seleccionar tipo...</option>
                                     <option value="Nacional">Nacional</option>
@@ -199,6 +202,20 @@ $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_usuarios'
                                 </select>
                                 <div id="tipo-matricula-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                             </div>
+                        </div>
+
+                        <!-- Contenedor subespecialidades: aparece cuando la especialidad padre tiene hijos -->
+                        <div id="contenedor_subespecialidades" style="display: none;">
+                            <h6 class="text-secondary mt-3 mb-2" style="font-size: 0.9rem;">
+                                <i class="bi bi-diagram-3 me-1"></i>
+                                Subespecialidades — seleccioná las que apliquen e ingresá su matrícula
+                            </h6>
+                            <div class="card border-0 bg-light p-3" style="border-radius: 6px;">
+                                <div id="lista_subespecialidades">
+                                    <!-- Checkboxes generados dinámicamente por JS -->
+                                </div>
+                            </div>
+                            <div id="subesp-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                         </div>
                     </div>
 

@@ -47,7 +47,7 @@ function actualizarPlaceholder() {
 // ESTADÍSTICAS
 // ============================================================
 function cargarEstadisticas() {
-    fetch('app/cir-api/endpoints/especialidad_stats-e.php', {
+    fetch('app/cir-api/endpoints/especialidades-e.php?accion=stats', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
     })
@@ -85,8 +85,9 @@ function cargarTabla(tipo, nombre, pagina) {
         '<div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>' +
         'Buscando registros...</td></tr>';
 
-    var url = 'app/cir-api/endpoints/listar_especialidades-e.php' +
-              '?tipo=' + encodeURIComponent(tipo) +
+    var url = 'app/cir-api/endpoints/especialidades-e.php' +
+              '?accion=listar' +
+              '&tipo=' + encodeURIComponent(tipo) +
               '&nombre=' + encodeURIComponent(nombre) +
               '&pagina=' + pagina +
               '&limite=' + limitePorPagina;
@@ -104,21 +105,21 @@ function cargarTabla(tipo, nombre, pagina) {
                 var badgeTipo = esPadre
                     ? '<span class="badge bg-light-success success rounded-pill px-2 py-1 fw-normal"><i class="bi bi-layers me-1"></i>Especialidad</span>'
                     : '<span class="badge bg-light-info info rounded-pill px-2 py-1 fw-normal"><i class="bi bi-diagram-3 me-1"></i>Subespecialidad</span>';
-                var nombrePadre = e.nombre_padre ? e.nombre_padre : '<span class="text-secondary">—</span>';
+                var nombrePadre = e.nombre_padre ? escapeHTML(e.nombre_padre) : '<span class="text-secondary">—</span>';
 
                 tr.setAttribute('data-id', e.id_especialidad);
                 tr.innerHTML =
                     '<td class="ps-4 py-3 text-center text-secondary small">' + num + '</td>' +
-                    '<td class="py-3 fw-medium">' + (e.nombre || '—') + '</td>' +
+                    '<td class="py-3 fw-medium">' + escapeHTML(e.nombre || '—') + '</td>' +
                     '<td class="py-3 text-center">' + badgeTipo + '</td>' +
                     '<td class="py-3 text-center">' + nombrePadre + '</td>' +
                     '<td class="py-3 pe-4 text-center">' +
                         '<button class="btn btn-sm btn-link blue me-2" title="Editar" ' +
-                            'onclick="abrirModalEditar(' + e.id_especialidad + ', \'' + escHtml(e.nombre) + '\', ' + (e.id_especialidad_padre || 'null') + ')">' +
+                            'onclick="abrirModalEditar(' + e.id_especialidad + ', \'' + escJsAttr(e.nombre) + '\', ' + (e.id_especialidad_padre || 'null') + ')">' +
                             '<i class="bi bi-pencil-square"></i></button>' +
                         '<button class="btn btn-sm btn-link danger" title="Eliminar" ' +
                             'data-id="'     + e.id_especialidad + '" ' +
-                            'data-nombre="' + escHtml(e.nombre) + '" ' +
+                            'data-nombre="' + escJsAttr(e.nombre) + '" ' +
                             'data-tipo="'   + (esPadre ? 'Especialidad' : 'Subespecialidad') + '" ' +
                             'onclick="abrirModalEliminar(this)">' +
                             '<i class="bi bi-trash"></i></button>' +
@@ -269,7 +270,7 @@ function cargarEspecialidadesPadre(seleccionado) {
     var sel = document.getElementById('modalEspecialidadPadre');
     sel.innerHTML = '<option value="">Cargando...</option>';
 
-    fetch('app/cir-api/endpoints/listar_especialidades-e.php?tipo=especialidad&nombre=&pagina=1&limite=500', {
+    fetch('app/cir-api/endpoints/especialidades-e.php?accion=listar&tipo=especialidad&nombre=&pagina=1&limite=500', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
     })
@@ -319,14 +320,13 @@ function guardarEspecialidad() {
     if (!valido) return;
 
     var body = {
+        accion: modo === 'crear' ? 'crear' : 'editar',
         nombre: nombre,
         id_especialidad_padre: (tipo === 'subespecialidad' ? parseInt(padre) : null)
     };
     if (modo === 'editar') body.id = parseInt(id);
 
-    var url    = modo === 'crear'
-        ? 'app/cir-api/endpoints/crear_especialidad-e.php'
-        : 'app/cir-api/endpoints/editar_especialidad-e.php';
+    var url    = 'app/cir-api/endpoints/especialidades-e.php';
     var method = 'POST';
 
     var btn = document.getElementById('btn-guardar-especialidad');
@@ -390,10 +390,10 @@ async function confirmarEliminar() {
     btn.textContent = 'Procesando...';
 
     try {
-        var res    = await fetch('app/cir-api/endpoints/eliminar_especialidad-e.php', {
+        var res    = await fetch('app/cir-api/endpoints/especialidades-e.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: parseInt(id) })
+            body: JSON.stringify({ accion: 'eliminar', id: parseInt(id) })
         });
         var result = await res.json();
 
@@ -424,8 +424,20 @@ async function confirmarEliminar() {
 // ============================================================
 // UTILIDADES
 // ============================================================
-function escHtml(str) {
-    return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+function escapeHTML(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escJsAttr(str) {
+    return String(str || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;');
 }
 
 function mostrarError(inputId, errorId, msg) {

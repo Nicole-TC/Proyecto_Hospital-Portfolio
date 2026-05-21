@@ -42,10 +42,13 @@ try {
     $codigo_postal    = mb_strtoupper(trim($data['codigo_postal'] ?? ''), 'UTF-8');
     $rol_id           = $data['rol'] ?? '';
 
-    // Datos específicos de cirujano (opcionales dependiendo del rol)
-    $especialidad_id  = $data['especialidad'] ?? null;
-    $numero_matricula = trim($data['numero_matricula'] ?? '');
-    $tipo_matricula   = $data['tipo_matricula'] ?? '';
+    // Datos específicos de cirujano
+    $especialidad_id    = $data['especialidad']     ?? null;
+    $numero_matricula   = trim($data['numero_matricula'] ?? '');
+    $tipo_matricula     = $data['tipo_matricula']   ?? '';
+    $subespecialidades  = $data['subespecialidades'] ?? []; // array de IDs
+    $matricula_sub      = $data['matricula_sub']    ?? []; // ['id' => 'numero']
+    $tipo_matricula_sub = $data['tipo_matricula_sub'] ?? []; // ['id' => 'tipo']
 
     
     // ── DNI: solo dígitos, entre 6 y 8 caracteres ─────────────────────────────
@@ -139,10 +142,27 @@ try {
     }
 
     // ── DATOS DE CIRUJANO: validar si se enviaron ──────────────────────────────
-    if (!empty($numero_matricula) || !empty($especialidad_id) || !empty($tipo_matricula)) {
-        if (empty($especialidad_id))   $errores[] = "Si es profesional, debe seleccionar una especialidad.";
-        if (empty($numero_matricula))  $errores[] = "Si es profesional, el número de matrícula es obligatorio.";
-        if (empty($tipo_matricula))    $errores[] = "Si es profesional, el tipo de matrícula es obligatorio.";
+    if (!empty($especialidad_id)) {
+        if (!empty($subespecialidades) && is_array($subespecialidades)) {
+            // Validar cada subespecialidad seleccionada
+            foreach ($subespecialidades as $id_sub) {
+                $id_sub = (int)$id_sub;
+                $num_s = trim($matricula_sub[$id_sub] ?? '');
+                $tip_s = trim($tipo_matricula_sub[$id_sub] ?? '');
+                if (empty($num_s)) {
+                    $errores[] = "El número de matrícula es obligatorio para todas las subespecialidades seleccionadas.";
+                    break;
+                }
+                if (empty($tip_s)) {
+                    $errores[] = "El tipo de matrícula es obligatorio para todas las subespecialidades seleccionadas.";
+                    break;
+                }
+            }
+        } else {
+            // Validar matrícula principal
+            if (empty($numero_matricula))  $errores[] = "Si es profesional, el número de matrícula es obligatorio.";
+            if (empty($tipo_matricula))    $errores[] = "Si es profesional, el tipo de matrícula es obligatorio.";
+        }
     }
 
     if (!empty($errores)) {
@@ -186,24 +206,55 @@ try {
     // PARTE 3: GUARDAR DATOS DE PROFESIONAL (SI CORRESPONDE)
     // =========================================================================
     if (!empty($especialidad_id)) {
-        // 1. Crear el registro en profesional
-        $idProfesional = ConsultasUsers::crearProfesional($idPersona);
-        
-        if ($idProfesional) {
-            // 2. Vincular con la especialidad (tabla intermedia)
-            ConsultasUsers::vincularEspecialidad($idProfesional, $especialidad_id);
-            
-            // 3. Crear la matrícula (incluye id_especialidad según README)
-            ConsultasUsers::crearMatricula($idProfesional, $especialidad_id, $numero_matricula, $tipo_matricula);
-        } else {
-            throw new Exception("Error al vincular la persona como profesional.");
+        $pdo = conexionCircuitoQuirurgico();
+        $pdo->beginTransaction();
+
+        try {
+            // Crear registro en la tabla profesional
+            $idProfesional = ConsultasUsers::crearProfesional($idPersona);
+            if (!$idProfesional) {
+                throw new Exception('Error al crear el registro de profesional.');
+            }
+
+            // Determinar si la especialidad elegida tiene subespecialidades seleccionadas
+            if (!empty($subespecialidades) && is_array($subespecialidades)) {
+                // CASO CIRUJANO CON SUBESPECIALIDADES
+                // Por cada subespecialidad: vincular + matrícula propia
+                foreach ($subespecialidades as $id_sub) {
+                    $id_sub = (int)$id_sub;
+                    if ($id_sub <= 0) continue;
+
+                    $numero_mat_sub = trim($matricula_sub[$id_sub] ?? '');
+                    $tipo_mat_sub   = trim($tipo_matricula_sub[$id_sub] ?? '');
+
+                    if (empty($numero_mat_sub)) {
+                        throw new Exception('Falta el número de matrícula para la subespecialidad ID ' . $id_sub . '.');
+                    }
+                    if (empty($tipo_mat_sub)) {
+                        throw new Exception('Falta el tipo de matrícula para la subespecialidad ID ' . $id_sub . '.');
+                    }
+
+                    ConsultasUsers::vincularEspecialidad($idProfesional, $id_sub);
+                    ConsultasUsers::crearMatricula($idProfesional, $id_sub, $numero_mat_sub, $tipo_mat_sub);
+                }
+            } else {
+                // CASO REGULAR: especialidad sin subespecialidades seleccionadas
+                ConsultasUsers::vincularEspecialidad($idProfesional, $especialidad_id);
+                ConsultasUsers::crearMatricula($idProfesional, $especialidad_id, $numero_matricula, $tipo_matricula);
+            }
+
+            $pdo->commit();
+
+        } catch (Exception $eProf) {
+            $pdo->rollBack();
+            throw new Exception('Error al registrar datos del profesional: ' . $eProf->getMessage());
         }
     }
 
     // Responder al front-end
     echo json_encode([
         "status" => "success", 
-        "message" => "Usuario creado exitosamente con todos sus datos vinculados según el nuevo esquema.",
+        "message" => "Usuario creado exitosamente con todos sus datos vinculados.",
         "id_persona" => $idPersona
     ]);
 

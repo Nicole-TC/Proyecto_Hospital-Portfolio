@@ -53,6 +53,25 @@ try {
         $servicios = $stmtServicios->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Obtener tipos de identificacion (personas)
+    $tipos_identificacion = [];
+    try {
+        $stmtTiposIden = $bd_dig->prepare("
+            SELECT id, nombre
+            FROM tipos_identificacion
+            WHERE estado = true
+            ORDER BY id ASC
+        ");
+        
+        if ($stmtTiposIden) {
+            $stmtTiposIden->execute();
+            $tipos_identificacion = $stmtTiposIden->fetchAll(PDO::FETCH_ASSOC);
+        }
+    } catch (PDOException $e) {
+        // En caso de error de permisos, devolver array vacío para no romper el resto
+        error_log("Error al obtener tipos de identificacion: " . $e->getMessage());
+    }
+
     http_response_code(200);
 
     echo json_encode([
@@ -60,7 +79,8 @@ try {
         "data" => [
             "tipos_documentos" => $tipos_documentos,
             "etiquetas" => $etiquetas,
-            "servicios" => $servicios
+            "servicios" => $servicios,
+            "tipos_identificacion" => $tipos_identificacion
         ]
     ], JSON_UNESCAPED_UNICODE);
 

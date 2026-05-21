@@ -144,7 +144,7 @@
             <!-- Cuerpo -->
             <div class="modal-body px-4 pt-3 pb-2">
                 <p class="text-secondary mb-3" style="font-size:0.9rem;">
-                    ¿Estás seguro que querés dar de baja al siguiente usuario? El usuario <strong>no podrá acceder al sistema</strong> mientras esté inactivo.
+                    ¿Estás seguro que querés dar de baja al siguiente usuario? El usuario <strong>no podrá acceder al sistema</strong> si lo das de baja.
                 </p>
 
                 <!-- Datos del usuario -->

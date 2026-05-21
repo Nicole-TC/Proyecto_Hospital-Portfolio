@@ -196,9 +196,11 @@ class ConsultasUsers {
         if (!$row) return true; // No era cirujano, nada que desactivar
 
         $idProf = $row['id_profesional'];
+        $idEstadoIna = id_estado('USUARIO', 'INA');
 
-        // 2. Realizar la baja lógica (UPDATE activo = FALSE) en lugar de un borrado físico con DELETE
-        $stmtUpdate = $pdo->prepare("UPDATE profesional SET activo = FALSE WHERE id_profesional = :id_prof");
+        // 2. Realizar la baja lógica id_estado
+        $stmtUpdate = $pdo->prepare("UPDATE profesional SET id_estado = :id_estado WHERE id_profesional = :id_prof");
+        $stmtUpdate->bindParam(':id_estado', $idEstadoIna, PDO::PARAM_INT);
         $stmtUpdate->bindParam(':id_prof', $idProf, PDO::PARAM_INT);
         return $stmtUpdate->execute();
     }

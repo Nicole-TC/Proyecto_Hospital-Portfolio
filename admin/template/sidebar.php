@@ -87,6 +87,7 @@
 .icon-ayuda     { color: #16a085; }
 .icon-db        { color: #2980b9; }
 .icon-usuarios  { color: #e67e22; }
+.icon-cq        { color: #e74c3c; }
 
 /* Submenús (menús hijos): mayor margen a la izquierda */
 .collapse .list-unstyled li a {
@@ -151,6 +152,17 @@ hr.my-0 {
       </a>
       <ul class="collapse list-unstyled" id="submenuDigitalizar">
         <?php require_once "template/digitalizacion/sidebar_dig.php"; ?>
+      </ul>
+    </li>
+    <?php } ?>
+
+    <?php if (@$_SESSION["menu_circuitoquirurgico"] == TRUE || @$_SESSION["admin"] == 1) { ?>
+    <li>
+      <a data-bs-toggle="collapse" href="#submenuCircuitoQuirurgico" role="button" aria-expanded="false" aria-controls="submenuCircuitoQuirurgico">
+        <i class="fa-solid fa-heart-pulse menu-icon icon-cq"></i> Circuito Quirúrgico
+      </a>
+      <ul class="collapse list-unstyled" id="submenuCircuitoQuirurgico">
+        <?php require_once "template/circuitoquirurgico/sidebar_cq.php"; ?>
       </ul>
     </li>
     <?php } ?>

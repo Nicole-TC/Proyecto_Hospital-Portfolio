@@ -121,11 +121,11 @@ class ConsultasAdmision {
         $sqlPersonas = "SELECT p.id_persona, prof.id_profesional, p.nombre, p.apellido 
                         FROM persona p
                         INNER JOIN profesional prof ON p.id_persona = prof.id_persona
-                        WHERE p.id_rol = :id_rol AND prof.activo = TRUE";
+                        WHERE p.id_rol = :id_rol";
         $params = [':id_rol' => $idRol];
 
         if ($idEstado) {
-            $sqlPersonas .= " AND p.id_estado = :id_estado";
+            $sqlPersonas .= " AND prof.id_estado = :id_estado";
             $params[':id_estado'] = $idEstado;
         }
 

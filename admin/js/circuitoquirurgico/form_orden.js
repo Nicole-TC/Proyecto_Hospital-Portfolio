@@ -51,11 +51,15 @@
                 return;
             }
             var o = data.orden;
-            if (o.estado_codigo === 'CANC') {
+            if (o.estado_codigo === 'CANC' || o.estado_codigo === 'FIN') {
+                var titulo = o.estado_codigo === 'CANC' ? 'Orden cancelada' : 'Orden finalizada';
+                var texto = o.estado_codigo === 'CANC'
+                    ? 'No se puede editar una orden cancelada.'
+                    : 'No se puede editar una orden finalizada.';
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Orden cancelada',
-                    text: 'No se puede editar una orden cancelada.'
+                    title: titulo,
+                    text: texto
                 });
                 form.querySelectorAll('input, select, textarea, button[type=submit]').forEach(function(el) {
                     el.disabled = true;
@@ -64,10 +68,10 @@
 
             document.getElementById('id_orden_display').value = '#' + o.id_orden;
             document.getElementById('estado_display').value = (o.estado_descripcion || o.estado_codigo || '');
+            document.getElementById('fecha_orden_display').value = o.fecha_orden || '';
             document.getElementById('dni_paciente').value = o.dni || '';
             document.getElementById('nombre_paciente').value =
                 ((o.paciente_nombre || '') + ' ' + (o.paciente_apellido || '')).trim();
-            document.getElementById('fecha_orden').value = o.fecha_orden || '';
             document.getElementById('observaciones').value = o.observaciones || '';
 
             cargarCombos(function() {
@@ -86,7 +90,6 @@
             id_orden: idOrden,
             id_cirugia_catalogo: parseInt(selectCirugia.value, 10),
             id_profesional: parseInt(selectCirujano.value, 10),
-            fecha_orden: document.getElementById('fecha_orden').value,
             observaciones: document.getElementById('observaciones').value
         };
 

@@ -37,9 +37,17 @@ try {
         $valor  = isset($_GET['valor']) ? $_GET['valor'] : null;
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 10;
+        $listarTodos = !empty($_GET['listar_todos']);
         $incluirCanceladas = !empty($_GET['incluir_canceladas']);
 
-        $resultado = ConsultasOrdenesMedicas::listarOrdenes($filtro, $valor, $pagina, $limite, $incluirCanceladas);
+        $resultado = ConsultasOrdenesMedicas::listarOrdenes(
+            $filtro,
+            $valor,
+            $pagina,
+            $limite,
+            $listarTodos,
+            $incluirCanceladas
+        );
 
         echo json_encode([
             'status'  => 'success',
@@ -60,21 +68,21 @@ try {
         }
 
         $accion = $data['accion'] ?? '';
+        $id_orden = filter_var($data['id_orden'] ?? '', FILTER_VALIDATE_INT);
+        if (!$id_orden || $id_orden <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'ID de orden inválido.']);
+            exit;
+        }
 
-        if ($accion === 'eliminar') {
-            $id_orden = filter_var($data['id_orden'] ?? '', FILTER_VALIDATE_INT);
-            if (!$id_orden || $id_orden <= 0) {
-                echo json_encode(['status' => 'error', 'message' => 'ID de orden inválido.']);
-                exit;
-            }
+        if ($accion === 'cancelar') {
             ConsultasOrdenesMedicas::cancelarOrden($id_orden);
             echo json_encode(['status' => 'success', 'message' => 'Orden cancelada correctamente.']);
             exit;
         }
 
-        $id_orden = filter_var($data['id_orden'] ?? '', FILTER_VALIDATE_INT);
-        if (!$id_orden || $id_orden <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'ID de orden inválido.']);
+        if ($accion === 'eliminar') {
+            ConsultasOrdenesMedicas::eliminarOrden($id_orden);
+            echo json_encode(['status' => 'success', 'message' => 'Orden eliminada correctamente.']);
             exit;
         }
 

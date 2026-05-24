@@ -26,10 +26,16 @@ $urlVolver = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_ordenes';
                         <input type="text" class="form-control bg-light" id="estado_display" readonly>
                     </div>
                     <div class="col-md-3">
+                        <label class="form-label text-secondary small">Fecha de la orden</label>
+                        <input type="text" class="form-control bg-light" id="fecha_orden_display" readonly>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label text-secondary small">DNI paciente</label>
                         <input type="text" class="form-control bg-light" id="dni_paciente" readonly>
                     </div>
-                    <div class="col-md-3">
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-12">
                         <label class="form-label text-secondary small">Paciente</label>
                         <input type="text" class="form-control bg-light" id="nombre_paciente" readonly>
                     </div>
@@ -51,13 +57,9 @@ $urlVolver = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_ordenes';
                 </div>
 
                 <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label for="fecha_orden" class="form-label text-secondary small">Fecha orden <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="fecha_orden" name="fecha_orden" required>
-                    </div>
-                    <div class="col-md-8">
+                    <div class="col-md-12">
                         <label for="observaciones" class="form-label text-secondary small">Observaciones</label>
-                        <textarea class="form-control" id="observaciones" name="observaciones" rows="2" maxlength="2000"></textarea>
+                        <textarea class="form-control" id="observaciones" name="observaciones" rows="3" maxlength="2000"></textarea>
                     </div>
                 </div>
 

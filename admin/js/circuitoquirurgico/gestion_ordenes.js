@@ -1,8 +1,14 @@
 var paginaActual = 1;
 var limitePorPagina = 10;
+var listarTodos = false;
 
 function initGestionOrdenes() {
-    cargarOrdenesAPI();
+    var tbody = document.getElementById('tablaOrdenesBody');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-secondary">' +
+            '<i class="bi bi-search me-2"></i> Ingrese un criterio de b&uacute;squeda o use &laquo;Ver listado completo&raquo;.' +
+            '</td></tr>';
+    }
 }
 
 if (document.readyState === 'loading') {
@@ -23,24 +29,54 @@ function badgeEstado(codigo, descripcion) {
     return '<span class="badge ' + cls + '">' + (descripcion || codigo || '—') + '</span>';
 }
 
-function ejecutarBusqueda() {
-    paginaActual = 1;
-    cargarOrdenesAPI();
+function puedeEditar(codigo) {
+    return codigo === 'PEND' || codigo === 'PROC';
 }
 
-function cargarOrdenesAPI() {
+function puedeCancelar(codigo) {
+    return codigo === 'PEND' || codigo === 'PROC';
+}
+
+function puedeEliminar(codigo) {
+    return codigo === 'PEND' || codigo === 'PROC' || codigo === 'CANC';
+}
+
+function ejecutarBusqueda() {
+    var filtro = document.getElementById('filtroTipo').value;
+    var valor  = document.getElementById('filtroValor').value.trim();
+    if (!valor) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Búsqueda requerida',
+            text: 'Ingrese un valor para buscar o use el botón Ver listado completo.',
+            confirmButtonColor: '#00cec9'
+        });
+        return;
+    }
+    listarTodos = false;
+    paginaActual = 1;
+    cargarOrdenesAPI(filtro, valor);
+}
+
+function listarTodasOrdenes() {
+    listarTodos = true;
+    paginaActual = 1;
+    cargarOrdenesAPI(null, null);
+}
+
+function cargarOrdenesAPI(filtro, valor) {
     var tbody = document.getElementById('tablaOrdenesBody');
     if (!tbody) return;
 
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-secondary">' +
         '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Buscando...</td></tr>';
-
-    var filtro = document.getElementById('filtroTipo').value;
-    var valor  = document.getElementById('filtroValor').value;
     var incluir = document.getElementById('incluirCanceladas').checked ? '1' : '0';
+    var url = 'app/cir-api/endpoints/ordenes_medicas-e.php?pagina=' + paginaActual +
+        '&limite=' + limitePorPagina + '&incluir_canceladas=' + incluir;
 
-    var url = 'app/cir-api/endpoints/ordenes_medicas-e.php?pagina=' + paginaActual + '&limite=' + limitePorPagina + '&incluir_canceladas=' + incluir;
-    if (filtro && valor) {
+    if (listarTodos) {
+        url += '&listar_todos=1';
+    } else if (filtro && valor) {
         url += '&filtro=' + encodeURIComponent(filtro) + '&valor=' + encodeURIComponent(valor);
     }
 
@@ -49,7 +85,10 @@ function cargarOrdenesAPI() {
         .then(function(data) {
             tbody.innerHTML = '';
             if (data.status !== 'success') {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">' + (data.message || 'Error') + '</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">' +
+                    (data.message || 'Error') + '</td></tr>';
+                document.getElementById('infoPaginacion').textContent = 'Mostrando 0 de 0 registros';
+                document.getElementById('paginador').innerHTML = '';
                 return;
             }
 
@@ -58,9 +97,16 @@ function cargarOrdenesAPI() {
                     var tr = document.createElement('tr');
                     tr.setAttribute('data-id', o.id_orden);
                     var paciente = ((o.paciente_nombre || '') + ' ' + (o.paciente_apellido || '')).trim();
-                    var puedeCancelar = o.estado_codigo !== 'CANC' && o.estado_codigo !== 'FIN';
-                    var btnCancelar = puedeCancelar
-                        ? '<button class="btn btn-sm btn-link danger" title="Cancelar orden" onclick="cancelarOrden(' + o.id_orden + ')"><i class="bi bi-x-circle"></i></button>'
+                    var codigo = o.estado_codigo || '';
+
+                    var btnEditar = puedeEditar(codigo)
+                        ? '<button class="btn btn-sm btn-link blue me-1" title="Editar" onclick="editarOrden(' + o.id_orden + ')"><i class="bi bi-pencil-square"></i></button>'
+                        : '';
+                    var btnCancelar = puedeCancelar(codigo)
+                        ? '<button class="btn btn-sm btn-link warning me-1" title="Cancelar orden" onclick="cancelarOrden(' + o.id_orden + ')"><i class="bi bi-x-circle"></i></button>'
+                        : '';
+                    var btnEliminar = puedeEliminar(codigo)
+                        ? '<button class="btn btn-sm btn-link danger" title="Eliminar orden" onclick="eliminarOrden(' + o.id_orden + ')"><i class="bi bi-trash"></i></button>'
                         : '';
 
                     tr.innerHTML =
@@ -70,11 +116,8 @@ function cargarOrdenesAPI() {
                         '<td class="py-3 text-center">' + (o.dni || '—') + '</td>' +
                         '<td class="py-3 text-center">' + (o.cirugia || '—') + '</td>' +
                         '<td class="py-3 text-center">' + (o.cirujano || '—') + '</td>' +
-                        '<td class="py-3 text-center">' + badgeEstado(o.estado_codigo, o.estado_descripcion) + '</td>' +
-                        '<td class="py-3 pe-4 text-center">' +
-                            '<button class="btn btn-sm btn-link blue me-1" title="Editar" onclick="editarOrden(' + o.id_orden + ')"><i class="bi bi-pencil-square"></i></button>' +
-                            btnCancelar +
-                        '</td>';
+                        '<td class="py-3 text-center">' + badgeEstado(codigo, o.estado_descripcion) + '</td>' +
+                        '<td class="py-3 pe-4 text-center">' + btnEditar + btnCancelar + btnEliminar + '</td>';
                     tbody.appendChild(tr);
                 });
 
@@ -124,7 +167,11 @@ function renderPaginador(total, pagina, limite) {
 function cambiarPagina(n) {
     if (n < 1) return;
     paginaActual = n;
-    cargarOrdenesAPI();
+    if (listarTodos) {
+        cargarOrdenesAPI(null, null);
+    } else {
+        cargarOrdenesAPI(document.getElementById('filtroTipo').value, document.getElementById('filtroValor').value.trim());
+    }
 }
 
 function editarOrden(id) {
@@ -133,8 +180,8 @@ function editarOrden(id) {
 
 function cancelarOrden(id) {
     Swal.fire({
-        title: '¿Cancelar orden?',
-        text: 'La orden quedará en estado Cancelada (baja lógica).',
+        title: '¿Cancelar esta orden?',
+        text: 'Indica que la orden no continúa (por ejemplo, inasistencia a turnos). Podrá consultarla marcando "Incluir canceladas".',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff6b81',
@@ -143,22 +190,49 @@ function cancelarOrden(id) {
         cancelButtonText: 'No'
     }).then(function(result) {
         if (!result.isConfirmed) return;
-        fetch('app/cir-api/endpoints/ordenes_medicas-e.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accion: 'eliminar', id_orden: parseInt(id, 10) })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.status === 'success') {
-                Swal.fire({ icon: 'success', title: 'Cancelada', text: data.message, confirmButtonColor: '#00cec9' });
-                cargarOrdenesAPI();
+        enviarAccionOrden('cancelar', id, 'Orden cancelada correctamente.');
+    });
+}
+
+function eliminarOrden(id) {
+    Swal.fire({
+        title: '¿Eliminar esta orden?',
+        text: 'Esta acción no se puede deshacer. La orden dejará de mostrarse en el listado.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ff6b81',
+        cancelButtonColor: '#e9ecef',
+        confirmButtonText: '<i class="bi bi-trash me-1"></i> Eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+        enviarAccionOrden('eliminar', id, 'Orden eliminada correctamente.');
+    });
+}
+
+function enviarAccionOrden(accion, id, msgOk) {
+    fetch('app/cir-api/endpoints/ordenes_medicas-e.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: accion, id_orden: parseInt(id, 10) })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'success') {
+            Swal.fire({ icon: 'success', title: 'Listo', text: data.message || msgOk, confirmButtonColor: '#00cec9' });
+            if (listarTodos) {
+                cargarOrdenesAPI(null, null);
             } else {
-                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#ff6b81' });
+                var filtro = document.getElementById('filtroTipo').value;
+                var valor  = document.getElementById('filtroValor').value.trim();
+                if (valor) cargarOrdenesAPI(filtro, valor);
+                else initGestionOrdenes();
             }
-        })
-        .catch(function() {
-            Swal.fire({ icon: 'error', title: 'Error de conexión', confirmButtonColor: '#ff6b81' });
-        });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#ff6b81' });
+        }
+    })
+    .catch(function() {
+        Swal.fire({ icon: 'error', title: 'Error de conexión', confirmButtonColor: '#ff6b81' });
     });
 }

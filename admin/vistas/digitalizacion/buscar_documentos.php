@@ -131,7 +131,10 @@ document.addEventListener("DOMContentLoaded", async function() {
             data: function (d) {
                 d.dni = $('#buscar_dni').val();
                 const tag = $('#buscar_tag').val();
-                if(tag) { d.etiquetas = [tag]; }
+                if(tag) { 
+                    d.etiquetas = [tag];
+                    d.tag_id = tag;
+                }
                 d.fecha_inicio = $('#fecha_desde').val();
                 d.fecha_fin = $('#fecha_hasta').val();
             }
@@ -148,7 +151,13 @@ document.addEventListener("DOMContentLoaded", async function() {
             { data: "tipo_documento", defaultContent: "Sin Tipo" },
             { data: "comentario", defaultContent: "-" }, 
             { data: "fecha_subido" },
-            { data: null, defaultContent: "N/A" },
+            { 
+                data: "etiquetas",
+                render: function(data, type, row) {
+                    if (!data) return '<span class="badge bg-secondary">Sin etiquetas</span>';
+                    return data.split(', ').map(tag => `<span class="badge bg-info text-white me-1">${tag}</span>`).join('');
+                }
+            },
             { 
                 data: null,
                 render: function(data, type, row) {

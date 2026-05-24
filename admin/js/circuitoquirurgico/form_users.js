@@ -122,7 +122,7 @@ async function verificarDNI(val) {
     }
     if (icoDni) icoDni.className = 'bi bi-hourglass-split text-warning';
     try {
-        var response = await fetch('app/cir-api/endpoints/verificar_dni-e.php?dni=' + val);
+        var response = await fetch('app/cir-api/endpoints/usuarios-e.php?accion=verificar_dni&dni=' + val);
         var result = await response.json();
         if (result.status === 'success') {
             if (result.existe === true) {
@@ -619,7 +619,7 @@ async function cargarSubespecialidades(idPadre) {
     }
 
     try {
-        var res  = await fetch('app/cir-api/endpoints/subespecialidades_por_padre-e.php?id_padre=' + encodeURIComponent(idPadre));
+        var res  = await fetch('app/cir-api/endpoints/usuarios-e.php?accion=subespecialidades&id_padre=' + encodeURIComponent(idPadre));
         var data = await res.json();
 
         if (data.status !== 'success' || !data.subespecialidades || data.subespecialidades.length === 0) {
@@ -738,7 +738,7 @@ function toggleMatriculaSub(idSub, checked) {
 // ============================================================
 async function cargarSelects() {
     try {
-        var response = await fetch('app/cir-api/endpoints/obtener_roles_especialidades-e.php');
+        var response = await fetch('app/cir-api/endpoints/usuarios-e.php?accion=roles_especialidades');
         var result   = await response.json();
 
         if (result.status === 'success') {
@@ -821,7 +821,7 @@ function init() {
 // Pre-llenar formulario con datos del usuario a editar
 async function preLlenarFormulario(idPersona) {
     try {
-        var res = await fetch('app/cir-api/endpoints/obtener_usuario-e.php?id=' + idPersona);
+        var res = await fetch('app/cir-api/endpoints/usuarios-e.php?accion=obtener&id=' + idPersona);
         var result = await res.json();
 
         if (result.status !== 'success' || !result.persona) {
@@ -996,8 +996,8 @@ function bindSubmit(modoEditar) {
 
         // Elegir endpoint según modo
         var endpoint = modoEditar
-            ? 'app/cir-api/endpoints/editar_users-e.php'
-            : 'app/cir-api/endpoints/crear_users-e.php';
+            ? 'app/cir-api/endpoints/usuarios-e.php?accion=editar'
+            : 'app/cir-api/endpoints/usuarios-e.php?accion=crear';
 
         try {
             var res = await fetch(endpoint, {

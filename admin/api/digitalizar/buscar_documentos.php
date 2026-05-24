@@ -30,8 +30,19 @@ try {
     $id_tipo_documento = filter_var($_GET['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $fecha_inicio = trim($_GET['fecha_inicio'] ?? '');
     $fecha_fin = trim($_GET['fecha_fin'] ?? '');
-    $etiquetas = isset($_GET['etiquetas']) && is_array($_GET['etiquetas']) ? $_GET['etiquetas'] : [];
+    // Recibir y procesar etiquetas (puede venir como array, string separado por comas o valor único)
+    $etiquetas = [];
+    if (isset($_GET['etiquetas'])) {
+        if (is_array($_GET['etiquetas'])) {
+            $etiquetas = $_GET['etiquetas'];
+        } else {
+            $etiquetas = explode(',', $_GET['etiquetas']);
+        }
+    } elseif (isset($_GET['tag_id']) && $_GET['tag_id'] !== '') {
+        $etiquetas = [$_GET['tag_id']];
+    }
     $etiquetas = array_filter(array_map('intval', $etiquetas));
+
     $pagina = max(1, filter_var($_GET['pagina'] ?? 1, FILTER_VALIDATE_INT) ?: 1);
     $limite = max(1, min(100, filter_var($_GET['limite'] ?? 50, FILTER_VALIDATE_INT) ?: 50));
 
@@ -42,6 +53,12 @@ try {
             d.prioridad, d.estado_documento,
             p.dni, p.apellidoynombre AS paciente,
             td.nombre AS tipo_documento,
+            (
+                SELECT STRING_AGG(e.nombre_etiqueta, ', ')
+                FROM documento_etiquetas de
+                JOIN etiquetas e ON de.id_etiqueta = e.id
+                WHERE de.id_documento = d.id
+            ) AS etiquetas,
             COUNT(*) OVER() AS total_count
         FROM documentos d
         JOIN personal p ON d.id_persona = p.id

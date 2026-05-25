@@ -1,10 +1,14 @@
 #!/bin/sh
 # entrypoint.sh
 
-# Aseguramos que la carpeta de uploads y el root sean de Apache
-# Esto arregla el problema de los volúmenes montados
+#Crea la carpeta por si acaso
+mkdir -p /var/www/html/admin/uploads
+
+#Como Docker tiene control del montaje, esto va a impactar hacia afuera en la VPS
 chown -R www-data:www-data /var/www/html/admin/uploads
+
+#Le da permiso al usuario de apache de modificar archivos
 chmod -R 775 /var/www/html/admin/uploads
 
-# Ejecuta el comando que Apache trae por defecto
+#Arranca Apache normalmente
 exec apache2-foreground

@@ -19,7 +19,7 @@
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
                                     <p class="text-secondary small mb-1">Pacientes en Circuito</p>
-                                    <h3 class="fw-bold mb-0">24</h3>
+                                    <h3 id="pacientes-circuito" class="fw-bold mb-0">24</h3>
                                 </div>
                                 <div class="bg-light-blue text-blue rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                                     <i class="bi bi-people-fill fs-5"></i>
@@ -35,7 +35,7 @@
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
                                     <p class="text-secondary small mb-1">Aptos para Operar</p>
-                                    <h3 class="fw-bold mb-0">8</h3>
+                                    <h3 id="aptos-operar" class="fw-bold mb-0">8</h3>
                                 </div>
                                 <div class="bg-light-success text-success rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                                     <i class="bi bi-check-circle-fill fs-5"></i>
@@ -51,7 +51,7 @@
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
                                     <p class="text-secondary small mb-1">Alertas de Demora</p>
-                                    <h3 class="fw-bold mb-0">5</h3>
+                                    <h3 id="alertas-demora" class="fw-bold mb-0">5</h3>
                                 </div>
                                 <div class="bg-light-warning text-warning rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                                     <i class="bi bi-exclamation-triangle-fill fs-5"></i>
@@ -67,7 +67,7 @@
                             <div class="d-flex align-items-center justify-content-between mb-3">
                                 <div>
                                     <p class="text-secondary small mb-1">Tiempo Promedio</p>
-                                    <h3 class="fw-bold mb-0">12d</h3>
+                                    <h3 id="tiempo-promedio" class="fw-bold mb-0">12d</h3>
                                 </div>
                                 <div class="bg-light-blue-grey text-blue rounded-3 p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                                     <i class="bi bi-clock-history fs-5"></i>
@@ -150,3 +150,5 @@
         </div>
     </div>
 </div>
+
+<script src="js/circuitoquirurgico/dashboard.js" defer></script>

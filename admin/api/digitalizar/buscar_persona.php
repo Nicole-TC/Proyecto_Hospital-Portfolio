@@ -20,17 +20,27 @@ $dni = trim($_GET['dni']);
 
 try {
 
-    // Buscar en la tabla personal (PostgreSQL)
-    $stmt = $bd_dig->prepare("
-        SELECT id, nombre, apellido, correo AS email, telefono
-        FROM personal
-        WHERE dni = :dni
-        LIMIT 1
-    ");
+    $tipo = filter_var($_GET['tipo'] ?? null, FILTER_VALIDATE_INT);
 
-    $stmt->execute([
-        ':dni' => $dni
-    ]);
+    // Buscar en la tabla personal haciendo join con la nueva tabla
+    $query = "
+        SELECT p.id, p.nombre, p.apellido, p.correo AS email, p.telefono
+        FROM personal p
+        INNER JOIN personal_identificaciones pi ON p.id = pi.id_personal
+        WHERE pi.numero_identificacion = :dni
+    ";
+
+    $params = [':dni' => $dni];
+
+    if ($tipo) {
+        $query .= " AND pi.id_tipo_identificacion = :tipo";
+        $params[':tipo'] = $tipo;
+    }
+
+    $query .= " LIMIT 1";
+
+    $stmt = $bd_dig->prepare($query);
+    $stmt->execute($params);
 
     $persona = $stmt->fetch(PDO::FETCH_ASSOC);
 

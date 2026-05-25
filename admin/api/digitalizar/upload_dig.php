@@ -1,5 +1,7 @@
 <?php
 session_start();
+ini_set('display_errors', '0');
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../../model/conexion_dig.php';
 
@@ -24,7 +26,7 @@ try {
     $titulo = trim($_POST['titulo'] ?? '');
     
     // Campo de identificación único
-    $dni = trim($_POST['dni'] ?? '');
+    $dni = trim($_POST['dni'] ?? $_POST['numero_identificacion'] ?? '');
     
     $nombre = trim($_POST['nombre'] ?? '');
     $apellido = trim($_POST['apellido'] ?? '');
@@ -41,20 +43,25 @@ try {
     $estado_documento = trim($_POST['estado_documento'] ?? 'Activo');
     $forzar_subida = isset($_POST['forzar_subida']) && $_POST['forzar_subida'] == '1';
 
-    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo || !$id_servicio) {
+    // Datos de la nueva identidad
+    $id_tipo_identificacion = filter_var($_POST['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
+    $genero = trim($_POST['genero'] ?? '');
+
+    if (!$dni || !$nombre || !$apellido || !$id_tipo_documento || !$titulo || !$id_servicio || !$id_tipo_identificacion) {
         $missing = [];
-        if (!$dni) $missing[] = "DNI";
+        if (!$dni) $missing[] = "Número de Documento";
+        if (!$id_tipo_identificacion) $missing[] = "Tipo de Identificación";
         if (!$nombre) $missing[] = "Nombre";
         if (!$apellido) $missing[] = "Apellido";
-        if (!$id_tipo_documento) $missing[] = "Tipo Documento";
+        if (!$id_tipo_documento) $missing[] = "Tipo de Archivo";
         if (!$titulo) $missing[] = "Título";
         if (!$id_servicio) $missing[] = "Sector";
         throw new Exception("Faltan datos requeridos: " . implode(", ", $missing));
     }
 
     // Validaciones estrictas solicitadas
-    if (!preg_match('/^[0-9]{8}$/', $dni)) {
-        throw new Exception("El DNI debe contener exactamente 8 dígitos y no puede contener letras.");
+    if (strlen($dni) < 5) {
+        throw new Exception("El número de documento es demasiado corto (mínimo 5 caracteres).");
     }
     if (strlen($nombre) > 20) {
         throw new Exception("El nombre no puede superar los 20 caracteres.");
@@ -63,14 +70,48 @@ try {
         throw new Exception("El apellido no puede superar los 20 caracteres.");
     }
 
-    // 2. Gestionar la Persona (Buscar en `personal` o insertar paciente)
-    $stmt = $bd_dig->prepare("SELECT id FROM personal WHERE dni = ?");
-    $stmt->execute([$dni]);
+    // 2. Gestionar la Persona (Buscar en `personal_identificaciones` o insertar paciente)
+    $stmt = $bd_dig->prepare("
+        SELECT id_personal 
+        FROM personal_identificaciones 
+        WHERE numero_identificacion = ? AND id_tipo_identificacion = ?
+    ");
+    $stmt->execute([$dni, $id_tipo_identificacion]);
     $persona = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($persona) {
-        $id_persona = $persona['id'];
+        $id_persona = $persona['id_personal'];
     } else {
+        // Idea del usuario: extraer solo los números de la identificación (ej. pasaportes)
+        $numeros_extraidos = preg_replace('/[^0-9]/', '', $dni);
+        
+        // Si no quedaron números, o si el número extraído es más grande de lo que soporta el 'integer' de Postgres (2.147.483.647)
+        if (empty($numeros_extraidos) || $numeros_extraidos > 2100000000) {
+            if (strlen($numeros_extraidos) > 8) {
+                // Si es enorme (ej. un número de 12 cifras), tomamos los últimos 8 dígitos que sí caben
+                $dummy_dni = (int)substr($numeros_extraidos, -8);
+            } else {
+                $dummy_dni = 900000000 + rand(1, 99999999);
+            }
+        } else {
+            $dummy_dni = (int)$numeros_extraidos;
+        }
+
+        // Bucle de seguridad: Verificar que no haya chocado con el UNIQUE constraint (ej: LC 123456 chocando con DNI 123456)
+        while (true) {
+            $stmtCheck = $bd_dig->prepare("SELECT id FROM personal WHERE dni = ?");
+            $stmtCheck->execute([$dummy_dni]);
+            if (!$stmtCheck->fetch()) {
+                break; // Está libre
+            }
+            // Si hay colisión, le sumamos un prefijo alto para despejarlo, ya que no puede duplicarse
+            $dummy_dni += 100000000;
+            // Si al sumar se pasa del máximo permitido, generamos uno aleatorio
+            if ($dummy_dni > 2100000000) {
+                $dummy_dni = 900000000 + rand(1, 99999999);
+            }
+        }
+
         // Insertar paciente en la tabla `personal` con valores por defecto para los NOT NULL
         $stmt = $bd_dig->prepare("
             INSERT INTO personal (
@@ -80,7 +121,7 @@ try {
         ");
         $apellidoynombre = $apellido . ' ' . $nombre;
         $stmt->execute([
-            $dni, 
+            $dummy_dni, // dni ficticio único para evitar violar el constraint UNIQUE
             true, // activo
             0, // legajo
             $apellidoynombre, 
@@ -96,6 +137,15 @@ try {
             $email
         ]);
         $id_persona = $stmt->fetchColumn();
+
+        // Insertar la identificación real
+        $stmtId = $bd_dig->prepare("
+            INSERT INTO personal_identificaciones (id_personal, id_tipo_identificacion, numero_identificacion, genero)
+            VALUES (?, ?, ?, ?)
+        ");
+        // Convertir strings vacíos a null para campos opcionales como el género si fuera necesario, 
+        // aunque genero permite nulos o strings vacíos según tu lógica
+        $stmtId->execute([$id_persona, $id_tipo_identificacion, $dni, $genero ?: null]);
     }
 
     // 3. Comprobar duplicados si no se forzó la subida
@@ -211,10 +261,11 @@ try {
         ]
     ], JSON_UNESCAPED_UNICODE);
 
-} catch (Exception $e) {
-    if ($bd_dig->inTransaction()) {
+} catch (Throwable $e) {
+    if (isset($bd_dig) && $bd_dig->inTransaction()) {
         $bd_dig->rollBack();
     }
+    file_put_contents(__DIR__ . '/last_error.log', date('Y-m-d H:i:s') . ' - ' . $e->getMessage() . PHP_EOL, FILE_APPEND);
     http_response_code(400);
     echo json_encode([
         "status" => "error",

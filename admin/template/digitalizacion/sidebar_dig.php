@@ -19,7 +19,7 @@
     </a>
 </li>
 <li>
-    <a class="dropdown-item" href="index.php?modulo=buscar_documentos">
+    <a class="dropdown-item" href="index.php?modulo=menu_digitalizar&accion=buscar_documentos">
         <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Buscar Documento
     </a>
 </li>

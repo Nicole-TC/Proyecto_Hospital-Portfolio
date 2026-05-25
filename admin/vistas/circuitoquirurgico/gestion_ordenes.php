@@ -2,7 +2,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3 mb-4 mt-2">
         <div>
             <h2 class="blue fw-bold mb-1">Órdenes Médicas</h2>
-            <p class="text-secondary mb-0">Listado, edición, cancelación y eliminación de órdenes del circuito quirúrgico</p>
+            <p class="text-secondary mb-0">Consulta, cancelación y baja lógica de órdenes del circuito quirúrgico</p>
         </div>
         <a href="index.php?modulo=menu_circuitoquirurgico&accion=admision" class="btn btn-outline-primary fw-bold">
             <i class="bi bi-plus-circle me-2"></i>Nueva orden (Admisión)
@@ -18,23 +18,21 @@
                         <option value="dni">DNI paciente</option>
                         <option value="apellido">Apellido paciente</option>
                         <option value="id_orden">Nº orden</option>
-                        <option value="estado">Código estado (PEND, PROC, FIN)</option>
+                        <option value="estado">Estado</option>
                     </select>
                 </div>
                 <div class="col-md-5">
-                    <label class="form-label text-secondary small fw-bold">VALOR A BUSCAR</label>
+                    <label class="form-label text-secondary small fw-bold" id="filtroValorLabel">VALOR A BUSCAR</label>
                     <input type="text" class="form-control border-0 bg-light" id="filtroValor"
                            placeholder="Ingrese el dato..."
                            style="border-radius: 0.5rem; height: 45px;"
                            onkeyup="if(event.key === 'Enter') ejecutarBusqueda()">
+                    <select class="form-select border-0 bg-light d-none" id="filtroEstado"
+                            style="border-radius: 0.5rem; height: 45px;">
+                        <option value="">Seleccione un estado...</option>
+                    </select>
                 </div>
-                <div class="col-md-2">
-                    <div class="form-check mt-4">
-                        <input class="form-check-input" type="checkbox" id="incluirCanceladas">
-                        <label class="form-check-label small" for="incluirCanceladas">Incluir canceladas</label>
-                    </div>
-                </div>
-                <div class="col-md-2">
+                <div class="col-md-4">
                     <button class="btn btn-primary w-100 fw-bold" onclick="ejecutarBusqueda()" style="border-radius: 0.5rem; height: 45px;">
                         <i class="bi bi-search me-2"></i> BUSCAR
                     </button>

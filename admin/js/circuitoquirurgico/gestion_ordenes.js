@@ -1,6 +1,8 @@
 var paginaActual = 1;
 var limitePorPagina = 10;
 var listarTodos = false;
+var estadosOrdenCargados = false;
+var reglasOrden = null;
 
 function initGestionOrdenes() {
     var tbody = document.getElementById('tablaOrdenesBody');
@@ -9,6 +11,12 @@ function initGestionOrdenes() {
             '<i class="bi bi-search me-2"></i> Ingrese un criterio de b&uacute;squeda o use &laquo;Ver listado completo&raquo;.' +
             '</td></tr>';
     }
+    var filtroTipo = document.getElementById('filtroTipo');
+    if (filtroTipo) {
+        filtroTipo.addEventListener('change', actualizarControlFiltroValor);
+        actualizarControlFiltroValor();
+    }
+    cargarEstadosFiltro();
 }
 
 if (document.readyState === 'loading') {
@@ -17,38 +25,85 @@ if (document.readyState === 'loading') {
     initGestionOrdenes();
 }
 
-function badgeEstado(codigo, descripcion) {
-    var map = {
-        'PEND': 'bg-warning text-dark',
-        'PROC': 'bg-primary',
-        'FIN':  'bg-success',
-        'CANC': 'bg-secondary',
-        'RECH': 'bg-danger'
-    };
-    var cls = map[codigo] || 'bg-secondary';
-    return '<span class="badge ' + cls + '">' + (descripcion || codigo || '—') + '</span>';
+function cargarEstadosFiltro() {
+    fetch('app/cir-api/endpoints/ordenes_medicas-e.php?estados=1', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var select = document.getElementById('filtroEstado');
+        if (!select || data.status !== 'success') return;
+        select.innerHTML = '<option value="">Seleccione un estado...</option>';
+        (data.estados || []).forEach(function(e) {
+            var opt = document.createElement('option');
+            opt.value = e.id_estado;
+            opt.textContent = e.descripcion || e.codigo;
+            select.appendChild(opt);
+        });
+        reglasOrden = data.reglas || null;
+        estadosOrdenCargados = true;
+    })
+    .catch(function() { /* el filtro por estado quedará vacío hasta recargar */ });
 }
 
-function puedeEditar(codigo) {
-    return codigo === 'PEND' || codigo === 'PROC';
+function actualizarControlFiltroValor() {
+    var filtro = document.getElementById('filtroTipo').value;
+    var input = document.getElementById('filtroValor');
+    var select = document.getElementById('filtroEstado');
+    var label = document.getElementById('filtroValorLabel');
+    if (!input || !select) return;
+
+    if (filtro === 'estado') {
+        input.classList.add('d-none');
+        select.classList.remove('d-none');
+        if (label) label.textContent = 'ESTADO';
+    } else {
+        select.classList.add('d-none');
+        input.classList.remove('d-none');
+        if (label) label.textContent = 'VALOR A BUSCAR';
+        if (filtro === 'id_orden') {
+            input.placeholder = 'Número de orden';
+            input.type = 'number';
+        } else {
+            input.placeholder = 'Ingrese el dato...';
+            input.type = 'text';
+        }
+    }
 }
 
-function puedeCancelar(codigo) {
-    return codigo === 'PEND' || codigo === 'PROC';
+function obtenerValorFiltro() {
+    var filtro = document.getElementById('filtroTipo').value;
+    if (filtro === 'estado') {
+        return document.getElementById('filtroEstado').value.trim();
+    }
+    return document.getElementById('filtroValor').value.trim();
 }
 
-function puedeEliminar(codigo) {
-    return codigo === 'PEND' || codigo === 'PROC' || codigo === 'CANC';
+function badgeEstado(descripcion) {
+    return '<span class="badge bg-secondary">' + (descripcion || '—') + '</span>';
 }
 
 function ejecutarBusqueda() {
     var filtro = document.getElementById('filtroTipo').value;
-    var valor  = document.getElementById('filtroValor').value.trim();
+    var valor  = obtenerValorFiltro();
     if (!valor) {
+        var msg = filtro === 'estado'
+            ? 'Seleccione un estado para buscar o use el botón Ver listado completo.'
+            : 'Ingrese un valor para buscar o use el botón Ver listado completo.';
         Swal.fire({
             icon: 'info',
             title: 'Búsqueda requerida',
-            text: 'Ingrese un valor para buscar o use el botón Ver listado completo.',
+            text: msg,
+            confirmButtonColor: '#00cec9'
+        });
+        return;
+    }
+    if (filtro === 'estado' && !estadosOrdenCargados) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Espere un momento',
+            text: 'Los estados aún se están cargando. Intente de nuevo.',
             confirmButtonColor: '#00cec9'
         });
         return;
@@ -70,9 +125,8 @@ function cargarOrdenesAPI(filtro, valor) {
 
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-secondary">' +
         '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Buscando...</td></tr>';
-    var incluir = document.getElementById('incluirCanceladas').checked ? '1' : '0';
     var url = 'app/cir-api/endpoints/ordenes_medicas-e.php?pagina=' + paginaActual +
-        '&limite=' + limitePorPagina + '&incluir_canceladas=' + incluir;
+        '&limite=' + limitePorPagina;
 
     if (listarTodos) {
         url += '&listar_todos=1';
@@ -97,15 +151,13 @@ function cargarOrdenesAPI(filtro, valor) {
                     var tr = document.createElement('tr');
                     tr.setAttribute('data-id', o.id_orden);
                     var paciente = ((o.paciente_nombre || '') + ' ' + (o.paciente_apellido || '')).trim();
-                    var codigo = o.estado_codigo || '';
-
-                    var btnEditar = puedeEditar(codigo)
-                        ? '<button class="btn btn-sm btn-link blue me-1" title="Editar" onclick="editarOrden(' + o.id_orden + ')"><i class="bi bi-pencil-square"></i></button>'
+                    var btnVer = o.puede_ver
+                        ? '<button class="btn btn-sm btn-link blue me-1" title="Ver orden" onclick="verOrden(' + o.id_orden + ')"><i class="bi bi-eye"></i></button>'
                         : '';
-                    var btnCancelar = puedeCancelar(codigo)
+                    var btnCancelar = o.puede_cancelar
                         ? '<button class="btn btn-sm btn-link warning me-1" title="Cancelar orden" onclick="cancelarOrden(' + o.id_orden + ')"><i class="bi bi-x-circle"></i></button>'
                         : '';
-                    var btnEliminar = puedeEliminar(codigo)
+                    var btnEliminar = o.puede_eliminar
                         ? '<button class="btn btn-sm btn-link danger" title="Eliminar orden" onclick="eliminarOrden(' + o.id_orden + ')"><i class="bi bi-trash"></i></button>'
                         : '';
 
@@ -116,8 +168,8 @@ function cargarOrdenesAPI(filtro, valor) {
                         '<td class="py-3 text-center">' + (o.dni || '—') + '</td>' +
                         '<td class="py-3 text-center">' + (o.cirugia || '—') + '</td>' +
                         '<td class="py-3 text-center">' + (o.cirujano || '—') + '</td>' +
-                        '<td class="py-3 text-center">' + badgeEstado(codigo, o.estado_descripcion) + '</td>' +
-                        '<td class="py-3 pe-4 text-center">' + btnEditar + btnCancelar + btnEliminar + '</td>';
+                        '<td class="py-3 text-center">' + badgeEstado(o.estado_descripcion) + '</td>' +
+                        '<td class="py-3 pe-4 text-center">' + btnVer + btnCancelar + btnEliminar + '</td>';
                     tbody.appendChild(tr);
                 });
 
@@ -170,18 +222,21 @@ function cambiarPagina(n) {
     if (listarTodos) {
         cargarOrdenesAPI(null, null);
     } else {
-        cargarOrdenesAPI(document.getElementById('filtroTipo').value, document.getElementById('filtroValor').value.trim());
+        cargarOrdenesAPI(document.getElementById('filtroTipo').value, obtenerValorFiltro());
     }
 }
 
-function editarOrden(id) {
+function verOrden(id) {
     window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=form_orden&id=' + id;
 }
 
 function cancelarOrden(id) {
+    var descEstado = (reglasOrden && reglasOrden.cancelar && reglasOrden.cancelar.descripcion_destino)
+        ? reglasOrden.cancelar.descripcion_destino
+        : 'cancelada';
     Swal.fire({
         title: '¿Cancelar esta orden?',
-        text: 'Indica que la orden no continúa (por ejemplo, inasistencia a turnos). Podrá consultarla marcando "Incluir canceladas".',
+        text: 'La orden pasará al estado «' + descEstado + '». Podrá consultarla filtrando por ese estado.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff6b81',
@@ -197,7 +252,7 @@ function cancelarOrden(id) {
 function eliminarOrden(id) {
     Swal.fire({
         title: '¿Eliminar esta orden?',
-        text: 'Esta acción no se puede deshacer. La orden dejará de mostrarse en el listado.',
+        text: 'La orden se dará de baja y dejará de mostrarse en el listado.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ff6b81',
@@ -224,7 +279,7 @@ function enviarAccionOrden(accion, id, msgOk) {
                 cargarOrdenesAPI(null, null);
             } else {
                 var filtro = document.getElementById('filtroTipo').value;
-                var valor  = document.getElementById('filtroValor').value.trim();
+                var valor  = obtenerValorFiltro();
                 if (valor) cargarOrdenesAPI(filtro, valor);
                 else initGestionOrdenes();
             }

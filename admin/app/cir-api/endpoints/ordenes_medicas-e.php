@@ -13,11 +13,15 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 try {
     if ($method === 'GET') {
-        if (isset($_GET['combos']) && $_GET['combos'] === '1') {
+        if (isset($_GET['estados']) && $_GET['estados'] === '1') {
+            $reglas = ConsultasOrdenesMedicas::obtenerReglasAccionesOrden();
             echo json_encode([
-                'status'    => 'success',
-                'cirugias'  => ConsultasOrdenesMedicas::obtenerCatalogoCirugias(),
-                'cirujanos' => ConsultasOrdenesMedicas::obtenerCirujanos(),
+                'status'  => 'success',
+                'estados' => $reglas['estados'],
+                'reglas'  => [
+                    'cancelar' => $reglas['cancelar'],
+                    'eliminar' => $reglas['eliminar'],
+                ],
             ]);
             exit;
         }
@@ -38,15 +42,13 @@ try {
         $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
         $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 10;
         $listarTodos = !empty($_GET['listar_todos']);
-        $incluirCanceladas = !empty($_GET['incluir_canceladas']);
 
         $resultado = ConsultasOrdenesMedicas::listarOrdenes(
             $filtro,
             $valor,
             $pagina,
             $limite,
-            $listarTodos,
-            $incluirCanceladas
+            $listarTodos
         );
 
         echo json_encode([
@@ -86,8 +88,7 @@ try {
             exit;
         }
 
-        ConsultasOrdenesMedicas::actualizarOrden($id_orden, $data);
-        echo json_encode(['status' => 'success', 'message' => 'Orden actualizada correctamente.']);
+        echo json_encode(['status' => 'error', 'message' => 'Acción no permitida.']);
         exit;
     }
 

@@ -26,7 +26,7 @@ if (document.readyState === 'loading') {
 // ACTUALIZAR ESTADÍSTICAS
 // ============================================================
 function cargarEstadisticas() {
-    fetch('app/cir-api/endpoints/listar_users-e.php', {
+    fetch('app/cir-api/endpoints/usuarios-e.php?accion=listar', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
     })
@@ -82,7 +82,7 @@ function cargarUsuariosAPI(filtro, valor) {
                       '<div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>' +
                       'Buscando usuarios...</td></tr>';
 
-    var url = 'app/cir-api/endpoints/listar_users-e.php?pagina=' + paginaActual + '&limite=' + limitePorPagina;
+    var url = 'app/cir-api/endpoints/usuarios-e.php?accion=listar&pagina=' + paginaActual + '&limite=' + limitePorPagina;
     if (filtro && valor) {
         url += '&filtro=' + encodeURIComponent(filtro) + '&valor=' + encodeURIComponent(valor);
     }
@@ -226,7 +226,7 @@ async function confirmarBaja() {
     }
 
     try {
-        var res    = await fetch('app/cir-api/endpoints/desactivar_user-e.php', {
+        var res    = await fetch('app/cir-api/endpoints/usuarios-e.php?accion=desactivar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_persona: parseInt(idPersona) })

@@ -103,7 +103,7 @@ async function verificarDNI(val) {
     }
     if (icoDni) icoDni.className = 'bi bi-hourglass-split text-warning';
     try {
-        var response = await fetch('app/cir-api/endpoints/verificar_dni-e.php?dni=' + val);
+        var response = await fetch('app/cir-api/endpoints/usuarios-e.php?accion=verificar_dni&dni=' + val);
         var result = await response.json();
         if (result.status === 'success') {
             if (result.existe === true) {

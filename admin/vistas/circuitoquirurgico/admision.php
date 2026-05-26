@@ -43,7 +43,7 @@
           <div class="row mb-3">
             <div class="col-md-6">
               <label for="codigoPostal" class="form-label">Código Postal*</label>
-              <input type="text" class="form-control" id="codigoPostal" name="codigoPostal" placeholder="Ej: 1406" required disabled>
+              <input type="text" class="form-control" id="codigoPostal" name="codigoPostal" placeholder="Ej: 1406A" required disabled>
             </div>
             <div class="col-md-6">
               <label for="email" class="form-label">Email*</label>
@@ -57,7 +57,7 @@
             <input type="text" class="form-control" id="telefono" name="telefono" placeholder="Ej: 11-2345-6789" required disabled>
           </div>
 
-          <!-- Tipo de cirugía y Tipo de cirujano -->
+          <!-- Tipo de cirugía y Cirujano -->
           <div class="row mb-3">
             <div class="col-md-6">
               <label for="tipoCirugia" class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
@@ -65,22 +65,25 @@
               </label>
               <select class="form-select select-boton" id="tipoCirugia" name="tipoCirugia" required disabled>
                 <option value="">Seleccione tipo de cirugía</option>
-                <option>Cardíaca</option>
-                <option>Ortopédica</option>
-                <option>Neurológica</option>
-                <option>General</option>
               </select>
             </div>
             <div class="col-md-6">
-              <label for="tipoCirujano" class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
-                Tipo de cirujano
+              <label for="cirujano" class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
+                Cirujano
               </label>
-              <select class="form-select select-boton" id="tipoCirujano" name="tipoCirujano" required disabled>
-                <option value="">Seleccione tipo de cirujano</option>
-                <option>Cirujano General</option>
-                <option>Cirujano Cardiovascular</option>
-                <option>Neurocirujano</option>
+              <select class="form-select select-boton" id="cirujano" name="cirujano" required disabled>
+                <option value="">Seleccione cirujano</option>
               </select>
+            </div>
+          </div>
+
+          <!-- Estudios asociados -->
+          <div class="row mb-3" id="contenedorEstudios" style="display:none;">
+            <div class="col-md-12">
+              <label class="form-label fw-bolder fs-5 text-dark border-bottom border-2 border-dark pb-1 w-100 d-block">
+                Estudios requeridos
+              </label>
+              <div id="listaEstudios" class="d-flex flex-wrap gap-2"></div>
             </div>
           </div>
 
@@ -93,4 +96,5 @@
       </div>
     </div>
   </main>
+
 <script src="js/circuitoquirurgico/admision.js"></script>

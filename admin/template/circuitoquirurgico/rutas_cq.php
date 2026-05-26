@@ -19,9 +19,9 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/admision.php"; // Archivo físico a cargar
         break;
 
-    case 'agenda_quirurgica':
+    case 'agenda':
         $menu = 'Agenda  (CQ)'; // Título en la barra de navegación superior
-        $require = "vistas/circuitoquirurgico/agenda_quirurgica.php"; // Archivo físico a cargar
+        $require = "vistas/circuitoquirurgico/agenda.php"; // Archivo físico a cargar
         break;
     case 'lista_espera':
         $menu = 'Lista de Espera Quirúrgica';
@@ -41,6 +41,31 @@ switch (@$_GET["accion"]) {
     case 'form_users':
         $menu = 'Formulario de Usuarios (CQ)'; // Título en la barra de navegación superior
         $require = "vistas/circuitoquirurgico/form_users.php"; // Archivo físico a cargar
+        break;
+
+    case 'gestion_pacientes':
+        $menu = 'Gestion de Pacientes (CQ)'; // Título en la barra de navegación superior
+        $require = "vistas/circuitoquirurgico/gestion_pacientes.php"; // Archivo físico a cargar
+        break;
+
+    case 'form_pacientes':
+        $menu = 'Formulario de Pacientes (CQ)';
+        $require = "vistas/circuitoquirurgico/form_pacientes.php";
+        break;
+
+    case 'especialidades':
+        $menu    = 'Especialidades y Subespecialidades (CQ)';
+        $require = "vistas/circuitoquirurgico/especialidad.php";
+        break;
+
+    case 'gestion_ordenes':
+        $menu = 'Gestión de Órdenes Médicas (CQ)';
+        $require = "vistas/circuitoquirurgico/gestion_ordenes.php";
+        break;
+
+    case 'form_orden':
+        $menu = 'Orden Médica (CQ)';
+        $require = "vistas/circuitoquirurgico/form_orden.php";
         break;
 
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php

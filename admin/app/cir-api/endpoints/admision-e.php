@@ -6,6 +6,34 @@ require_once __DIR__ . '/../php/admision-b.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
+if ($method === 'GET' && ($_GET['action'] ?? '') === 'obtener_catalogos') {
+    try {
+        $cirugias = ConsultasAdmision::obtenerCatalogoCirugias();
+        $estudiosPorCirugia = ConsultasAdmision::obtenerEstudiosPorCirugia();
+        echo json_encode([
+            'ok' => true,
+            'cirugias' => $cirugias,
+            'estudiosPorCirugia' => $estudiosPorCirugia
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['ok' => false, 'error' => 'Error al obtener catálogos: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($method === 'GET' && ($_GET['action'] ?? '') === 'obtener_cirujanos') {
+    try {
+        $cirujanos = ConsultasAdmision::obtenerCirujanos();
+        echo json_encode([
+            'ok' => true,
+            'cirujanos' => $cirujanos
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['ok' => false, 'error' => 'Error al obtener cirujanos: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 if ($method === 'GET' && ($_GET['action'] ?? '') === 'buscar_dni') {
     $dni = $_GET['dni'] ?? '';
 
@@ -55,27 +83,24 @@ try {
         exit;
     }
 
+    $datos = [
+        'dni' => $dni_clean,
+        'nombre' => $input['nombre'] ?? '',
+        'apellido' => $input['apellido'] ?? '',
+        'fecha_nacimiento' => $input['fechaNacimiento'] ?? '',
+        'email' => $input['email'] ?? '',
+        'telefono' => $input['telefono'] ?? '',
+        'direccion' => $input['direccion'] ?? '',
+        'codigo_postal' => $input['codigoPostal'] ?? '',
+        'tipoCirugia' => $input['tipoCirugia'] ?? '',
+        'cirujano' => $input['cirujano'] ?? ''
+    ];
+
+    ConsultasAdmision::procesarAdmision($datos, $paciente_existente);
+
     if ($paciente_existente) {
         $mensaje = "Cirugía de {$input['tipoCirugia']} registrada para el paciente.";
     } else {
-        $datos = [
-            'dni' => $dni_clean,
-            'nombre' => $input['nombre'] ?? '',
-            'apellido' => $input['apellido'] ?? '',
-            'fecha_nacimiento' => $input['fechaNacimiento'] ?? '',
-            'email' => $input['email'] ?? '',
-            'telefono' => $input['telefono'] ?? '',
-            'direccion' => $input['direccion'] ?? '',
-            'codigo_postal' => $input['codigoPostal'] ?? '',
-        ];
-
-        $id = ConsultasAdmision::registrarAdmision($datos);
-
-        if (!$id) {
-            echo json_encode(['ok' => false, 'error' => 'No se pudo registrar el paciente.']);
-            exit;
-        }
-
         $mensaje = "Paciente {$input['apellido']}, {$input['nombre']} registrado correctamente con cirugía de {$input['tipoCirugia']}.";
     }
 

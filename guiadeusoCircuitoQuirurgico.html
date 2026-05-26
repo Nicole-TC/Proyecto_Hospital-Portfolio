@@ -52,6 +52,20 @@
             padding: 1rem;
             border-radius: 0.5rem;
         }
+
+        .text-violet {
+            color: #8A2BE2 !important;
+        }
+
+        .card-placeholder {
+            opacity: 0.5;
+            filter: grayscale(0.6);
+            pointer-events: none;
+        }
+
+        .feature-list li {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 
@@ -61,24 +75,24 @@
         <div class="container">
             <i class="fa-solid fa-hospital-user fa-4x mb-3"></i>
             <h1 class="display-4 fw-bold">Módulo de Circuito Quirúrgico</h1>
-            <p class="lead">Manual de Usuario y Configuración Técnica</p>
+            <p class="lead">Manual de Usuario y Estado del Proyecto</p>
         </div>
     </div>
 
     <div class="container mb-5">
 
+        <!-- ============================================================ -->
+        <!-- 1. MÓDULOS IMPLEMENTADOS -->
+        <!-- ============================================================ -->
         <div class="card p-4 mt-4">
             <div class="d-flex align-items-center mb-3">
                 <div class="icon-circle bg-success text-white me-3">
                     <i class="fa-solid fa-circle-info"></i>
                 </div>
-                <h2 class="h3 fw-bold mb-0">1. ¿Cómo usar el Módulo?</h2>
+                <h2 class="h3 fw-bold mb-0">1. Módulos Implementados</h2>
             </div>
-            <p>Una vez que el proyecto esté corriendo en la VPS (accediendo a través de
-                <a href="http://149.50.137.127:8080" target="_blank">http://149.50.137.127:8080/admin</a>),
-                podrás encontrar la sección "Circuito Quirúrgico".
-                Este menú ofrece accesos a 7 módulos principales:
-            </p>
+            <p>El menú "Circuito Quirúrgico" (<a href="http://149.50.137.127:8080/admin" target="_blank">http://149.50.137.127:8080/admin</a>)
+                ofrece acceso a los siguientes módulos completamente operativos:</p>
 
             <div class="row mt-4">
 
@@ -87,74 +101,97 @@
                         <h4 class="h6 fw-bold text-primary">
                             <i class="fa-solid fa-chart-line me-2"></i> Dashboard
                         </h4>
-                        <p class="small text-muted">Métricas y Monitoreo en tiempo real del Circuito Quirúrgico.</p>
+                        <p class="small text-muted">Métricas y monitoreo del circuito: pacientes en circuito, aptos para operar, alertas de demora y tiempo promedio.</p>
                     </div>
                 </div>
-
 
                 <div class="col-md-4 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
                         <h4 class="h6 fw-bold text-warning">
-                            <i class="fa-solid fa-tags me-2"></i> Admisión de Pacientes
+                            <i class="fa-solid fa-user-plus me-2"></i> Admisión de Pacientes
                         </h4>
-                        <p class="small text-muted">Formularios para la carga de pacientes al circuito.</p>
+                        <p class="small text-muted">Ingreso de pacientes al circuito. Busca automáticamente por DNI: si existe, completa los datos; si no, habilita el formulario. Carga catálogos de cirugías, cirujanos y estudios asociados desde la base de datos. Al confirmar, registra al paciente y genera las órdenes para todas las postas del circuito.</p>
                     </div>
                 </div>
 
-
                 <div class="col-md-4 mb-3">
-                    <div class="p-3 border rounded bg-light h-100">
+                    <div class="p-3 border rounded bg-light h-100 card-placeholder">
                         <h4 class="h6 fw-bold text-success">
-                            <i class="fa-solid fa-file-signature me-2"></i> Seguimiento
+                            <i class="fa-solid fa-list-check me-2"></i> Seguimiento de Postas
                         </h4>
-                        <p class="small text-muted">Control de asistencia del paciente a su cita para los estudios
-                            prequirúrgicos.</p>
+                        <p class="small text-muted">Control del estado de cada posta prequirúrgica (Admisión, Laboratorio, Cardiología, Imágenes, Pre-Anestesia) con indicadores visuales. Incluye modal de expediente clínico con detalle de estudios realizados y línea de tiempo de auditoría del paciente.</p>
                     </div>
                 </div>
-
 
                 <div class="col-md-4 mb-3">
-                    <div class="p-3 border rounded bg-light h-100">
+                    <div class="p-3 border rounded bg-light h-100 card-placeholder">
                         <h4 class="h6 fw-bold text-info">
-                            <i class="fa-solid fa-list-ol me-2"></i> Lista de Espera
+                            <i class="fa-solid fa-clipboard-list me-2"></i> Lista de Espera
                         </h4>
-                        <p class="small text-muted">Lista de Espera Quirúrgica de los pacientes.</p>
+                        <p class="small text-muted">Pacientes con apto médico listos para programación quirúrgica. Muestra DNI, paciente, cirugía, fecha de apto y estado (Apto Quirúrgico, Pendiente, Rechazado) con badges de color. Incluye botón para iniciar la programación de cirugía.</p>
                     </div>
                 </div>
-
 
                 <div class="col-md-4 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
                         <h4 class="h6 fw-bold text-info">
                             <i class="fa-solid fa-calendar-days me-2"></i> Agenda de Turnos
                         </h4>
-                        <p class="small text-muted">Agenda para programar los diferentes tipos de turnos.</p>
+                        <p class="small text-muted">Calendario semanal con navegación entre semanas. Al seleccionar un día se despliega el panel de turnos. Incluye buscador de turnos por paciente (DNI, nombre, apellido) y modal para crear nuevos turnos con verificación de DNI en tiempo real contra el servidor.</p>
                     </div>
                 </div>
-
 
                 <div class="col-md-4 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
                         <h4 class="h6 fw-bold text-secondary">
-                            <i class="fa-solid fa-users me-2"></i> Usuarios
+                            <i class="fa-solid fa-users me-2"></i> Gestión de Usuarios
                         </h4>
-                        <p class="small text-muted">Administración de usuarios y permisos del sistema.</p>
+                        <p class="small text-muted">CRUD completo con estadísticas (totales por rol), tabla paginada con buscador por DNI/nombre/apellido/email. Formulario de carga/edición con verificación de DNI contra servidor, validaciones en tiempo real, roles (Administrador, Recepcionista, Cirujano) y datos profesionales para cirujanos (especialidad, matrícula).</p>
                     </div>
                 </div>
 
-
                 <div class="col-md-4 mb-3">
-                    <div class="p-3 border rounded bg-light h-100">
+                    <div class="p-3 border rounded bg-light h-100 card-placeholder">
                         <h4 class="h6 fw-bold text-danger">
                             <i class="fa-solid fa-shield-halved me-2"></i> Auditoría Global
                         </h4>
-                        <p class="small text-muted">Historial de actividades del sistema.</p>
+                        <p class="small text-muted">Historial de actividades del sistema con filtros por texto libre y fecha. Visualización en tabla con columnas: Fecha/Hora, Usuario, Rol, Acción, Paciente, Detalles. Incluye contador de resultados y mensaje cuando no hay coincidencias.</p>
                     </div>
                 </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-primary">
+                            <i class="fa-solid fa-user-gear me-2"></i> Gestión de Pacientes
+                        </h4>
+                        <p class="small text-muted">CRUD completo con estadísticas (total, en espera, en cirugía, completados). Tabla paginada con buscador por DNI/nombre/apellido/teléfono. Edición de campos del paciente con formulario que bloquea el DNI. Incluye baja lógica de pacientes.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-violet">
+                            <i class="fa-solid fa-stethoscope me-2"></i> Especialidades
+                        </h4>
+                        <p class="small text-muted">Catálogo de especialidades y subespecialidades médicas con relación padre-hijo. CRUD completo con estadísticas (total registros, especialidades, subespecialidades), tabla paginada con búsqueda, modal para crear/editar con selector de tipo y especialidad padre. Eliminación con confirmación.</p>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                        <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-primary">
+                            <i class="fa-solid fa-prescription me-2"></i> Órdenes Médicas
+                        </h4>
+                        <p class="small text-muted">Gestión de órdenes médicas del circuito quirúrgico. Permite visualizar, crear y dar seguimiento a las órdenes generadas durante el proceso de admisión y postas prequirúrgicas.</p>
+                    </div>
+                </div>
+
             </div>
         </div>
 
-
+        <!-- ============================================================ -->
+        <!-- 2. SEGURIDAD Y VALIDACIONES -->
+        <!-- ============================================================ -->
         <div class="card p-4 mt-4">
             <div class="d-flex align-items-center mb-3">
                 <div class="icon-circle bg-danger text-white me-3">
@@ -162,20 +199,110 @@
                 </div>
                 <h2 class="h3 fw-bold mb-0">2. Seguridad y Validaciones</h2>
             </div>
-            <p>El módulo cuenta con una doble capa de seguridad tanto en el Frontend (JavaScript y Atributos HTML) como
-                en el Backend (PHP).</p>
-            <ul>
-                <li><strong>Admision de pacientes:</strong> Primero se pide el DNI para evitar que se complete
-                    datos de un usuario que ya está registrado, si está registrado se trae automáticamente,en
-                    el caso que no esté se habilita el formulario para completar los campos restantes.
-                </li>
-                <li><strong>Gestion de usuarios:</strong> Se pide el DNI pero si existe se bloquea todo el
-                    formulario hasta que ingrese uno que no exista
-                </li>
+            <p>El módulo cuenta con una doble capa de seguridad (Frontend + Backend) en todos los formularios críticos:</p>
+
+            <h5 class="fw-bold mt-4">Frontend (JavaScript)</h5>
+            <ul class="feature-list">
+                <li><strong>Verificación de DNI en tiempo real:</strong> En Admisión, Usuarios y Agenda, se consulta el servidor al escribir el DNI. Si ya existe se bloquea el formulario (o auto-completa según el caso).</li>
+                <li><strong>Sanitización en tiempo real:</strong> DNI y teléfono solo aceptan dígitos; nombre y apellido solo mayúsculas con acentos y Ñ; email se fuerza a minúsculas y se filtran caracteres inválidos; código postal alfanumérico en mayúsculas.</li>
+                <li><strong>Sanitización de pegado (paste):</strong> Todos los campos relevantes interceptan el evento paste, limpian el contenido y lo reinseran ya sanitizado.</li>
+                <li><strong>Validación de fecha:</strong> Fecha de nacimiento no puede ser futura; en usuarios se exige mayor de 18 años y máximo 110 años.</li>
+                <li><strong>Bloqueo de formulario:</strong> En modo creación, todos los campos permanecen deshabilitados hasta que el DNI sea verificado como disponible contra el servidor.</li>
+                <li><strong>Feedback visual en tiempo real:</strong> Cada campo muestra icono y mensaje indicando si el valor es válido (verde) o inválido (rojo).</li>
+                <li><strong>Control de submit:</strong> Antes de enviar se re-ejecutan todas las validaciones; si hay errores se hace scroll al primer campo inválido.</li>
             </ul>
+
+            <h5 class="fw-bold mt-4">Backend (PHP)</h5>
+            <ul class="feature-list">
+                <li><strong>Control de sesión:</strong> Los endpoints críticos validan <code>$_SESSION['id']</code> y rechazan peticiones sin sesión activa.</li>
+                <li><strong>Restricción de método HTTP:</strong> Solo se acepta POST para operaciones de escritura; GET para consultas. Métodos no permitidos devuelven HTTP 405.</li>
+                <li><strong>Validación de datos duplicada:</strong> Todas las reglas del frontend se replican en el backend (formato de DNI, nombre, apellido, email, teléfono, código postal, fecha).</li>
+                <li><strong>Entrada JSON segura:</strong> Los datos se reciben como JSON desde <code>php://input</code> y se parsean de forma controlada.</li>
+                <li><strong>Escapado de salida:</strong> Se utiliza <code>htmlspecialchars()</code> con <code>ENT_QUOTES</code> y UTF-8 en vistas que renderizan datos del usuario.</li>
+                <li><strong>Manejo de errores:</strong> Todos los bloques críticos están envueltos en try/catch con mensajes de error seguros (sin exponer detalles internos).</li>
+            </ul>
+        </div>
+
+
+
+        <!-- ============================================================ -->
+        <!-- 3. ESTADO DEL PROYECTO -->
+        <!-- ============================================================ -->
+        <div class="card p-4 mt-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="icon-circle bg-warning text-white me-3">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+                <h2 class="h3 fw-bold mb-0">3. Estado del Proyecto</h2>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Módulo</th>
+                            <th>Estado</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Dashboard</td>
+                            <td><span class="badge bg-danger">En desarrollo</span></td>
+                            <td>En desarrollo</td>
+                        </tr>
+                        <tr>
+                            <td>Admisión de Pacientes</td>
+                            <td><span class="badge bg-danger">En desarrollo</span></td>
+                            <td>En desarrollo</td>
+                        </tr>
+                        <tr>
+                            <td>Seguimiento de Postas</td>
+                            <td><span class="badge bg-secondary">Sin desarrollar</span></td>
+                            <td>Solo vista visual, sin conexión a DB</td>
+                        </tr>
+                        <tr>
+                            <td>Lista de Espera</td>
+                            <td><span class="badge bg-secondary">Sin desarrollar</span></td>
+                            <td>Solo vista visual, sin conexión a DB</td>
+                        </tr>
+                        <tr>
+                            <td>Agenda de Turnos</td>
+                            <td><span class="badge bg-danger">En desarrollo</span></td>
+                            <td>Requiere modificaciones pendientes</td>
+                        </tr>
+                        <tr>
+                            <td>Gestión de Usuarios</td>
+                            <td><span class="badge bg-success">Completo</span></td>
+                            <td>CRUD completo con roles, validación doble</td>
+                        </tr>
+                        <tr>
+                            <td>Gestión de Pacientes</td>
+                            <td><span class="badge bg-success">Completo</span></td>
+                            <td>CRUD completo con búsqueda, paginación</td>
+                        </tr>
+                        <tr>
+                            <td>Especialidades</td>
+                            <td><span class="badge bg-danger">En desarrollo</span></td>
+                            <td>En desarrollo</td>
+                        </tr>
+                        <tr>
+                            <td>Auditoría Global</td>
+                            <td><span class="badge bg-secondary">Sin desarrollar</span></td>
+                            <td>Solo vista visual, sin conexión a DB</td>
+                        </tr>
+                        <tr>
+                            <td>Órdenes Médicas</td>
+                            <td><span class="badge bg-danger">En desarrollo</span></td>
+                            <td>En desarrollo</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
 
 
         </div>
+
     </div>
 
     <!-- Bootstrap JS -->

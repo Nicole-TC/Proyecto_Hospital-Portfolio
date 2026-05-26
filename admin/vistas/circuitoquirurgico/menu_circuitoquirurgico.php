@@ -15,6 +15,9 @@
             <!-- Admisión -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Admisión", "Ingreso de pacientes", "fa-solid fa-user-plus", "info", "index.php?modulo=menu_circuitoquirurgico&accion=admision"); ?>
 
+            <!-- Órdenes médicas -->
+            <?php HTML::tarjeta("menu_circuitoquirurgico", "Órdenes médicas", "Listado y gestión", "fa-solid fa-file-medical", "info", "index.php?modulo=menu_circuitoquirurgico&accion=gestion_ordenes"); ?>
+
             <!-- Seguimiento de Postas -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Seguimiento", "Control de postas", "fa-solid fa-list-check", "warning", "index.php?modulo=menu_circuitoquirurgico&accion=seguimiento_postas"); ?>
 

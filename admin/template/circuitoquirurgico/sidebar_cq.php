@@ -14,6 +14,11 @@
     </a>
 </li>
 <li>
+    <a class="dropdown-item" href="index.php?modulo=menu_circuitoquirurgico&accion=gestion_ordenes">
+        <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Órdenes médicas
+    </a>
+</li>
+<li>
     <a class="dropdown-item" href="index.php?modulo=menu_circuitoquirurgico&accion=seguimiento_postas">
         <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Seguimiento
     </a>

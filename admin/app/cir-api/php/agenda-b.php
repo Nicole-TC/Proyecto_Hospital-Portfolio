@@ -137,12 +137,13 @@ class ConsultasAgenda {
         }
 
         // 2. Validar estado de la orden
-        $codigosBloqueo = ['FIN', 'CANC', 'RECH'];
+        $codigosBloqueo = ['FIN', 'CANC', 'RECH', 'ELIM'];
         if (in_array($paciente['codigo_estado_orden'], $codigosBloqueo)) {
             $descripciones = [
                 'FIN'  => 'La orden médica del paciente ya fue finalizada.',
                 'CANC' => 'La orden médica del paciente fue cancelada.',
                 'RECH' => 'La orden médica del paciente fue rechazada.',
+                'ELIM' => 'La orden médica del paciente fue eliminada.',
             ];
             return [
                 'ok'        => true,

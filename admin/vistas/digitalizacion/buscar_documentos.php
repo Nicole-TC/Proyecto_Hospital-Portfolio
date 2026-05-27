@@ -131,6 +131,15 @@ body.modo-oscuro .table-light {
 body.modo-oscuro ::placeholder {
     color: #888 !important;
 }
+body.modo-oscuro .btn-light {
+    background-color: #3a3a3a !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .btn-light:hover {
+    background-color: #4a4a4a !important;
+    color: #fff !important;
+}
 </style>
 
 <!-- Librerías DataTables -->
@@ -186,7 +195,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         },
         columns: [
-            { data: "id" },
+            { data: "id", visible: false },
             { 
                 data: null, 
                 render: function(data, type, row) { 

@@ -1,4 +1,44 @@
 <?php
+/**
+ * CONTRATO DE:
+ * - API: Búsqueda de documentos digitalizados.
+ *
+ * Método: GET
+ * Ruta: admin/api/digitalizar/buscar_documentos.php
+ * Auth: requiere sesión ($_SESSION['id']), si no → 401.
+ *
+ * Parámetros GET (actuales):
+ * - dni (string): filtra por personal.dni (igualdad exacta).
+ * - id_tipo_documento (int): filtra por d.id_tipo_documento.
+ * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
+ * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
+ * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
+ * - tag_id (int): alias de una sola etiqueta.
+ * - pagina (int, default 1): número de página.
+ * - limite (int, default 50, max 100): registros por página.
+ *
+ * SQL base (JOINs):
+ * - documentos d
+ * - JOIN personal p ON d.id_persona = p.id
+ * - LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
+ * - WHERE d.estado = true
+ * - Subconsulta: etiquetas agregadas por documento (STRING_AGG).
+ * - No usa personal_identificaciones (hallazgo Sprint 5).
+ *
+ * Respuesta 200 (JSON):
+ * {
+ *   "status": "success",
+ *   "message": "Búsqueda completada",
+ *   "data": {
+ *     "paginacion": { "total_registros", "total_paginas", "pagina_actual", "limite" },
+ *     "documentos": [ { "id", "codigo_unico", "ruta_archivo", "comentario", "fecha_subido",
+ *       "prioridad", "estado_documento", "dni", "paciente", "tipo_documento", "etiquetas" } ]
+ *   }
+ * }
+ *
+ * Errores: 401 (sin sesión), 405 (no GET), 500 (BD).
+ */
+
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 

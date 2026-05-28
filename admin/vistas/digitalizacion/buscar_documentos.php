@@ -85,6 +85,61 @@
 .rounded-4 { border-radius: 1rem !important; }
 .bg-light { background-color: #f8f9fa !important; }
 .table-hover tbody tr:hover { background-color: #f8f9fa; }
+
+/* === Modo Oscuro === */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .card-header.bg-white {
+    background-color: transparent !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #fff !important;
+}
+body.modo-oscuro .form-control.border-0,
+body.modo-oscuro .form-select.border-0,
+body.modo-oscuro .input-group-text.border-0 {
+    border: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #80bdff !important;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+body.modo-oscuro .input-group-text {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .text-muted {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .table-hover tbody tr:hover {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+body.modo-oscuro .table-light {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+body.modo-oscuro ::placeholder {
+    color: #888 !important;
+}
+body.modo-oscuro .btn-light {
+    background-color: #3a3a3a !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .btn-light:hover {
+    background-color: #4a4a4a !important;
+    color: #fff !important;
+}
 </style>
 
 <!-- Librerías DataTables -->
@@ -140,7 +195,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             }
         },
         columns: [
-            { data: "id" },
+            { data: "id", visible: false },
             { 
                 data: null, 
                 render: function(data, type, row) { 

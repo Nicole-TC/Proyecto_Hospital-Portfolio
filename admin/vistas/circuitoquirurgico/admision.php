@@ -11,15 +11,15 @@
         <form id="form-admision">
           <!-- DNI y Apellido -->
           <div class="row mb-3">
-           <div class="col-md-6">
+            <div class="col-md-6">
               <label for="dni" class="form-label">DNI*</label>
               <input type="text" class="form-control" id="dni" name="dni" placeholder="Ej: 34.567.890" required>
             </div>
-             <div class="col-md-6">
-               <label for="apellido" class="form-label">Apellido*</label>
-               <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Ej: García" required disabled>
-             </div>
-           </div>
+            <div class="col-md-6">
+              <label for="apellido" class="form-label">Apellido*</label>
+              <input type="text" class="form-control" id="apellido" name="apellido" placeholder="Ej: García" required disabled>
+            </div>
+          </div>
            
            <!-- Nombre y Fecha de nacimiento -->
            <div class="row mb-3">
@@ -55,6 +55,17 @@
           <div class="mb-3">
             <label for="telefono" class="form-label">Teléfono*</label>
             <input type="text" class="form-control" id="telefono" name="telefono" placeholder="Ej: 11-2345-6789" required disabled>
+          </div>
+
+          <!-- Obra Social -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <button type="button" id="btnObraSocial" class="btn btn-danger rounded-pill px-4 w-auto"
+                      style="cursor: pointer;">
+                <span id="obraSocialLabel">Obra Social</span>
+              </button>
+              <input type="checkbox" class="d-none" id="obraSocial" name="obraSocial">
+            </div>
           </div>
 
           <!-- Tipo de cirugía y Cirujano -->

@@ -93,7 +93,8 @@ try {
         'direccion' => $input['direccion'] ?? '',
         'codigo_postal' => $input['codigoPostal'] ?? '',
         'tipoCirugia' => $input['tipoCirugia'] ?? '',
-        'cirujano' => $input['cirujano'] ?? ''
+        'cirujano' => $input['cirujano'] ?? '',
+        'obra_social' => filter_var($input['obraSocial'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 't' : 'f'
     ];
 
     ConsultasAdmision::procesarAdmision($datos, $paciente_existente);

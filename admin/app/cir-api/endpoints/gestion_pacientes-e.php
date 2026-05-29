@@ -109,6 +109,7 @@ try {
         $telefono         = trim($data['telefono'] ?? '');
         $direccion        = mb_strtoupper(trim($data['direccion']     ?? ''), 'UTF-8');
         $codigo_postal    = mb_strtoupper(trim($data['codigo_postal'] ?? ''), 'UTF-8');
+        $obra_social      = isset($data['obraSocial']) ? ($data['obraSocial'] === 't' || $data['obraSocial'] === 'true' ? 't' : 'f') : null;
 
         // NOMBRE
         if (empty($nombre)) {
@@ -186,6 +187,8 @@ try {
         if ($telefono         !== ($pacienteActual['telefono']         ?? '')) $camposAActualizar['telefono']         = $telefono;
         if ($direccion        !== ($pacienteActual['direccion']        ?? '')) $camposAActualizar['direccion']        = $direccion;
         if ($codigo_postal    !== ($pacienteActual['codigo_postal']    ?? '')) $camposAActualizar['codigo_postal']    = $codigo_postal;
+
+        if ($obra_social !== null && ($obra_social !== ($pacienteActual['obra_social'] ?? 'f'))) $camposAActualizar['obra_social'] = $obra_social;
 
         if (!empty($camposAActualizar)) {
             $actualizado = ConsultasPacientes::actualizarPacienteParcial($id_persona, $camposAActualizar);

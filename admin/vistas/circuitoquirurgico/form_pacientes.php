@@ -149,6 +149,16 @@ $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_pacientes
                                placeholder="Ej: AV. CORRIENTES 1234" maxlength="150" autocomplete="off">
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <button type="button" id="btnObraSocialForm" class="btn btn-danger rounded-pill px-4 w-auto"
+                                    style="cursor: pointer;">
+                                <span id="obraSocialLabelForm">Obra Social</span>
+                            </button>
+                            <input type="checkbox" class="d-none" id="obraSocial" name="obraSocial">
+                        </div>
+                    </div>
+
                 </fieldset>
 
                 <div class="d-flex justify-content-center mt-5 mb-3 gap-3">

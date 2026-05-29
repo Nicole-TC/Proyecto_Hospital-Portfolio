@@ -1,8 +1,17 @@
 <?php
-
+session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../model/conexion_dig.php';
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No autorizado. Por favor inicie sesion."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 

@@ -153,9 +153,14 @@ class ConsultasAdmision {
             // 2. Insertar o actualizar paciente
             if ($paciente_existente) {
                 $id_persona = $paciente_existente['id_persona'];
+                $stmtUpdate = $pdo->prepare("UPDATE persona SET obra_social = :obra_social WHERE id_persona = :id_persona");
+                $stmtUpdate->execute([
+                    ':obra_social' => $datos['obra_social'],
+                    ':id_persona' => $id_persona
+                ]);
             } else {
-                $sqlPersona = "INSERT INTO persona (dni, nombre, apellido, fecha_nacimiento, email, telefono, direccion, codigo_postal, id_rol) 
-                               VALUES (:dni, :nombre, :apellido, :fecha_nacimiento, :email, :telefono, :direccion, :codigo_postal, :id_rol)
+                $sqlPersona = "INSERT INTO persona (dni, nombre, apellido, fecha_nacimiento, email, telefono, direccion, codigo_postal, obra_social, id_rol) 
+                               VALUES (:dni, :nombre, :apellido, :fecha_nacimiento, :email, :telefono, :direccion, :codigo_postal, :obra_social, :id_rol)
                                RETURNING id_persona";
                 $stmtPersona = $pdo->prepare($sqlPersona);
                 $stmtPersona->execute([
@@ -167,6 +172,7 @@ class ConsultasAdmision {
                     ':telefono' => $datos['telefono'],
                     ':direccion' => $datos['direccion'],
                     ':codigo_postal' => $datos['codigo_postal'],
+                    ':obra_social' => $datos['obra_social'],
                     ':id_rol' => $idRol
                 ]);
                 $id_persona = $stmtPersona->fetch(PDO::FETCH_COLUMN);

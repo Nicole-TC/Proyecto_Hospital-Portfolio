@@ -369,6 +369,26 @@ function bindDireccion() {
     });
 }
 
+function actualizarLabelOSForm() {
+    var cb = document.getElementById('obraSocial');
+    var btn = document.getElementById('btnObraSocialForm');
+    if (!cb || !btn) return;
+    btn.className = cb.checked
+        ? 'btn btn-success rounded-pill px-4 w-auto'
+        : 'btn btn-danger rounded-pill px-4 w-auto';
+}
+
+function bindObraSocial() {
+    var btn = document.getElementById('btnObraSocialForm');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+        var cb = document.getElementById('obraSocial');
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        actualizarLabelOSForm();
+    });
+}
+
 function init() {
     camposFieldset = document.getElementById('campos-principal');
     btnGuardar = document.getElementById('btn-guardar');
@@ -392,6 +412,7 @@ function init() {
     bindTelefono();
     bindDireccion();
     bindCodigoPostal();
+    bindObraSocial();
     bindSubmit(modoEditar);
 }
 
@@ -425,6 +446,13 @@ async function preLlenarFormulario(idPersona) {
         setVal('telefono', p.telefono);
         setVal('direccion', (p.direccion || '').toUpperCase());
         setVal('codigo_postal', (p.codigo_postal || '').toUpperCase());
+
+        var cb = document.getElementById('obraSocial');
+        if (cb) {
+            var v = p.obra_social;
+            cb.checked = v === 't' || v === 'T' || v === 'true' || v === 'True' || v === 'TRUE' || v === true || v == 1 || v === '1';
+            actualizarLabelOSForm();
+        }
 
         ['nombre', 'apellido', 'direccion', 'codigo_postal'].forEach(function (id) {
             var el = document.getElementById(id);
@@ -478,6 +506,8 @@ function bindSubmit(modoEditar) {
 
         var formData = new FormData(form);
         var data = Object.fromEntries(formData.entries());
+
+        data.obraSocial = document.getElementById('obraSocial').checked ? 't' : 'f';
 
         if (modoEditar) {
             data.id_persona = form.getAttribute('data-id');

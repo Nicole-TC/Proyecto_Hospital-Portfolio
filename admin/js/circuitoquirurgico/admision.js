@@ -2,7 +2,7 @@ const ENDPOINT = 'app/cir-api/endpoints/admision-e.php';
 
 const camposPaciente = [
   'apellido', 'nombre', 'fechaNacimiento',
-  'direccion', 'codigoPostal', 'email', 'telefono'
+  'direccion', 'codigoPostal', 'email', 'telefono', 'obraSocial'
 ];
 
 const inputDni = document.getElementById('dni');
@@ -27,6 +27,7 @@ function limpiarCamposPaciente() {
     var e = el(id);
     if (e) {
       if (e.type === 'date') e.value = '';
+      else if (e.type === 'checkbox') e.checked = false;
       else e.value = '';
     }
   });
@@ -98,6 +99,8 @@ function buscarPaciente(dni) {
         el('codigoPostal').value = p.codigo_postal || '';
         el('email').value = p.email || '';
         el('telefono').value = p.telefono || '';
+        el('obraSocial').checked = p.obra_social == 1 || p.obra_social === true;
+        actualizarLabelObraSocial();
         deshabilitarCamposPaciente(true);
         habilitarSelects(false);
       } else {
@@ -117,7 +120,8 @@ function serializarFormulario() {
   var datos = {};
   datos.dni = inputDni.value.trim();
   camposPaciente.forEach(function (id) {
-    datos[id] = el(id).value;
+    var e = el(id);
+    datos[id] = e ? (e.type === 'checkbox' ? e.checked : e.value) : '';
   });
   datos.tipoCirugia = selectCirugia.value;
   var s = el('cirujano');
@@ -273,6 +277,21 @@ inputDni.addEventListener('blur', function () {
   buscarPaciente(this.value.trim());
 });
 
+function actualizarLabelObraSocial() {
+  var cb = el('obraSocial');
+  var btn = document.getElementById('btnObraSocial');
+  if (!cb || !btn) return;
+  btn.className = cb.checked
+    ? 'btn btn-success rounded-pill px-4 w-auto'
+    : 'btn btn-danger rounded-pill px-4 w-auto';
+}
+
+document.getElementById('btnObraSocial').addEventListener('click', function () {
+  var cb = el('obraSocial');
+  cb.checked = !cb.checked;
+  actualizarLabelObraSocial();
+});
+
 inputDni.addEventListener('input', function () {
   var val = this.value.trim();
   if (val === '') {
@@ -283,3 +302,5 @@ inputDni.addEventListener('input', function () {
     if (s) s.value = '';
   }
 });
+
+el('obraSocial').addEventListener('change', actualizarLabelObraSocial);

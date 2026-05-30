@@ -117,7 +117,7 @@ try {
     if (!empty($dni_paciente)) {
         $query .= " AND EXISTS (
             SELECT 1 FROM personal_identificaciones pi
-            WHERE pi.id_persona = p.id
+            WHERE pi.id_personal = p.id
             AND pi.numero_identificacion = :dni";
 
         if ($id_tipo_identificacion) {

@@ -9,6 +9,7 @@
  *
  * Parámetros GET (actuales):
  * - dni (string): filtra por personal_identificaciones.numero_identificacion (EXISTS, igualdad exacta).
+ * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
@@ -71,6 +72,7 @@ try {
     $id_tipo_documento = filter_var($_GET['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $fecha_inicio = trim($_GET['fecha_inicio'] ?? '');
     $fecha_fin = trim($_GET['fecha_fin'] ?? '');
+    $id_tipo_identificacion = filter_var($_GET['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
     // Recibir y procesar etiquetas (puede venir como array, string separado por comas o valor único)
     $etiquetas = [];
     if (isset($_GET['etiquetas'])) {
@@ -116,8 +118,14 @@ try {
         $query .= " AND EXISTS (
             SELECT 1 FROM personal_identificaciones pi
             WHERE pi.id_persona = p.id
-            AND pi.numero_identificacion = :dni
-        )";
+            AND pi.numero_identificacion = :dni";
+
+        if ($id_tipo_identificacion) {
+            $query .= " AND pi.id_tipo_identificacion = :id_tipo_identificacion";
+            $params[':id_tipo_identificacion'] = $id_tipo_identificacion;
+        }
+
+        $query .= ")";
         $params[':dni'] = $dni_paciente;
     }
 

@@ -55,6 +55,7 @@ if (!isset($_SESSION['id'])) {
 
 // Incluir conexión a la base de datos
 require_once __DIR__ . '/../../model/conexion_dig.php';
+require_once __DIR__ . '/helpers_dig.php';
 
 // Validar que la petición sea GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -68,27 +69,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     // Recibir y sanear parámetros básicos
-    $dni_paciente = trim($_GET['dni'] ?? '');
-    $id_tipo_documento = filter_var($_GET['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
-    $fecha_inicio = trim($_GET['fecha_inicio'] ?? '');
-    $fecha_fin = trim($_GET['fecha_fin'] ?? '');
-    $id_tipo_identificacion = filter_var($_GET['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
-    // Recibir y procesar etiquetas (puede venir como array, string separado por comas o valor único)
-    $etiquetas = [];
-    if (isset($_GET['etiquetas'])) {
-        if (is_array($_GET['etiquetas'])) {
-            $etiquetas = $_GET['etiquetas'];
-        } else {
-            $etiquetas = explode(',', $_GET['etiquetas']);
-        }
-    } elseif (isset($_GET['tag_id']) && $_GET['tag_id'] !== '') {
-        $etiquetas = [$_GET['tag_id']];
-    }
-    $etiquetas = array_filter(array_map('intval', $etiquetas));
-
-    $pagina = max(1, filter_var($_GET['pagina'] ?? 1, FILTER_VALIDATE_INT) ?: 1);
-    $limite = max(1, min(100, filter_var($_GET['limite'] ?? 50, FILTER_VALIDATE_INT) ?: 50));
-
+    [
+        'dni_paciente'           => $dni_paciente,
+        'id_tipo_documento'      => $id_tipo_documento,
+        'id_tipo_identificacion' => $id_tipo_identificacion,
+        'fecha_inicio'           => $fecha_inicio,
+        'fecha_fin'              => $fecha_fin,
+        'etiquetas'              => $etiquetas,
+        'pagina'                 => $pagina,
+        'limite'                 => $limite,
+    ] = sanitizar_params_busqueda($_GET);
+    
     // Consulta SQL base
     $query = "
         SELECT 

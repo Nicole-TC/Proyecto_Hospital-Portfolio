@@ -5,6 +5,9 @@ let estudiosDisponibles = [];  // Catálogo completo desde API
 let estudiosSeleccionados = new Set();           // IDs marcados
 let pasoActual = 1;
 
+let nombreCirugiaValido = false;
+let timeoutValidacionNombre = null;
+
 /* =========================================================
    UTILIDADES
    ========================================================= */
@@ -35,13 +38,37 @@ function validarNombreCirugia() {
     const val = document.getElementById('nombre_cirugia').value.trim();
     if (!val) {
         mostrarFeedback('nombre-cirugia-feedback', false, 'El nombre de la cirugía es obligatorio.');
+        nombreCirugiaValido = false;
         return false;
     }
     if (!RGX_NOMBRE_CIR.test(val)) {
         mostrarFeedback('nombre-cirugia-feedback', false, 'Solo mayúsculas, números, acentos y Ñ. Mín. 3 caracteres.');
+        nombreCirugiaValido = false;
         return false;
     }
-    mostrarFeedback('nombre-cirugia-feedback', true, 'Nombre válido.');
+    
+    mostrarFeedback('nombre-cirugia-feedback', true, 'Validando disponibilidad...');
+    nombreCirugiaValido = false;
+
+    clearTimeout(timeoutValidacionNombre);
+    timeoutValidacionNombre = setTimeout(() => {
+        fetch(`app/cir-api/endpoints/cirugias-e.php?accion=validar_nombre_cirugia&nombre=${encodeURIComponent(val)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    mostrarFeedback('nombre-cirugia-feedback', true, 'Nombre disponible.');
+                    nombreCirugiaValido = true;
+                } else {
+                    mostrarFeedback('nombre-cirugia-feedback', false, data.message);
+                    nombreCirugiaValido = false;
+                }
+            })
+            .catch(() => {
+                mostrarFeedback('nombre-cirugia-feedback', false, 'Error al validar nombre.');
+                nombreCirugiaValido = false;
+            });
+    }, 500);
+
     return true;
 }
 
@@ -56,9 +83,19 @@ function validarDescripcion() {
 }
 
 function validarFormularioPaso1() {
-    const r1 = validarNombreCirugia();
     const r2 = validarDescripcion();
-    return r1 && r2;
+    
+    if (!nombreCirugiaValido) {
+        const val = document.getElementById('nombre_cirugia').value.trim();
+        if (val && RGX_NOMBRE_CIR.test(val)) {
+             mostrarFeedback('nombre-cirugia-feedback', false, 'Nombre no disponible o validación pendiente.');
+        } else {
+             validarNombreCirugia();
+        }
+        return false;
+    }
+
+    return r2;
 }
 
 /* =========================================================

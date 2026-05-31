@@ -8,7 +8,8 @@
  * Auth: requiere sesión ($_SESSION['id']), si no → 401.
  *
  * Parámetros GET (actuales):
- * - dni (string): filtra por personal.dni (igualdad exacta).
+ * - dni (string): filtra por personal_identificaciones.numero_identificacion (EXISTS, igualdad exacta).
+ * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
@@ -22,9 +23,9 @@
  * - JOIN personal p ON d.id_persona = p.id
  * - LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
  * - LEFT JOIN servicios s ON d.id_servicio = s.id
+ * - EXISTS subconsulta sobre personal_identificaciones para filtro dni.
  * - WHERE d.estado = true
  * - Subconsulta: etiquetas agregadas por documento (STRING_AGG).
- * - No usa personal_identificaciones (hallazgo Sprint 5).
  *
  * Respuesta 200 (JSON):
  * {
@@ -33,7 +34,7 @@
  *   "data": {
  *     "paginacion": { "total_registros", "total_paginas", "pagina_actual", "limite" },
  *     "documentos": [ { "id", "codigo_unico", "ruta_archivo", "comentario", "fecha_subido",
- *       "prioridad", "estado_documento", "dni", "paciente", "tipo_documento", "etiquetas" } ]
+ *       "prioridad", "estado_documento", "dni", "paciente", "tipo_documento", "servicio", "etiquetas" } ]
  *   }
  * }
  *
@@ -71,6 +72,7 @@ try {
     $id_tipo_documento = filter_var($_GET['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $fecha_inicio = trim($_GET['fecha_inicio'] ?? '');
     $fecha_fin = trim($_GET['fecha_fin'] ?? '');
+    $id_tipo_identificacion = filter_var($_GET['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
     // Recibir y procesar etiquetas (puede venir como array, string separado por comas o valor único)
     $etiquetas = [];
     if (isset($_GET['etiquetas'])) {
@@ -113,7 +115,17 @@ try {
 
     // Agregar filtros dinámicos
     if (!empty($dni_paciente)) {
-        $query .= " AND p.dni = :dni";
+        $query .= " AND EXISTS (
+            SELECT 1 FROM personal_identificaciones pi
+            WHERE pi.id_personal = p.id
+            AND pi.numero_identificacion = :dni";
+
+        if ($id_tipo_identificacion) {
+            $query .= " AND pi.id_tipo_identificacion = :id_tipo_identificacion";
+            $params[':id_tipo_identificacion'] = $id_tipo_identificacion;
+        }
+
+        $query .= ")";
         $params[':dni'] = $dni_paciente;
     }
 

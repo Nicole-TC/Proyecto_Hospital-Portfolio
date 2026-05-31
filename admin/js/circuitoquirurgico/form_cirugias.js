@@ -1,22 +1,7 @@
 /* =========================================================
-   CATÁLOGOS MOCK (se reemplazarán por llamadas AJAX reales)
-   ========================================================= */
-
-const ESTUDIOS_MOCK = [
-    { id: 1, nombre: 'Hemograma Completo', descripcion: 'Análisis de componentes sanguíneos', observaciones: 'Ayuno de 8 horas' },
-    { id: 2, nombre: 'Electrocardiograma (ECG)', descripcion: 'Evaluación de la actividad cardíaca', observaciones: 'No requiere preparación especial' },
-    { id: 3, nombre: 'Radiografía de Tórax', descripcion: 'Imagen radiológica del tórax', observaciones: 'Quitar objetos metálicos' },
-    { id: 4, nombre: 'Coagulograma', descripcion: 'Evaluación de coagulación sanguínea', observaciones: 'Ayuno de 4 horas' },
-    { id: 5, nombre: 'Grupo y Factor Sanguíneo', descripcion: 'Determinación del tipo de sangre', observaciones: 'No requiere ayuno' },
-    { id: 6, nombre: 'Glucemia en Ayunas', descripcion: 'Medición de glucosa en sangre', observaciones: 'Ayuno de 8 horas estricto' },
-    { id: 7, nombre: 'Urea y Creatinina', descripcion: 'Función renal', observaciones: 'Hidratación previa' },
-    { id: 8, nombre: 'Ecografía Abdominal', descripcion: 'Imagen ecográfica del abdomen', observaciones: 'Ayuno de 6 horas, vejiga llena' },
-];
-
-/* =========================================================
    ESTADO GLOBAL
    ========================================================= */
-let estudiosDisponibles = [...ESTUDIOS_MOCK];  // Catálogo completo
+let estudiosDisponibles = [];  // Catálogo completo desde API
 let estudiosSeleccionados = new Set();           // IDs marcados
 let pasoActual = 1;
 
@@ -367,19 +352,65 @@ function agregarNuevoEstudio() {
     const okObs = validarNuevoObsEstudio();
     if (!okNombre || !okObs) return;
 
+    const btnBtn = document.getElementById('btn-agregar-nuevo-estudio');
+    const origText = btnBtn.innerHTML;
+    btnBtn.disabled = true;
+    btnBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Guardando...';
+
     const nombre = document.getElementById('nuevo-nombre-estudio').value.trim();
     const desc = document.getElementById('nuevo-descripcion-estudio').value.trim();
     const obs = document.getElementById('nuevo-obs-estudio').value.trim();
 
-    const nuevoId = Date.now(); // ID temporal hasta guardar en backend
-    const nuevoEstudio = { id: nuevoId, nombre, descripcion: desc, observaciones: obs, esNuevo: true };
+    fetch('app/cir-api/endpoints/cirugias-e.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            accion: 'crear_estudio',
+            nombre: nombre,
+            descripcion: desc,
+            observaciones: obs
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const nuevoEstudio = data.estudio;
+            estudiosDisponibles.push(nuevoEstudio);
+            estudiosSeleccionados.add(nuevoEstudio.id);
 
-    estudiosDisponibles.push(nuevoEstudio);
-    estudiosSeleccionados.add(nuevoId);
+            cerrarPanelNuevoEstudio();
+            renderizarEstudios(document.getElementById('buscador-estudios').value);
+            actualizarBadgeYBoton();
 
-    cerrarPanelNuevoEstudio();
-    renderizarEstudios(document.getElementById('buscador-estudios').value);
-    actualizarBadgeYBoton();
+            Swal.fire({
+                icon: 'success',
+                title: 'Estudio agregado',
+                text: 'El estudio se guardó en el catálogo y fue seleccionado automáticamente.',
+                timer: 2500,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'No se pudo crear el estudio.',
+                confirmButtonColor: '#ff6b81'
+            });
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de red',
+            text: 'Ocurrió un error al procesar la solicitud. Intente nuevamente.',
+            confirmButtonColor: '#ff6b81'
+        });
+    })
+    .finally(() => {
+        btnBtn.disabled = false;
+        btnBtn.innerHTML = origText;
+    });
 }
 
 /* =========================================================
@@ -389,21 +420,57 @@ function guardarVinculacion() {
     if (estudiosSeleccionados.size === 0) return;
 
     const payload = {
+        accion: 'crear',
         nombre_cirugia: document.getElementById('nombre_cirugia').value.trim(),
         descripcion: document.getElementById('descripcion_cirugia').value.trim(),
-        estudios: [...estudiosSeleccionados],
-        estudios_nuevos: estudiosDisponibles.filter(e => e.esNuevo && estudiosSeleccionados.has(e.id)),
+        estudios: [...estudiosSeleccionados]
     };
 
-    // TODO: reemplazar console.log por fetch POST a la API
-    console.log('[form_cirugias] Payload a enviar:', payload);
+    const btnGuardar = document.getElementById('btn-guardar-vinculacion');
+    const originalText = btnGuardar.innerHTML;
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Guardando...';
 
-    Swal.fire({
-        icon: 'success',
-        title: '¡Guardado!',
-        html: `Se vincularon <strong>${estudiosSeleccionados.size}</strong> estudios a <strong>${escapeHtml(payload.nombre_cirugia)}</strong>.`,
-        confirmButtonText: 'Aceptar',
-        confirmButtonColor: '#00b894',
+    fetch('app/cir-api/endpoints/cirugias-e.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Guardado!',
+                html: `Se vinculó correctamente la cirugía <strong>${escapeHtml(payload.nombre_cirugia)}</strong>.`,
+                confirmButtonText: 'Aceptar',
+                confirmButtonColor: '#00cec9',
+            }).then(() => {
+                window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_cirugias';
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Error al guardar la cirugía',
+                confirmButtonText: 'Aceptar',
+                confirmButtonColor: '#ff6b81'
+            });
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = originalText;
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de red',
+            text: 'Ocurrió un error al procesar la solicitud. Intente nuevamente.',
+            confirmButtonText: 'Aceptar',
+            confirmButtonColor: '#ff6b81'
+        });
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = originalText;
     });
 }
 
@@ -426,12 +493,34 @@ function aplicarAjustesModoOscuro() {
 }
 
 /* =========================================================
-   INICIALIZACIÓN
+   INICIALIZACIÓN Y CARGA DE DATOS
    ========================================================= */
+function cargarEstudios() {
+    fetch('app/cir-api/endpoints/cirugias-e.php?accion=listar_estudios')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                estudiosDisponibles = data.estudios || [];
+                renderizarEstudios();
+            } else {
+                console.error("Error al cargar estudios:", data.message);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al cargar',
+                    text: 'No se pudieron cargar los estudios disponibles.',
+                    confirmButtonColor: '#ff6b81'
+                });
+            }
+        })
+        .catch(err => {
+            console.error("Error de red al cargar estudios:", err);
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     aplicarSanitizacion();
-    renderizarEstudios();
+    cargarEstudios();
     aplicarAjustesModoOscuro();
 
     // Botón: continuar a paso 2

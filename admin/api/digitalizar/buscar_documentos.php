@@ -21,6 +21,7 @@
  * - documentos d
  * - JOIN personal p ON d.id_persona = p.id
  * - LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
+ * - LEFT JOIN servicios s ON d.id_servicio = s.id
  * - WHERE d.estado = true
  * - Subconsulta: etiquetas agregadas por documento (STRING_AGG).
  * - No usa personal_identificaciones (hallazgo Sprint 5).
@@ -93,6 +94,7 @@ try {
             d.prioridad, d.estado_documento,
             p.dni, p.apellidoynombre AS paciente,
             td.nombre AS tipo_documento,
+            s.detalle AS servicio,
             (
                 SELECT STRING_AGG(e.nombre_etiqueta, ', ')
                 FROM documento_etiquetas de
@@ -103,6 +105,7 @@ try {
         FROM documentos d
         JOIN personal p ON d.id_persona = p.id
         LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
+        LEFT JOIN servicios s ON d.id_servicio = s.id
         WHERE d.estado = true
     ";
 

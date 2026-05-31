@@ -110,8 +110,16 @@ try {
 
     // Agregar filtros dinámicos
     if (!empty($dni_paciente)) {
-        $query .= " AND p.dni = :dni";
-        $params[':dni'] = $dni_paciente;
+        $query .= " AND (";
+        if (ctype_digit($dni_paciente) && $dni_paciente <= 2147483647) {
+            $query .= "p.dni = :dni OR ";
+            $params[':dni'] = $dni_paciente;
+        }
+        $query .= " EXISTS (
+            SELECT 1 FROM personal_identificaciones pi
+            WHERE pi.id_personal = p.id AND pi.numero_identificacion = :dni_str
+        ))";
+        $params[':dni_str'] = $dni_paciente;
     }
 
     if ($id_tipo_documento) {

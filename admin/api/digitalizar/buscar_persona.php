@@ -26,15 +26,22 @@ try {
     $query = "
         SELECT p.id, p.nombre, p.apellido, p.correo AS email, p.telefono
         FROM personal p
-        INNER JOIN personal_identificaciones pi ON p.id = pi.id_personal
-        WHERE pi.numero_identificacion = :dni
-    ";
+        LEFT JOIN personal_identificaciones pi ON p.id = pi.id_personal
+        WHERE (pi.numero_identificacion = :dni";
 
     $params = [':dni' => $dni];
 
     if ($tipo) {
         $query .= " AND pi.id_tipo_identificacion = :tipo";
         $params[':tipo'] = $tipo;
+    }
+
+    $query .= ")";
+
+    // Por compatibilidad hacia atrás: buscar también en p.dni si es un número válido (integer de Postgres)
+    if (ctype_digit($dni) && $dni <= 2147483647) {
+        $query .= " OR p.dni = :dni_old";
+        $params[':dni_old'] = $dni;
     }
 
     $query .= " LIMIT 1";

@@ -96,7 +96,7 @@ try {
             d.prioridad, d.estado_documento,
             p.dni, p.apellidoynombre AS paciente,
             td.nombre AS tipo_documento,
-            s.detalle AS servicio,
+            s.nombre AS servicio,
             (
                 SELECT STRING_AGG(e.nombre_etiqueta, ', ')
                 FROM documento_etiquetas de

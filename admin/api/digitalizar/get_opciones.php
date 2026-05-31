@@ -57,7 +57,7 @@ try {
     
     try {
         // Admins
-        $stmtAdmin = $bd_dig->prepare("SELECT id, nombre || ' ' || apellido AS nombre, 'admin' AS tipo FROM admin WHERE activo = 1 ORDER BY nombre ASC");
+        $stmtAdmin = $bd_dig->prepare("SELECT id, nombre || ' ' || apellido AS nombre, 'admin' AS tipo FROM admin WHERE activo = true ORDER BY nombre ASC");
         if ($stmtAdmin) {
             $stmtAdmin->execute();
             $admins = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
@@ -66,7 +66,7 @@ try {
             }
         }
     } catch (Exception $e) {
-        error_log("Error al obtener admins de Postgres para responsables: " . $e->getMessage());
+        error_log("Error al obtener admins para responsables: " . $e->getMessage());
     }
 
     try {

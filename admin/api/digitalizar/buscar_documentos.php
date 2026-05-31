@@ -38,7 +38,7 @@
  *   }
  * }
  *
- * Errores: 401 (sin sesión), 405 (no GET), 500 (BD).
+ * Errores: 400 (sin filtros), 401 (sin sesión), 405 (no GET), 500 (BD).
  */
 
 session_start();
@@ -96,7 +96,7 @@ try {
             d.prioridad, d.estado_documento,
             p.dni, p.apellidoynombre AS paciente,
             td.nombre AS tipo_documento,
-            s.detalle AS servicio,
+            s.nombre AS servicio,
             (
                 SELECT STRING_AGG(e.nombre_etiqueta, ', ')
                 FROM documento_etiquetas de
@@ -135,8 +135,21 @@ try {
     }
 
     // Filtros por rango de fechas
-    $tiene_inicio = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio);
-    $tiene_fin = !empty($fecha_fin) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin);
+    $tiene_dni       = $dni_paciente !== '';
+    $tiene_tipo_doc  = $id_tipo_documento !== false && $id_tipo_documento !== null;
+    $tiene_inicio    = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio);
+    $tiene_fin       = !empty($fecha_fin)    && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin);
+    $tiene_etiquetas = !empty($etiquetas);
+
+    if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas) {
+        http_response_code(400);
+        echo json_encode([
+            "status"     => "error",
+            "message"    => "Debe ingresar al menos un criterio de búsqueda (dni, tipo de documento, fecha o etiqueta).",
+            "error_code" => "NO_FILTER"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     if ($tiene_inicio && $tiene_fin) {
         $query .= " AND d.fecha_subido::DATE BETWEEN :fecha_inicio AND :fecha_fin";

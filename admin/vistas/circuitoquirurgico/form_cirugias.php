@@ -95,7 +95,7 @@
 
                     <!-- Botones paso 1 -->
                     <div class="d-flex justify-content-center mt-5 mb-2 gap-3">
-                        <a href="<?= $urlVolver ?>" class="btn border-0 shadow-sm"
+                        <a href="index.php?modulo=menu_circuitoquirurgico&accion=gestion_cirugias" class="btn border-0 shadow-sm"
                            style="background-color:#ff6b81;color:white;padding:8px 30px;font-weight:400;border-radius:4px;">
                             Cancelar
                         </a>

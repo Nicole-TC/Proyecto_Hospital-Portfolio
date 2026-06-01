@@ -169,7 +169,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         console.error("Error al cargar etiquetas:", error);
     }
 
-    // 2. Inicializar DataTables
+// 2. Inicializar DataTables sin ajax
     let tablaBusqueda = $('#tabla-busqueda').DataTable({
         paging: true,
         lengthChange: true,
@@ -178,21 +178,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         responsive: true,
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
-        },
-        ajax: {
-            url: 'api/digitalizar/buscar_documentos.php', 
-            type: 'GET',
-            dataSrc: 'data.documentos', 
-            data: function (d) {
-                d.dni = $('#buscar_dni').val();
-                const tag = $('#buscar_tag').val();
-                if(tag) { 
-                    d.etiquetas = [tag];
-                    d.tag_id = tag;
-                }
-                d.fecha_inicio = $('#fecha_desde').val();
-                d.fecha_fin = $('#fecha_hasta').val();
-            }
         },
         columns: [
             { data: "id", visible: false },
@@ -219,9 +204,34 @@ document.addEventListener("DOMContentLoaded", async function() {
                     return `<a href="${row.ruta_archivo}" target="_blank" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-eye"></i> Ver</a>`;
                 }
             }
-        ],
-        deferLoading: 0 // No carga hasta que aprietes buscar
+        ]
     });
+
+    // Función que llama a la API solo cuando el usuario busca
+    function ejecutarBusqueda() {
+        const params = new URLSearchParams();
+        const dni = $('#buscar_dni').val();
+        const tag = $('#buscar_tag').val();
+        const desde = $('#fecha_desde').val();
+        const hasta = $('#fecha_hasta').val();
+
+        if (dni) params.append('dni', dni);
+        if (tag) params.append('tag_id', tag);
+        if (desde) params.append('fecha_inicio', desde);
+        if (hasta) params.append('fecha_fin', hasta);
+
+        fetch('api/digitalizar/buscar_documentos.php?' + params.toString())
+            .then(r => r.json())
+            .then(json => {
+                tablaBusqueda.clear();
+                if (json.status === 'success') {
+                    tablaBusqueda.rows.add(json.data.documentos).draw();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            })
+            .catch(err => console.error('Error en búsqueda:', err));
+    }
 
     // 3. Programar el Botón Limpiar
     const btnLimpiar = document.getElementById("btn-limpiar");
@@ -239,7 +249,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         e.preventDefault();
         const cardRes = document.getElementById("card-resultados");
         if(cardRes) cardRes.style.display = "block";
-        tablaBusqueda.ajax.reload();
+        ejecutarBusqueda();
     });
 });
 </script>

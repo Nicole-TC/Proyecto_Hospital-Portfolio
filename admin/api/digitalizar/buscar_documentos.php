@@ -79,13 +79,20 @@ try {
         'pagina'                 => $pagina,
         'limite'                 => $limite,
     ] = sanitizar_params_busqueda($_GET);
-    
+
     // Consulta SQL base
     $query = "
         SELECT 
             d.id, d.codigo_unico, d.ruta_archivo, d.comentario, d.fecha_subido, 
             d.prioridad, d.estado_documento,
-            p.dni, p.apellidoynombre AS paciente,
+            (
+                SELECT pi.numero_identificacion
+                FROM personal_identificaciones pi
+                WHERE pi.id_personal = p.id
+                AND pi.id_tipo_identificacion = 1
+                LIMIT 1
+            ) AS dni,
+            p.apellidoynombre AS paciente,
             td.nombre AS tipo_documento,
             s.nombre AS servicio,
             (

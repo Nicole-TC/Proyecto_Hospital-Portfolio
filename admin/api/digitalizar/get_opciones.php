@@ -43,9 +43,10 @@ try {
     // Obtener servicios (sectores)
     $servicios = [];
     $stmtServicios = $bd_dig->prepare("
-        SELECT id, detalle AS nombre
+        SELECT id, nombre
         FROM servicios
-        ORDER BY detalle ASC
+        WHERE estado = true
+        ORDER BY nombre ASC
     ");
     
     if ($stmtServicios) {

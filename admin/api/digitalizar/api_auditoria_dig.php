@@ -31,24 +31,85 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit;
 }
 
-$tipo = $_GET['tipo'] ?? '';
+$MAX_STR_TIPO   = 20;
+$MAX_STR_TABLA  = 50;
+$MAX_STR_FECHA  = 10;
+$MAX_LIMIT      = 200;
 
-$accion_map = [
-    'subidos' => 'INSERT',
-    'eliminados' => 'DELETE',
-    'actualizados' => 'UPDATE'
-];
-
-if (!isset($accion_map[$tipo])) {
+function badRequest($msg) {
     http_response_code(400);
     echo json_encode([
-        "status" => "error",
-        "message" => "Parámetro 'tipo' inválido. Use: subidos, eliminados, actualizados"
+        "status"  => "error",
+        "message" => $msg
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+function validarFecha($s) {
+    $d = DateTime::createFromFormat('d-m-Y', $s);
+    return $d && $d->format('d-m-Y') === $s;
+}
+
 try {
+    $tipo           = trim($_GET['tipo'] ?? '');
+    $tabla_afectada = trim($_GET['tabla_afectada'] ?? '');
+    $fecha_desde    = trim($_GET['fecha_desde'] ?? '');
+    $fecha_hasta    = trim($_GET['fecha_hasta'] ?? '');
+
+    if ($tipo === '') {
+        badRequest("El parámetro 'tipo' es obligatorio.");
+    }
+    if (mb_strlen($tipo) > $MAX_STR_TIPO) {
+        badRequest("El parámetro 'tipo' excede la longitud máxima permitida.");
+    }
+
+    $accion_map = [
+        'subidos'      => 'INSERT',
+        'eliminados'   => 'DELETE',
+        'actualizados' => 'UPDATE'
+    ];
+
+    if (!isset($accion_map[$tipo])) {
+        badRequest("Parámetro 'tipo' inválido. Use: subidos, eliminados, actualizados");
+    }
+
+    if ($tabla_afectada !== '') {
+        if (mb_strlen($tabla_afectada) > $MAX_STR_TABLA) {
+            badRequest("El parámetro 'tabla_afectada' excede la longitud máxima permitida.");
+        }
+        $stmt_wl = $bd_dig->prepare("SELECT DISTINCT tabla_afectada FROM auditoria_logs");
+        $stmt_wl->execute();
+        $tablas_permitidas = array_column($stmt_wl->fetchAll(PDO::FETCH_ASSOC), 'tabla_afectada');
+        if (!in_array($tabla_afectada, $tablas_permitidas, true)) {
+            badRequest("Tabla afectada no reconocida.");
+        }
+    }
+
+    if ($fecha_desde !== '') {
+        if (mb_strlen($fecha_desde) > $MAX_STR_FECHA) {
+            badRequest("fecha_desde excede la longitud máxima permitida.");
+        }
+        if (!validarFecha($fecha_desde)) {
+            badRequest("Formato de fecha_desde inválido. Use DD-MM-AAAA.");
+        }
+        $fecha_desde = DateTime::createFromFormat('d-m-Y', $fecha_desde)->format('Y-m-d');
+    }
+    if ($fecha_hasta !== '') {
+        if (mb_strlen($fecha_hasta) > $MAX_STR_FECHA) {
+            badRequest("fecha_hasta excede la longitud máxima permitida.");
+        }
+        if (!validarFecha($fecha_hasta)) {
+            badRequest("Formato de fecha_hasta inválido. Use DD-MM-AAAA.");
+        }
+        $fecha_hasta = DateTime::createFromFormat('d-m-Y', $fecha_hasta)->format('Y-m-d');
+    }
+    if ($fecha_desde !== '' && $fecha_hasta !== '' && $fecha_desde > $fecha_hasta) {
+        badRequest("fecha_desde no puede ser mayor que fecha_hasta.");
+    }
+    if ($fecha_hasta !== '' && $fecha_hasta > (new DateTime('today'))->format('Y-m-d')) {
+        badRequest("fecha_hasta no puede ser una fecha futura.");
+    }
+
     $accion_detalle = $accion_map[$tipo];
     $params = [':accion' => $accion_detalle];
     $condiciones = [];
@@ -59,19 +120,16 @@ try {
         $condiciones[] = "a.detalle = :accion";
     }
 
-    $tabla_afectada = $_GET['tabla_afectada'] ?? '';
     if ($tabla_afectada !== '') {
         $condiciones[] = "al.tabla_afectada = :tabla_afectada";
         $params[':tabla_afectada'] = $tabla_afectada;
     }
 
-    $fecha_desde = $_GET['fecha_desde'] ?? '';
     if ($fecha_desde !== '') {
         $condiciones[] = "al.fecha_accion >= :fecha_desde::date";
         $params[':fecha_desde'] = $fecha_desde;
     }
 
-    $fecha_hasta = $_GET['fecha_hasta'] ?? '';
     if ($fecha_hasta !== '') {
         $condiciones[] = "al.fecha_accion < (:fecha_hasta::date + INTERVAL '1 day')";
         $params[':fecha_hasta'] = $fecha_hasta;
@@ -88,12 +146,10 @@ try {
         LEFT JOIN tipos_documentos td ON td.id = d.id_tipo_documento
     ";
 
-    // Count
     $stmt_count = $bd_dig->prepare("SELECT COUNT(*) $from $where");
     $stmt_count->execute($params);
     $total_registros = (int) $stmt_count->fetchColumn();
 
-    // Data
     $select = "
         SELECT
             al.id,
@@ -116,7 +172,7 @@ try {
 
     $order = "ORDER BY al.fecha_accion DESC";
 
-    $stmt_data = $bd_dig->prepare("$select $from $where $order");
+    $stmt_data = $bd_dig->prepare("$select $from $where $order LIMIT $MAX_LIMIT");
     $stmt_data->execute($params);
     $auditoria = $stmt_data->fetchAll(PDO::FETCH_ASSOC);
 
@@ -125,7 +181,7 @@ try {
         "status" => "success",
         "data" => [
             "total_registros" => $total_registros,
-            "auditoria" => $auditoria
+            "auditoria"       => $auditoria
         ]
     ], JSON_UNESCAPED_UNICODE);
     exit;
@@ -134,16 +190,16 @@ try {
     error_log("Error DB en api_auditoria_dig: " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
-        "status" => "error",
-        "message" => "Error en la base de datos.",
+        "status"     => "error",
+        "message"    => "Error en la base de datos.",
         "error_code" => "DB_ERROR"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
-        "status" => "error",
-        "message" => "Error interno del servidor.",
+        "status"     => "error",
+        "message"    => "Error interno del servidor.",
         "error_code" => "SERVER_ERROR"
     ], JSON_UNESCAPED_UNICODE);
     exit;

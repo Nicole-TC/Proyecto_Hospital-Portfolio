@@ -273,6 +273,14 @@ document.getElementById('numero_identificacion').addEventListener('input', funct
     } else {
         this.value = this.value.toUpperCase(); // Para pasaportes, ID extranjero, etc.
     }
+
+    //Autocompletado de DNI
+    clearTimeout(window.dniTimeout);
+    if (this.value.length >= 7) {
+        window.dniTimeout = setTimeout(() => {
+            document.getElementById("btnBuscarDni").click();
+        }, 500);
+    }
 });
 
 document.getElementById('telefono').addEventListener('input', function(e) {

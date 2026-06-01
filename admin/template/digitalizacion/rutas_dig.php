@@ -29,6 +29,10 @@ switch (@$_GET["accion"]) {
         $menu = 'Buscar Documentos';
         require_once "vistas/digitalizacion/buscar_documentos.php";
         break;
+    case 'servicios_digitalizar':
+        $menu = 'Administrar Servicios';
+        require_once "vistas/digitalizacion/servicios_digitalizar.php";
+        break;
 
     default:
         // Si no hay acción, o la acción no existe, mostramos el menú principal del grupo

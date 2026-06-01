@@ -45,6 +45,7 @@ try {
     $stmtServicios = $bd_dig->prepare("
         SELECT id, nombre
         FROM servicios
+        WHERE estado = true
         ORDER BY nombre ASC
     ");
     

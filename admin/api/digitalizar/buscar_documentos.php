@@ -38,7 +38,7 @@
  *   }
  * }
  *
- * Errores: 401 (sin sesión), 405 (no GET), 500 (BD).
+ * Errores: 400 (sin filtros), 401 (sin sesión), 405 (no GET), 500 (BD).
  */
 
 session_start();
@@ -55,6 +55,7 @@ if (!isset($_SESSION['id'])) {
 
 // Incluir conexión a la base de datos
 require_once __DIR__ . '/../../model/conexion_dig.php';
+require_once __DIR__ . '/helpers_dig.php';
 
 // Validar que la petición sea GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -68,33 +69,30 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     // Recibir y sanear parámetros básicos
-    $dni_paciente = trim($_GET['dni'] ?? '');
-    $id_tipo_documento = filter_var($_GET['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
-    $fecha_inicio = trim($_GET['fecha_inicio'] ?? '');
-    $fecha_fin = trim($_GET['fecha_fin'] ?? '');
-    $id_tipo_identificacion = filter_var($_GET['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
-    // Recibir y procesar etiquetas (puede venir como array, string separado por comas o valor único)
-    $etiquetas = [];
-    if (isset($_GET['etiquetas'])) {
-        if (is_array($_GET['etiquetas'])) {
-            $etiquetas = $_GET['etiquetas'];
-        } else {
-            $etiquetas = explode(',', $_GET['etiquetas']);
-        }
-    } elseif (isset($_GET['tag_id']) && $_GET['tag_id'] !== '') {
-        $etiquetas = [$_GET['tag_id']];
-    }
-    $etiquetas = array_filter(array_map('intval', $etiquetas));
-
-    $pagina = max(1, filter_var($_GET['pagina'] ?? 1, FILTER_VALIDATE_INT) ?: 1);
-    $limite = max(1, min(100, filter_var($_GET['limite'] ?? 50, FILTER_VALIDATE_INT) ?: 50));
+    [
+        'dni_paciente'           => $dni_paciente,
+        'id_tipo_documento'      => $id_tipo_documento,
+        'id_tipo_identificacion' => $id_tipo_identificacion,
+        'fecha_inicio'           => $fecha_inicio,
+        'fecha_fin'              => $fecha_fin,
+        'etiquetas'              => $etiquetas,
+        'pagina'                 => $pagina,
+        'limite'                 => $limite,
+    ] = sanitizar_params_busqueda($_GET);
 
     // Consulta SQL base
     $query = "
         SELECT 
             d.id, d.codigo_unico, d.ruta_archivo, d.comentario, d.fecha_subido, 
             d.prioridad, d.estado_documento,
-            p.dni, p.apellidoynombre AS paciente,
+            (
+                SELECT pi.numero_identificacion
+                FROM personal_identificaciones pi
+                WHERE pi.id_personal = p.id
+                AND pi.id_tipo_identificacion = 1
+                LIMIT 1
+            ) AS dni,
+            p.apellidoynombre AS paciente,
             td.nombre AS tipo_documento,
             s.nombre AS servicio,
             (
@@ -135,8 +133,21 @@ try {
     }
 
     // Filtros por rango de fechas
-    $tiene_inicio = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio);
-    $tiene_fin = !empty($fecha_fin) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin);
+    $tiene_dni       = $dni_paciente !== '';
+    $tiene_tipo_doc  = $id_tipo_documento !== false && $id_tipo_documento !== null;
+    $tiene_inicio    = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio) && $fecha_inicio <= date('Y-m-d');
+    $tiene_fin       = !empty($fecha_fin)    && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)    && $fecha_fin   <= date('Y-m-d');
+    $tiene_etiquetas = !empty($etiquetas);
+
+    if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas) {
+        http_response_code(400);
+        echo json_encode([
+            "status"     => "error",
+            "message"    => "Debe ingresar al menos un criterio de búsqueda (dni, tipo de documento, fecha o etiqueta).",
+            "error_code" => "NO_FILTER"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     if ($tiene_inicio && $tiene_fin) {
         $query .= " AND d.fecha_subido::DATE BETWEEN :fecha_inicio AND :fecha_fin";

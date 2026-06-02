@@ -3,6 +3,16 @@ session_start();
 ini_set('display_errors', '0');
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 header('Content-Type: application/json; charset=utf-8');
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No autorizado. Por favor inicie sesión."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 require_once __DIR__ . '/../../model/conexion_dig.php';
 
 // Validar que la solicitud sea POST

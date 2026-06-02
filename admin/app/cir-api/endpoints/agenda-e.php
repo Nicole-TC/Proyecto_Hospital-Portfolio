@@ -24,10 +24,10 @@ if ($method === 'GET' && $action === 'turnos_del_dia') {
 
 // ── GET: buscar paciente con validación de circuito ───────────
 if ($method === 'GET' && $action === 'buscar_paciente') {
-    $dni           = trim($_GET['dni'] ?? '');
+    $dni           = preg_replace('/\D/', '', trim($_GET['dni'] ?? ''));
     $id_tipo_turno = (int)($_GET['id_tipo_turno'] ?? 0);
 
-    if (!preg_match('/^\d{7,8}$/', $dni)) {
+    if (strlen($dni) < 7 || strlen($dni) > 8) {
         echo json_encode(['ok' => false, 'error' => 'DNI inválido.']); exit;
     }
     if (!$id_tipo_turno) {

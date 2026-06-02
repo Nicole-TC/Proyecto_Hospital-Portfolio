@@ -1,8 +1,17 @@
 <?php
-
+session_start();
 require_once '../../model/conexion_dig.php';
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No autorizado. Por favor inicie sesión."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 try {
 

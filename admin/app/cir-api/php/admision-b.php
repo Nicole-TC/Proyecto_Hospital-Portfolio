@@ -85,7 +85,7 @@ class ConsultasAdmision {
 
     public static function obtenerEstudiosPorCirugia() {
         $pdo = conexionCircuitoQuirurgico();
-        $sql = "SELECT cc.nombre AS cirugia, e.nombre AS estudio
+        $sql = "SELECT cc.nombre AS cirugia, e.id_estudio, e.nombre AS estudio, e.observacion
                 FROM catalogo_cirugia cc
                 JOIN combo_cirugia co ON co.id_cirugia_catalogo = cc.id_cirugia_catalogo
                 JOIN estudio e ON e.id_estudio = co.id_estudio
@@ -96,11 +96,11 @@ class ConsultasAdmision {
         $estudiosPorCirugia = [];
         foreach ($rows as $row) {
             $cirugia = $row['cirugia'];
-            $estudio = $row['estudio'];
-            if (!isset($estudiosPorCirugia[$cirugia])) {
-                $estudiosPorCirugia[$cirugia] = [];
-            }
-            $estudiosPorCirugia[$cirugia][] = $estudio;
+            $estudiosPorCirugia[$cirugia][] = [
+                'id_estudio' => $row['id_estudio'],
+                'nombre' => $row['estudio'],
+                'observacion' => $row['observacion']
+            ];
         }
         return $estudiosPorCirugia;
     }

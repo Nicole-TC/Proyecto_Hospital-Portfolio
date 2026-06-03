@@ -12,6 +12,7 @@
  *                Si se envía id_tipo_identificacion, se aplica solo sobre personal_identificaciones.
  * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento.
+ * - id_servicio (int): filtra por d.id_servicio.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
@@ -126,9 +127,14 @@ try {
             WHERE pi.id_personal = p.id
             AND pi.numero_identificacion = :dni2";
 
-    if ($id_tipo_identificacion) {
-        $query .= " AND pi.id_tipo_identificacion = :id_tipo_identificacion";
-        $params[':id_tipo_identificacion'] = $id_tipo_identificacion;
+    if ($id_tipo_documento) {
+        $query .= " AND d.id_tipo_documento = :id_tipo_documento";
+        $params[':id_tipo_documento'] = $id_tipo_documento;
+    }
+
+    if ($id_servicio) {
+        $query .= " AND d.id_servicio = :id_servicio";
+        $params[':id_servicio'] = $id_servicio;
     }
 
     $query .= "

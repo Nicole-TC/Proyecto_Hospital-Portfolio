@@ -23,6 +23,7 @@ function sanitizar_params_busqueda(array $get): array
     $dni_paciente           = trim($get['dni'] ?? '');
     $id_tipo_documento      = filter_var($get['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $id_tipo_identificacion = filter_var($get['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
+    $id_servicio            = filter_var($get['id_servicio'] ?? '', FILTER_VALIDATE_INT);
     $fecha_inicio           = trim($get['fecha_inicio'] ?? '');
     $fecha_fin              = trim($get['fecha_fin'] ?? '');
 

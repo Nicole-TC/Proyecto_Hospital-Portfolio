@@ -8,7 +8,8 @@
  * Auth: requiere sesión ($_SESSION['id']), si no → 401.
  *
  * Parámetros GET (actuales):
- * - dni (string): filtra por personal_identificaciones.numero_identificacion (EXISTS, igualdad exacta).
+ * - dni (string): filtra por personal.dni (igualdad exacta) OR personal_identificaciones.numero_identificacion (EXISTS).
+ *                Si se envía id_tipo_identificacion, se aplica solo sobre personal_identificaciones.
  * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
@@ -113,24 +114,24 @@ try {
 
     // Agregar filtros dinámicos
     if (!empty($dni_paciente)) {
-        $query .= " AND EXISTS (
+    $query .= " AND (
+        p.dni = :dni
+        OR EXISTS (
             SELECT 1 FROM personal_identificaciones pi
             WHERE pi.id_personal = p.id
-            AND pi.numero_identificacion = :dni";
+            AND pi.numero_identificacion = :dni2";
 
-        if ($id_tipo_identificacion) {
-            $query .= " AND pi.id_tipo_identificacion = :id_tipo_identificacion";
-            $params[':id_tipo_identificacion'] = $id_tipo_identificacion;
-        }
-
-        $query .= ")";
-        $params[':dni'] = $dni_paciente;
+    if ($id_tipo_identificacion) {
+        $query .= " AND pi.id_tipo_identificacion = :id_tipo_identificacion";
+        $params[':id_tipo_identificacion'] = $id_tipo_identificacion;
     }
 
-    if ($id_tipo_documento) {
-        $query .= " AND d.id_tipo_documento = :id_tipo_documento";
-        $params[':id_tipo_documento'] = $id_tipo_documento;
-    }
+    $query .= "
+        )
+    )";
+    $params[':dni']  = $dni_paciente;
+    $params[':dni2'] = $dni_paciente;
+}
 
     // Filtros por rango de fechas
     $tiene_dni       = $dni_paciente !== '';

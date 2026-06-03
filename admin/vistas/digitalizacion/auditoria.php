@@ -261,10 +261,20 @@ document.addEventListener("DOMContentLoaded", async function() {
     };
 
     // 3. Diff
-    function buildDiffView(accion, anteriorRaw, nuevoRaw) {
+    function buildDiffView(accion, anteriorRaw, nuevoRaw, row) {
         const antObj = safeParse(anteriorRaw);
         const nueObj = safeParse(nuevoRaw);
         const meta = metaAccion(accion);
+
+        [antObj, nueObj].forEach(obj => {
+            if (!obj) return;
+            Object.keys(obj).forEach(k => { if (k === 'id' || k.startsWith('id_')) delete obj[k]; });
+            if (row && row.tabla_afectada === 'documentos') {
+                obj.servicio = row.servicio;
+                obj.personal = row.personal_documento;
+                obj.tipo_documento = row.tipo_documento;
+            }
+        });
 
         if (!antObj && !nueObj) {
             return '<div class="text-center text-muted py-4"><i class="fa-solid fa-circle-info me-2"></i>Sin información de cambios registrados.</div>';
@@ -326,6 +336,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         ordering: true,
         responsive: true,
         language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+        drawCallback: function() {
+            const data = this.api().data();
+            const hasDocs = data.toArray().some(r => r.tabla_afectada === 'documentos');
+            this.api().column(4).visible(hasDocs);
+        },
         ajax: {
             url: 'api/digitalizar/api_auditoria_dig.php',
             type: 'GET',
@@ -349,7 +364,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             { data: 'usuario' },
             { data: 'accion', render: d => `<span class="badge ${metaAccion(d).badge}">${(d || '-').toUpperCase()}</span>` },
             { data: 'tabla_afectada' },
-            { data: 'tipo_documento', defaultContent: '-' },
+            { data: 'tipo_documento', render: (d, t, row) => row.tabla_afectada === 'documentos' ? d : '' },
             { data: 'ip_origen' },
             { data: 'fecha_accion' },
             {
@@ -379,7 +394,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             <div class="col-md-2 col-6 ctx-item"><small>IP</small><div class="ctx-value"><code>${escapeHtml(row.ip_origen)}</code></div></div>
             <div class="col-md-2 col-12 ctx-item"><small>Fecha</small><div class="ctx-value">${escapeHtml(row.fecha_accion)}</div></div>
         `);
-        $('#modal-detalle-body').html(buildDiffView(accion, row.valor_anterior, row.valor_nuevo));
+        $('#modal-detalle-body').html(buildDiffView(accion, row.valor_anterior, row.valor_nuevo, row));
 
         const modalEl = document.getElementById('modal-detalle-auditoria');
         if (!modalInstancia) modalInstancia = bootstrap.Modal.getOrCreateInstance(modalEl);

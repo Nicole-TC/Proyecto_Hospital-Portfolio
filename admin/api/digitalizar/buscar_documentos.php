@@ -34,8 +34,9 @@
  *   "message": "Búsqueda completada",
  *   "data": {
  *     "paginacion": { "total_registros", "total_paginas", "pagina_actual", "limite" },
- *     "documentos": [ { "id", "codigo_unico", "ruta_archivo", "comentario", "fecha_subido",
- *       "prioridad", "estado_documento", "dni", "paciente", "tipo_documento", "servicio", "etiquetas" } ]
+*     "documentos": [ { "id", "codigo_unico", "ruta_archivo", "comentario", "fecha_subido",
+ *       "prioridad", "estado_documento", "id_persona", "id_servicio", "id_tipo_documento",
+ *       "dni", "paciente", "tipo_documento", "servicio", "etiquetas" } ]
  *   }
  * }
  *
@@ -85,7 +86,7 @@ try {
     $query = "
         SELECT 
             d.id, d.codigo_unico, d.ruta_archivo, d.comentario, d.fecha_subido, 
-            d.prioridad, d.estado_documento,
+            d.prioridad, d.estado_documento, d.id_persona, d.id_servicio, d.id_tipo_documento,
             (
                 SELECT pi.numero_identificacion
                 FROM personal_identificaciones pi

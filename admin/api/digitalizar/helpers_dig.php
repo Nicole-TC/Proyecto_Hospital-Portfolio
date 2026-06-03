@@ -11,6 +11,8 @@
  *   string    $dni_paciente
  *   int|false $id_tipo_documento
  *   int|false $id_tipo_identificacion
+ *   int|false $id_servicio
+ *   string|null $estado_documento
  *   string    $fecha_inicio
  *   string    $fecha_fin
  *   int[]     $etiquetas
@@ -24,6 +26,10 @@ function sanitizar_params_busqueda(array $get): array
     $id_tipo_documento      = filter_var($get['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $id_tipo_identificacion = filter_var($get['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
     $id_servicio            = filter_var($get['id_servicio'] ?? '', FILTER_VALIDATE_INT);
+    $estados_permitidos = ['pendiente', 'revisado', 'archivado'];
+    $estado_documento = isset($get['estado_documento']) && in_array($get['estado_documento'], $estados_permitidos)
+        ? $get['estado_documento']
+        : null;
     $fecha_inicio           = trim($get['fecha_inicio'] ?? '');
     $fecha_fin              = trim($get['fecha_fin'] ?? '');
 
@@ -46,6 +52,7 @@ function sanitizar_params_busqueda(array $get): array
         'id_tipo_documento',
         'id_tipo_identificacion',
         'id_servicio',
+        'estado_documento',
         'fecha_inicio',
         'fecha_fin',
         'etiquetas',

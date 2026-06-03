@@ -17,6 +17,8 @@
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
  * - tag_id (int): alias de una sola etiqueta.
+ * - id_servicio (int): filtra por d.id_servicio.
+ * - estado_documento (string): filtra por d.estado_documento; valores permitidos: pendiente, revisado, archivado.
  * - pagina (int, default 1): número de página.
  * - limite (int, default 50, max 100): registros por página.
  *
@@ -77,6 +79,7 @@ try {
         'id_tipo_documento'      => $id_tipo_documento,
         'id_tipo_identificacion' => $id_tipo_identificacion,
         'id_servicio'            => $id_servicio,
+        'estado_documento'       => $estado_documento,
         'fecha_inicio'           => $fecha_inicio,
         'fecha_fin'              => $fecha_fin,
         'etiquetas'              => $etiquetas,
@@ -140,6 +143,21 @@ try {
     $params[':dni']  = $dni_paciente;
     $params[':dni2'] = $dni_paciente;
 }
+
+    if ($id_tipo_documento) {
+        $query .= " AND d.id_tipo_documento = :id_tipo_documento";
+        $params[':id_tipo_documento'] = $id_tipo_documento;
+    }
+
+    if ($id_servicio) {
+        $query .= " AND d.id_servicio = :id_servicio";
+        $params[':id_servicio'] = $id_servicio;
+    }
+
+    if ($estado_documento !== null) {
+        $query .= " AND d.estado_documento = :estado_documento";
+        $params[':estado_documento'] = $estado_documento;
+    }
 
     // Filtros por rango de fechas
     $tiene_dni       = $dni_paciente !== '';

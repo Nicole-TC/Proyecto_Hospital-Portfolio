@@ -144,6 +144,8 @@ try {
         LEFT JOIN personal p ON p.id = ad.id_personal
         LEFT JOIN documentos d ON d.id = al.id_documento
         LEFT JOIN tipos_documentos td ON td.id = d.id_tipo_documento
+        LEFT JOIN servicios s ON s.id = d.id_servicio
+        LEFT JOIN personal pd ON pd.id = d.id_persona
     ";
 
     $stmt_count = $bd_dig->prepare("SELECT COUNT(*) $from $where");
@@ -167,6 +169,8 @@ try {
             al.valor_anterior,
             al.valor_nuevo,
             COALESCE(al.ip_origen, '-') AS ip_origen,
+            CASE WHEN al.tabla_afectada = 'documentos' THEN COALESCE(s.nombre, '-') ELSE '-' END AS servicio,
+            CASE WHEN al.tabla_afectada = 'documentos' THEN COALESCE(pd.apellidoynombre, '-') ELSE '-' END AS personal_documento,
             al.fecha_accion
     ";
 

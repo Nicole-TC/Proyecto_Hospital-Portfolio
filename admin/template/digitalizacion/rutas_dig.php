@@ -29,6 +29,10 @@ switch (@$_GET["accion"]) {
         $menu = 'Buscar Documentos';
         require_once "vistas/digitalizacion/buscar_documentos.php";
         break;
+    case 'auditoria':
+        $menu = 'Auditoría';
+        require_once "vistas/digitalizacion/auditoria.php";
+        break;
     case 'servicios_digitalizar':
         $menu = 'Administrar Servicios';
         require_once "vistas/digitalizacion/servicios_digitalizar.php";

@@ -45,6 +45,7 @@ function sanitizar_params_busqueda(array $get): array
         'dni_paciente',
         'id_tipo_documento',
         'id_tipo_identificacion',
+        'id_servicio',
         'fecha_inicio',
         'fecha_fin',
         'etiquetas',

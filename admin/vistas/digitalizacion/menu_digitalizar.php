@@ -69,6 +69,22 @@
         </div>
 
         <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+        <!-- Tarjeta Auditoría -->
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-clipboard-list text-danger" style="font-size: 4.5rem;"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Auditoría</h3>
+                    <p class="card-text text-muted mb-4">Consultá el historial de acciones (subidos, modificados, eliminados) realizadas en el sistema de digitalización.</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=auditoria" class="btn btn-danger btn-lg rounded-pill mt-auto align-self-center shadow text-white btn-menu">
+                        <i class="fa-solid fa-magnifying-glass-chart me-2"></i> Ver Auditoría
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Tarjeta Administrar Servicios -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">

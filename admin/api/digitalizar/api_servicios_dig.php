@@ -1,8 +1,18 @@
 <?php
+session_start();
 
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../model/conexion_dig.php';
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No autorizado. Por favor inicie sesion."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -94,13 +104,13 @@ switch ($method) {
         }
 
         $stmt = $bd_dig->prepare(
-            "INSERT INTO servicios (nombre, area, id_admin, id_personal, estado) VALUES (?, ?, ?, ?, ?)"
+            "INSERT INTO servicios (nombre, area, id_admin, id_personal, estado, id_usuario) VALUES (?, ?, ?, ?, ?, ?)"
         );
         
         // Convertir variables en un formato que Postgres entienda para boolean
         $estadoVal = ($estado == '1' || $estado === 1 || $estado === true) ? 'true' : 'false';
 
-        $stmt->execute([$nombre, $area ?: null, $id_admin, $id_personal, $estadoVal]);
+        $stmt->execute([$nombre, $area ?: null, $id_admin, $id_personal, $estadoVal, $_SESSION['id']]);
 
         // PDO::lastInsertId con el sequence name para Postgres
         $lastId = $bd_dig->lastInsertId('servicios_id_seq');
@@ -166,9 +176,9 @@ switch ($method) {
         $estadoVal = ($estado == '1' || $estado === 1 || $estado === true) ? 'true' : 'false';
 
         $stmt = $bd_dig->prepare(
-            "UPDATE servicios SET nombre = ?, area = ?, id_admin = ?, id_personal = ?, estado = ? WHERE id = ?"
+            "UPDATE servicios SET nombre = ?, area = ?, id_admin = ?, id_personal = ?, estado = ?, id_usuario = ? WHERE id = ?"
         );
-        $stmt->execute([$nombre, $area ?: null, $id_admin, $id_personal, $estadoVal, $id]);
+        $stmt->execute([$nombre, $area ?: null, $id_admin, $id_personal, $estadoVal, $_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;
@@ -197,8 +207,8 @@ switch ($method) {
             break;
         }
 
-        $stmt = $bd_dig->prepare("UPDATE servicios SET estado = false WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt = $bd_dig->prepare("UPDATE servicios SET estado = false, id_usuario = ? WHERE id = ?");
+        $stmt->execute([$_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;

@@ -70,9 +70,9 @@ switch ($method) {
         }
 
         $stmt = $bd_dig->prepare(
-            "INSERT INTO etiquetas (nombre_etiqueta, color_hex, estado) VALUES (?, ?, ?)"
+            "INSERT INTO etiquetas (nombre_etiqueta, color_hex, estado, id_usuario) VALUES (?, ?, ?, ?)"
         );
-        $stmt->execute([$nombre, $color, $estado]);
+        $stmt->execute([$nombre, $color, $estado, $_SESSION['id']]);
 
         echo json_encode(['success' => true, 'id' => $bd_dig->lastInsertId()]);
         break;
@@ -127,9 +127,9 @@ switch ($method) {
         }
 
         $stmt = $bd_dig->prepare(
-            "UPDATE etiquetas SET nombre_etiqueta = ?, color_hex = ?, estado = ? WHERE id = ?"
+            "UPDATE etiquetas SET nombre_etiqueta = ?, color_hex = ?, estado = ?, id_usuario = ? WHERE id = ?"
         );
-        $stmt->execute([$nombre, $color, $estado, $id]);
+        $stmt->execute([$nombre, $color, $estado, $_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;
@@ -158,8 +158,8 @@ switch ($method) {
             break;
         }
 
-        $stmt = $bd_dig->prepare("UPDATE etiquetas SET estado = true WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt = $bd_dig->prepare("UPDATE etiquetas SET estado = true, id_usuario = ? WHERE id = ?");
+        $stmt->execute([$_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;
@@ -188,8 +188,8 @@ switch ($method) {
             break;
         }
 
-        $stmt = $bd_dig->prepare("UPDATE etiquetas SET estado = false WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt = $bd_dig->prepare("UPDATE etiquetas SET estado = false, id_usuario = ? WHERE id = ?");
+        $stmt->execute([$_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;

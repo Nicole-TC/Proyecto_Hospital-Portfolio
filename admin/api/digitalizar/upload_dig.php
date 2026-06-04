@@ -126,8 +126,8 @@ try {
         $stmt = $bd_dig->prepare("
             INSERT INTO personal (
                 dni, activo, legajo, apellidoynombre, apellido, nombre, 
-                encasillamiento, cargo, rh, dependencia, regimen, turno, telefono, correo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+                encasillamiento, cargo, rh, dependencia, regimen, turno, telefono, correo, id_usuario
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
         ");
         $apellidoynombre = $apellido . ' ' . $nombre;
         $stmt->execute([
@@ -144,7 +144,8 @@ try {
             'Ninguno', // regimen
             'Ninguno', // turno
             $telefono, 
-            $email
+            $email,
+            $id_usuario
         ]);
         $id_persona = $stmt->fetchColumn();
 

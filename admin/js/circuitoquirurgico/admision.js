@@ -503,7 +503,7 @@ document.addEventListener('keydown', function (e) {
   var timeSinceLast = lastKeyTime ? now - lastKeyTime : 999;
   lastKeyTime = now;
 
-  if (!scanDetected && timeSinceLast < 50) {
+  if (!scanDetected && timeSinceLast < 500) {
     scanDetected = true;
     scanBuffer = '';
     dniAntesDeEscanear = inputDni.value;
@@ -528,7 +528,7 @@ document.addEventListener('keydown', function (e) {
     scanTimeout = setTimeout(function () {
       if (scanBuffer.length > 30) procesarEscaneo(scanBuffer);
       else cancelarEscaneo();
-    }, 1500);
+    }, 300);
     return;
   }
 
@@ -537,6 +537,6 @@ document.addEventListener('keydown', function (e) {
     scanTimeout = setTimeout(function () {
       if (scanBuffer.length > 30) procesarEscaneo(scanBuffer);
       else cancelarEscaneo();
-    }, 1500);
+    }, 300);
   }
 });

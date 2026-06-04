@@ -56,9 +56,9 @@ switch ($method) {
         }
 
         $stmt = $bd_dig->prepare(
-            "INSERT INTO tipos_documentos (nombre, estado) VALUES (?, ?)"
+            "INSERT INTO tipos_documentos (nombre, estado, id_usuario) VALUES (?, ?, ?)"
         );
-        $stmt->execute([$nombre, $estado]);
+        $stmt->execute([$nombre, $estado, $_SESSION['id']]);
 
         echo json_encode(['success' => true, 'id' => $bd_dig->lastInsertId()]);
         break;
@@ -106,9 +106,9 @@ switch ($method) {
         }
 
         $stmt = $bd_dig->prepare(
-            "UPDATE tipos_documentos SET nombre = ?, estado = ? WHERE id = ?"
+            "UPDATE tipos_documentos SET nombre = ?, estado = ?, id_usuario = ? WHERE id = ?"
         );
-        $stmt->execute([$nombre, $estado, $id]);
+        $stmt->execute([$nombre, $estado, $_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;
@@ -137,8 +137,8 @@ switch ($method) {
             break;
         }
 
-        $stmt = $bd_dig->prepare("UPDATE tipos_documentos SET estado = false WHERE id = ?");
-        $stmt->execute([$id]);
+        $stmt = $bd_dig->prepare("UPDATE tipos_documentos SET estado = false, id_usuario = ? WHERE id = ?");
+        $stmt->execute([$_SESSION['id'], $id]);
 
         echo json_encode(['success' => true]);
         break;

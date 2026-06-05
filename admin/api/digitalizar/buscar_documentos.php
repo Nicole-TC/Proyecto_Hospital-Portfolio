@@ -11,7 +11,7 @@
  * - dni (string): filtra por personal.dni (igualdad exacta) OR personal_identificaciones.numero_identificacion (EXISTS).
  *                Si se envía id_tipo_identificacion, se aplica solo sobre personal_identificaciones.
  * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
- * - id_tipo_documento (int): filtra por d.id_tipo_documento.
+ * - id_tipo_documento (int): filtra por d.id_tipo_documento; compatible con LEFT JOIN tipos_documentos td.
  * - codigo_unico (string, max 100 chars): filtra por d.codigo_unico (igualdad exacta); ignorado si vacío tras trim.
  * - q (string, max 200 chars): búsqueda textual ILIKE sobre comentario, codigo_unico y apellidoynombre del paciente; ignorado si vacío tras trim.
  * - id_servicio (int): filtra por d.id_servicio.

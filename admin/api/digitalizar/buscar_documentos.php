@@ -12,6 +12,7 @@
  *                Si se envía id_tipo_identificacion, se aplica solo sobre personal_identificaciones.
  * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento.
+ * - codigo_unico (string): filtra por d.codigo_unico (igualdad exacta).
  * - id_servicio (int): filtra por d.id_servicio.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
@@ -76,6 +77,7 @@ try {
     // Recibir y sanear parámetros básicos
     [
         'dni_paciente'           => $dni_paciente,
+        'codigo_unico'           => $codigo_unico,
         'id_tipo_documento'      => $id_tipo_documento,
         'id_tipo_identificacion' => $id_tipo_identificacion,
         'id_servicio'            => $id_servicio,
@@ -157,6 +159,11 @@ try {
     if ($estado_documento !== null) {
         $query .= " AND d.estado_documento = :estado_documento";
         $params[':estado_documento'] = $estado_documento;
+    }
+
+    if ($codigo_unico !== '') {
+        $query .= " AND d.codigo_unico = :codigo_unico";
+        $params[':codigo_unico'] = $codigo_unico;
     }
 
     // Filtros por rango de fechas

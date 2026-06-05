@@ -9,6 +9,7 @@
  * @param array $get  Normalmente $_GET
  * @return array {
  *   string    $dni_paciente
+ *   string    $codigo_unico
  *   int|false $id_tipo_documento
  *   int|false $id_tipo_identificacion
  *   int|false $id_servicio
@@ -23,6 +24,7 @@
 function sanitizar_params_busqueda(array $get): array
 {
     $dni_paciente           = trim($get['dni'] ?? '');
+    $codigo_unico           = trim($get['codigo_unico'] ?? '');
     $id_tipo_documento      = filter_var($get['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $id_tipo_identificacion = filter_var($get['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
     $id_servicio            = filter_var($get['id_servicio'] ?? '', FILTER_VALIDATE_INT);
@@ -49,6 +51,7 @@ function sanitizar_params_busqueda(array $get): array
 
     return compact(
         'dni_paciente',
+        'codigo_unico',
         'id_tipo_documento',
         'id_tipo_identificacion',
         'id_servicio',

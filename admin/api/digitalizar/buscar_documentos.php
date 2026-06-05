@@ -13,6 +13,7 @@
  * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento.
  * - codigo_unico (string): filtra por d.codigo_unico (igualdad exacta).
+ * - q (string): búsqueda textual ILIKE sobre comentario, codigo_unico y apellidoynombre del paciente.
  * - id_servicio (int): filtra por d.id_servicio.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
@@ -78,6 +79,7 @@ try {
     [
         'dni_paciente'           => $dni_paciente,
         'codigo_unico'           => $codigo_unico,
+        'q'                      => $q,
         'id_tipo_documento'      => $id_tipo_documento,
         'id_tipo_identificacion' => $id_tipo_identificacion,
         'id_servicio'            => $id_servicio,
@@ -164,6 +166,17 @@ try {
     if ($codigo_unico !== '') {
         $query .= " AND d.codigo_unico = :codigo_unico";
         $params[':codigo_unico'] = $codigo_unico;
+    }
+
+    if ($q !== '') {
+        $query .= " AND (
+            d.comentario ILIKE :q
+            OR d.codigo_unico ILIKE :q2
+            OR p.apellidoynombre ILIKE :q3
+        )";
+        $params[':q']  = '%' . $q . '%';
+        $params[':q2'] = '%' . $q . '%';
+        $params[':q3'] = '%' . $q . '%';
     }
 
     // Filtros por rango de fechas

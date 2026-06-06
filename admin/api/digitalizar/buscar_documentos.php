@@ -244,7 +244,7 @@ if (!empty($dni_paciente)) {
     }
 
     // Ordenamiento por defecto (más recientes primero)
-    $query .= " ORDER BY d.fecha_subido DESC";
+    $query .= " ORDER BY d.fecha_subido DESC, d.id DESC";
 
     // Paginación
     $offset = ($pagina - 1) * $limite;

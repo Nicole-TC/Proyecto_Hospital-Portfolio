@@ -12,7 +12,8 @@
  *                Si se envía id_tipo_identificacion, se aplica solo sobre personal_identificaciones.
  * - id_tipo_identificacion (int, opcional): filtra por tipo de identificación junto a dni.
  * - id_tipo_documento (int): filtra por d.id_tipo_documento; compatible con LEFT JOIN tipos_documentos td.
- * - codigo_unico (string, max 100 chars): filtra por d.codigo_unico (igualdad exacta); ignorado si vacío tras trim.
+ * - codigo_unico (string, max 100 chars): filtra por d.codigo_unico (búsqueda exacta, código completo, único resultado preciso); ignorado si vacío tras trim.
+ * - codigo_unico_like (string, max 100 chars): búsqueda parcial ILIKE sobre d.codigo_unico (búsqueda parcial, útil cuando no sabés el código completo.); ignorado si vacío tras trim.
  * - q (string, max 200 chars): búsqueda textual ILIKE sobre comentario, codigo_unico y apellidoynombre del paciente; ignorado si vacío tras trim.
  * - id_servicio (int): filtra por d.id_servicio.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre); responde 400 si formato inválido.
@@ -79,6 +80,7 @@ try {
     [
         'dni_paciente'           => $dni_paciente,
         'codigo_unico'           => $codigo_unico,
+        'codigo_unico_like'      => $codigo_unico_like,
         'q'                      => $q,
         'id_tipo_documento'      => $id_tipo_documento,
         'id_tipo_identificacion' => $id_tipo_identificacion,
@@ -187,6 +189,11 @@ try {
     if ($codigo_unico !== '') {
         $query .= " AND d.codigo_unico = :codigo_unico";
         $params[':codigo_unico'] = $codigo_unico;
+    }
+
+    if ($codigo_unico_like !== '') {
+        $query .= " AND d.codigo_unico ILIKE :codigo_unico_like";
+        $params[':codigo_unico_like'] = '%' . $codigo_unico_like . '%';
     }
 
     if ($q !== '') {

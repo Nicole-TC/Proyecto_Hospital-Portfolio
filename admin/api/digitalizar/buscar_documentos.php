@@ -20,7 +20,6 @@
  * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre); responde 400 si formato inválido.
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
  * - tag_id (int): alias de una sola etiqueta.
- * - id_servicio (int): filtra por d.id_servicio.
  * - estado_documento (string): filtra por d.estado_documento; valores permitidos: pendiente, revisado, archivado.
  * - pagina (int, default 1): número de página.
  * - limite (int, default 50, max 100): registros por página.
@@ -134,8 +133,7 @@ try {
                 FROM documento_etiquetas de
                 JOIN etiquetas e ON de.id_etiqueta = e.id
                 WHERE de.id_documento = d.id
-            ) AS etiquetas,
-            COUNT(*) OVER() AS total_count
+            ) AS etiquetas
         FROM documentos d
         JOIN personal p ON d.id_persona = p.id
         LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
@@ -145,31 +143,25 @@ try {
 
     $params = [];
 
-    // Agregar filtros dinámicos
-    if (!empty($dni_paciente)) {
-    $query .= " AND (
-        p.dni = :dni
-        OR EXISTS (
-            SELECT 1 FROM personal_identificaciones pi
-            WHERE pi.id_personal = p.id
-            AND pi.numero_identificacion = :dni2";
+if (!empty($dni_paciente)) {
+        $query .= " AND (
+            p.dni = :dni
+            OR EXISTS (
+                SELECT 1 FROM personal_identificaciones pi
+                WHERE pi.id_personal = p.id
+                AND pi.numero_identificacion = :dni2";
 
-    if ($id_tipo_documento) {
-        $query .= " AND d.id_tipo_documento = :id_tipo_documento";
-        $params[':id_tipo_documento'] = $id_tipo_documento;
+        if ($id_tipo_identificacion) {
+            $query .= " AND pi.id_tipo_identificacion = :id_tipo_identificacion";
+            $params[':id_tipo_identificacion'] = $id_tipo_identificacion;
+        }
+
+        $query .= "
+            )
+        )";
+        $params[':dni']  = $dni_paciente;
+        $params[':dni2'] = $dni_paciente;
     }
-
-    if ($id_servicio) {
-        $query .= " AND d.id_servicio = :id_servicio";
-        $params[':id_servicio'] = $id_servicio;
-    }
-
-    $query .= "
-        )
-    )";
-    $params[':dni']  = $dni_paciente;
-    $params[':dni2'] = $dni_paciente;
-}
 
     if ($id_tipo_documento) {
         $query .= " AND d.id_tipo_documento = :id_tipo_documento";
@@ -258,20 +250,19 @@ try {
     $offset = ($pagina - 1) * $limite;
     $query .= " LIMIT " . (int)$limite . " OFFSET " . (int)$offset;
 
-    // Preparar y ejecutar la consulta
+    // Contar total de registros sin paginación
+    $query_count = preg_replace('/SELECT.*?FROM/s', 'SELECT COUNT(*) AS total FROM', $query);
+    $query_count = preg_replace('/ORDER BY.*$/s', '', $query_count);
+    $query_count = preg_replace('/LIMIT \d+ OFFSET \d+/s', '', $query_count);
+    $stmt_count = $bd_dig->prepare($query_count);
+    $stmt_count->execute($params);
+    $total_registros = (int)$stmt_count->fetchColumn();
+    $total_paginas = $total_registros > 0 ? (int)ceil($total_registros / $limite) : 0;
+
+    // Preparar y ejecutar la consulta principal
     $stmt = $bd_dig->prepare($query);
     $stmt->execute($params);
-
-    // Obtener los resultados
     $documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    $total_registros = count($documentos) > 0 ? (int)$documentos[0]['total_count'] : 0;
-    $total_paginas = ceil($total_registros / $limite);
-
-    // Remover 'total_count' de los resultados para limpiar la respuesta
-    foreach ($documentos as &$doc) {
-        unset($doc['total_count']);
-    }
 
     // Respuesta JSON
     http_response_code(200);

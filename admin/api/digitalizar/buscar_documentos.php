@@ -17,7 +17,7 @@
  * - q (string, max 200 chars): búsqueda textual ILIKE sobre comentario, codigo_unico y apellidoynombre del paciente; ignorado si vacío tras trim.
  * - id_servicio (int): filtra por d.id_servicio.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre); responde 400 si formato inválido.
- * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre); responde 400 si formato inválido.
+ * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hast@a / entre); responde 400 si formato inválido.
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
  * - tag_id (int): alias de una sola etiqueta.
  * - estado_documento (string): filtra por d.estado_documento; valores permitidos: pendiente, revisado, archivado.
@@ -38,10 +38,11 @@
  *   "status": "success",
  *   "message": "Búsqueda completada",
  *   "data": {
- *     "paginacion": { "total_registros", "total_paginas", "pagina_actual", "limite" },
+ *    "paginacion": { "total_registros", "total_paginas", "pagina_actual", "limite" },
+ *    "filtros_aplicados": { eco de los parámetros efectivamente usados en la búsqueda },
 *     "documentos": [ { "id", "codigo_unico", "ruta_archivo", "comentario", "fecha_subido",
- *       "prioridad", "estado_documento", "id_persona", "id_servicio", "id_tipo_documento",
- *       "dni", "paciente", "tipo_documento", "servicio", "etiquetas" } ]
+ *                   "prioridad", "estado_documento", "id_persona", "id_servicio", "id_tipo_documento",
+ *                   "dni", "paciente", "tipo_documento", "servicio", "etiquetas" } ]
  *   }
  * }
  *
@@ -297,6 +298,19 @@ if (!empty($dni_paciente)) {
                 "pagina_actual" => $pagina,
                 "limite" => $limite
             ],
+            "filtros_aplicados" => array_filter([
+                "dni"                => $dni_paciente ?: null,
+                "codigo_unico"       => $codigo_unico ?: null,
+                "codigo_unico_like"  => $codigo_unico_like ?: null,
+                "q"                  => $q ?: null,
+                "id_tipo_documento"  => $id_tipo_documento ?: null,
+                "id_tipo_identificacion" => $id_tipo_identificacion ?: null,
+                "id_servicio"        => $id_servicio ?: null,
+                "estado_documento"   => $estado_documento,
+                "fecha_inicio"       => $fecha_inicio ?: null,
+                "fecha_fin"          => $fecha_fin ?: null,
+                "etiquetas"          => !empty($etiquetas) ? $etiquetas : null,
+            ]),
             "documentos" => $documentos
         ]
     ], JSON_UNESCAPED_UNICODE);

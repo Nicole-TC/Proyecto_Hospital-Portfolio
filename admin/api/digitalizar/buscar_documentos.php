@@ -21,8 +21,8 @@
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
  * - tag_id (int): alias de una sola etiqueta.
  * - estado_documento (string): filtra por d.estado_documento; valores permitidos: pendiente, revisado, archivado.
- * - pagina (int, default 1): número de página.
- * - limite (int, default 50, max 100): registros por página.
+ * - pagina (int, default 1): número de página; responde 400 si es 0 o inválido.
+ * - limite (int, default 50, max 100): registros por página; responde 400 si es 0 o mayor a 100.
  *
  * SQL base (JOINs):
  * - documentos d
@@ -109,6 +109,27 @@ try {
             "status"     => "error",
             "message"    => "El parámetro fecha_fin no tiene formato válido (YYYY-MM-DD).",
             "error_code" => "INVALID_DATE"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Validar pagina y limite
+    if ($pagina === false || $pagina < 1) {
+        http_response_code(400);
+        echo json_encode([
+            "status"     => "error",
+            "message"    => "El parámetro pagina debe ser un entero mayor a 0.",
+            "error_code" => "INVALID_PAGINA"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($limite === false || $limite < 1 || $limite > 100) {
+        http_response_code(400);
+        echo json_encode([
+            "status"     => "error",
+            "message"    => "El parámetro limite debe ser un entero entre 1 y 100.",
+            "error_code" => "INVALID_LIMITE"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

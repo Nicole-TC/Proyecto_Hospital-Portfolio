@@ -63,13 +63,41 @@ function mostrarEstudios() {
   }
   var estudios = estudiosPorCirugia[cirugia] || [];
   lista.innerHTML = '';
-  estudios.forEach(function (nombre) {
+  estudios.forEach(function (est) {
     var badge = document.createElement('span');
     badge.className = 'badge bg-info fs-6 px-3 py-2';
-    badge.textContent = nombre;
+    badge.textContent = est.nombre;
     lista.appendChild(badge);
   });
+
+  var conIndicaciones = estudios.filter(function (e) { return e.observacion && e.observacion.trim() !== ''; });
+  if (conIndicaciones.length > 0) {
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-outline-info rounded-pill px-4 ms-3';
+    btn.textContent = 'Ver indicaciones';
+    btn.type = 'button';
+    btn.addEventListener('click', function () {
+      verIndicaciones(conIndicaciones);
+    });
+    lista.appendChild(btn);
+  }
+
   cont.style.display = '';
+}
+
+function verIndicaciones(lista) {
+  var html = '';
+  lista.forEach(function (est, i) {
+    if (i > 0) html += '<hr>';
+    html += '<strong>' + est.nombre + '</strong><br>';
+    html += est.observacion.replace(/\n/g, '<br>');
+  });
+  Swal.fire({
+    icon: 'info',
+    title: 'Indicaciones generales',
+    html: html,
+    confirmButtonColor: '#3085d6'
+  });
 }
 
 function habilitarSelects(disabled) {
@@ -137,7 +165,7 @@ function serializarFormulario() {
   var s = el('cirujano');
   datos.cirujano = s ? s.value : '';
   var estudios = estudiosPorCirugia[selectCirugia.value] || [];
-  datos.tipoEstudio = estudios.join(', ');
+  datos.tipoEstudio = estudios.map(function (e) { return e.nombre; }).join(', ');
   return datos;
 }
 

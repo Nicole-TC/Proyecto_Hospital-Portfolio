@@ -15,8 +15,8 @@
  * - codigo_unico (string, max 100 chars): filtra por d.codigo_unico (igualdad exacta); ignorado si vacío tras trim.
  * - q (string, max 200 chars): búsqueda textual ILIKE sobre comentario, codigo_unico y apellidoynombre del paciente; ignorado si vacío tras trim.
  * - id_servicio (int): filtra por d.id_servicio.
- * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre).
- * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre).
+ * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre); responde 400 si formato inválido.
+ * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre); responde 400 si formato inválido.
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
  * - tag_id (int): alias de una sola etiqueta.
  * - id_servicio (int): filtra por d.id_servicio.
@@ -90,6 +90,27 @@ try {
         'pagina'                 => $pagina,
         'limite'                 => $limite,
     ] = sanitizar_params_busqueda($_GET);
+
+    // Validar formato de fechas
+    if ($fecha_inicio !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio)) {
+        http_response_code(400);
+        echo json_encode([
+            "status"     => "error",
+            "message"    => "El parámetro fecha_inicio no tiene formato válido (YYYY-MM-DD).",
+            "error_code" => "INVALID_DATE"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($fecha_fin !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)) {
+        http_response_code(400);
+        echo json_encode([
+            "status"     => "error",
+            "message"    => "El parámetro fecha_fin no tiene formato válido (YYYY-MM-DD).",
+            "error_code" => "INVALID_DATE"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 
     // Consulta SQL base
     $query = "

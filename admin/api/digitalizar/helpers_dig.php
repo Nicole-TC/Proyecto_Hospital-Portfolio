@@ -25,8 +25,8 @@
 function sanitizar_params_busqueda(array $get): array
 {
     $dni_paciente           = trim($get['dni'] ?? '');
-    $codigo_unico           = trim($get['codigo_unico'] ?? '');
-    $q                      = trim($get['q'] ?? '');
+    $codigo_unico           = mb_substr(trim($get['codigo_unico'] ?? ''), 0, 100);
+    $q                      = mb_substr(trim($get['q'] ?? ''), 0, 200);
     $id_tipo_documento      = filter_var($get['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $id_tipo_identificacion = filter_var($get['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
     $id_servicio            = filter_var($get['id_servicio'] ?? '', FILTER_VALIDATE_INT);

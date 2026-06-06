@@ -11,6 +11,15 @@ const form = document.getElementById('form-admision');
 
 var estudiosPorCirugia = {};
 
+// ─── VARIABLES DEL ESCÁNER ──────────────────────
+
+var scanBuffer = '';
+var scanTimeout = null;
+var lastKeyTime = 0;
+var scanDetected = false;
+var pacienteCargado = false;
+var dniAntesDeEscanear = '';
+
 function el(id) {
   return document.getElementById(id);
 }
@@ -70,6 +79,7 @@ function habilitarSelects(disabled) {
 }
 
 function reiniciarFormulario() {
+  pacienteCargado = false;
   limpiarCamposPaciente();
   inputDni.value = '';
   selectCirugia.value = '';
@@ -152,7 +162,6 @@ form.addEventListener('submit', function (e) {
           confirmButtonColor: '#3085d6',
         }).then(function (result) {
           if (result.isConfirmed) {
-            // ── Guardar datos del paciente para Agenda ──
             var datos = serializarFormulario();
             sessionStorage.setItem('pacienteAgenda', JSON.stringify({
               dni: datos.dni,
@@ -274,6 +283,10 @@ selectCirugia.addEventListener('change', function () {
 });
 
 inputDni.addEventListener('blur', function () {
+  if (window._scanJustCompleted) {
+    window._scanJustCompleted = false;
+    return;
+  }
   buscarPaciente(this.value.trim());
 });
 
@@ -295,6 +308,7 @@ document.getElementById('btnObraSocial').addEventListener('click', function () {
 inputDni.addEventListener('input', function () {
   var val = this.value.trim();
   if (val === '') {
+    pacienteCargado = false;
     limpiarCamposPaciente();
     deshabilitarCamposPaciente(true);
     habilitarSelects(true);
@@ -304,3 +318,225 @@ inputDni.addEventListener('input', function () {
 });
 
 el('obraSocial').addEventListener('change', actualizarLabelObraSocial);
+
+// ─── PARSER DEL QR ────────────────────────────────
+
+function parsearQRCode(texto) {
+  texto = texto.replace(/[qQ"]/g, '@');
+  var fechaMatch = texto.match(/(\d{2})[-\/](\d{2})[-\/](\d{4})/);
+  var fechaFormateada = '';
+  if (fechaMatch) {
+    fechaFormateada = fechaMatch[3] + '-' + fechaMatch[2] + '-' + fechaMatch[1];
+  }
+
+  var dni = null;
+
+  var sexoMatch = texto.match(/[MF]/i);
+  if (sexoMatch) {
+    var sexoPos = sexoMatch.index;
+    var afterSexo = texto.substring(sexoPos + 1).replace(/^[^0-9]*/, '');
+    var digitMatch = afterSexo.match(/^(\d{7,10})/);
+    if (digitMatch) {
+      var digits = digitMatch[1];
+      if (digits.length > 8) {
+        dni = digits.slice(-8);
+      } else if (/^\d{7,8}$/.test(digits)) {
+        dni = digits;
+      }
+    }
+  }
+
+  if (!dni) {
+    var digitos = texto.match(/\d{7,9}/g);
+    if (digitos && digitos.length > 0) {
+      dni = digitos[digitos.length - 1];
+      if (dni.length === 9 && dni[0] === '2') {
+        dni = dni.slice(1);
+      }
+    }
+  }
+  if (!dni || !/^\d{7,8}$/.test(dni)) return null;
+
+  var partes = texto.split('@').filter(function (p) { return p.length > 0; });
+  var apellido = '', nombre = '';
+
+  var nameIdx = 0;
+  if (partes.length >= 3 && (/^\d{1,3}$/.test(partes[0]) || partes[0].length <= 1)) {
+    nameIdx = 1;
+  }
+  if (nameIdx + 1 < partes.length && /^\d{7,8}$/.test(partes[nameIdx])) {
+    nameIdx++;
+  }
+
+  if (partes.length >= nameIdx + 2) {
+    apellido = partes[nameIdx].replace(/[^a-záéíóúüñA-Z\søØ]/g, '').trim().toUpperCase().replace(/Ø/g, 'O');
+    nombre = partes[nameIdx + 1].replace(/[^a-záéíóúüñA-Z\søØ]/g, '').trim().toUpperCase().replace(/Ø/g, 'O');
+  }
+
+  var sexoIdx = nameIdx + 2;
+  if (partes.length >= sexoIdx + 1 && nombre.length > 2) {
+    var sexo = partes[sexoIdx].replace(/[^MF]/gi, '').toUpperCase();
+    if ((sexo === 'M' || sexo === 'F') && nombre.slice(-1) === sexo) {
+      nombre = nombre.slice(0, -1).trim();
+    }
+  }
+
+  if (!apellido || !nombre) {
+    var nameMatches = texto.match(/[A-Za-z\sáéíóúüñ]{5,}/g);
+    if (nameMatches && nameMatches.length >= 2) {
+      apellido = nameMatches[0].trim().toUpperCase();
+      nombre = nameMatches.slice(1).join(' ').trim().toUpperCase();
+    }
+  }
+
+  if (!apellido || !nombre) {
+    if (partes.length >= nameIdx + 3) {
+      var primerCampo = partes[nameIdx > 0 ? nameIdx - 1 : 0];
+      var nombApell = primerCampo.replace(/^[\d&]+/, '');
+      var nomPartes = nombApell.split(/\d/).filter(function(p){return p.trim().length > 0;});
+      if (nomPartes.length >= 2) {
+        apellido = nomPartes[0].trim().toUpperCase();
+        nombre = nomPartes.slice(1).join(' ').trim().toUpperCase();
+      } else if (partes.length >= nameIdx + 2) {
+        apellido = partes[nameIdx].trim().toUpperCase();
+        nombre = partes[nameIdx + 1].trim().toUpperCase();
+      }
+    }
+  }
+
+  if (!apellido || !nombre) return null;
+
+  var fechaIdx = nameIdx + 5;
+  if (partes.length >= fechaIdx + 1) {
+    var fNacMatch = partes[fechaIdx].match(/(\d{2})[-\/](\d{2})[-\/](\d{4})/);
+    if (fNacMatch) {
+      fechaFormateada = fNacMatch[3] + '-' + fNacMatch[2] + '-' + fNacMatch[1];
+    }
+  }
+
+  return {
+    dni: dni,
+    apellido: apellido,
+    nombre: nombre,
+    fechaNacimiento: fechaFormateada
+  };
+}
+
+// ─── PROCESADOR DE ESCANEO ────────────────────────
+
+function procesarEscaneo(texto) {
+  var datos = parsearQRCode(texto);
+  if (!datos) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'QR no reconocido',
+      html: 'Texto recibido:<br><code style="font-size:0.8em;word-break:break-all;">' + texto + '</code>',
+      confirmButtonColor: '#3085d6'
+    });
+    return;
+  }
+
+  if (pacienteCargado && datos.dni !== dniAntesDeEscanear) {
+    inputDni.value = dniAntesDeEscanear;
+    Swal.fire({
+      icon: 'warning',
+      title: 'Paciente ya cargado',
+      text: 'Ya hay un paciente cargado. Complete la admisión actual o reinicie la página para escanear otro DNI.',
+      showDenyButton: true,
+      confirmButtonText: 'Seguir con el actual',
+      denyButtonText: 'Recargar página',
+      confirmButtonColor: '#3085d6',
+      denyButtonColor: '#d33',
+    }).then(function (result) {
+      if (result.isDenied) location.reload();
+    });
+    return;
+  }
+
+  pacienteCargado = true;
+  window._scanJustCompleted = true;
+  inputDni.value = datos.dni;
+
+  fetch(ENDPOINT + '?action=buscar_dni&dni=' + encodeURIComponent(datos.dni))
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.ok && data.encontrado && data.paciente) {
+        var p = data.paciente;
+        el('apellido').value = p.apellido || '';
+        el('nombre').value = p.nombre || '';
+        el('fechaNacimiento').value = p.fecha_nacimiento || '';
+        el('direccion').value = p.direccion || '';
+        el('codigoPostal').value = p.codigo_postal || '';
+        el('email').value = p.email || '';
+        el('telefono').value = p.telefono || '';
+        el('obraSocial').checked = p.obra_social == 1 || p.obra_social === true;
+        actualizarLabelObraSocial();
+        deshabilitarCamposPaciente(true);
+        habilitarSelects(false);
+      } else {
+        el('apellido').value = datos.apellido;
+        el('nombre').value = datos.nombre;
+        el('fechaNacimiento').value = datos.fechaNacimiento;
+        deshabilitarCamposPaciente(false);
+        habilitarSelects(false);
+      }
+    })
+    .catch(function () {
+      el('apellido').value = datos.apellido;
+      el('nombre').value = datos.nombre;
+      el('fechaNacimiento').value = datos.fechaNacimiento;
+      deshabilitarCamposPaciente(false);
+      habilitarSelects(false);
+    });
+}
+
+function cancelarEscaneo() {
+  scanBuffer = '';
+  scanDetected = false;
+  if (scanTimeout) { clearTimeout(scanTimeout); scanTimeout = null; }
+}
+
+// ─── DETECTOR DE ESCANER USB ──────────────────────
+
+document.addEventListener('keydown', function (e) {
+  var now = Date.now();
+  var timeSinceLast = lastKeyTime ? now - lastKeyTime : 999;
+  lastKeyTime = now;
+
+  if (!scanDetected && timeSinceLast < 500) {
+    scanDetected = true;
+    scanBuffer = '';
+    dniAntesDeEscanear = inputDni.value;
+    if (e.target.id !== 'dni') inputDni.focus();
+  }
+
+  if (!scanDetected) return;
+
+  if (scanTimeout) clearTimeout(scanTimeout);
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (scanBuffer.length > 10) procesarEscaneo(scanBuffer);
+    cancelarEscaneo();
+    return;
+  }
+
+  if (e.key && e.key.length === 1) {
+    e.preventDefault();
+    scanBuffer += e.key;
+    inputDni.value = '';
+    scanTimeout = setTimeout(function () {
+      if (scanBuffer.length > 30) procesarEscaneo(scanBuffer);
+      else cancelarEscaneo();
+    }, 300);
+    return;
+  }
+
+  if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') {
+    e.preventDefault();
+    scanTimeout = setTimeout(function () {
+      if (scanBuffer.length > 30) procesarEscaneo(scanBuffer);
+      else cancelarEscaneo();
+    }, 300);
+  }
+});

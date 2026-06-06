@@ -10,6 +10,7 @@
  * @return array {
  *   string    $dni_paciente
  *   string    $codigo_unico
+ *   string    $codigo_unico_like
  *   string    $q
  *   int|false $id_tipo_documento
  *   int|false $id_tipo_identificacion
@@ -26,6 +27,7 @@ function sanitizar_params_busqueda(array $get): array
 {
     $dni_paciente           = trim($get['dni'] ?? '');
     $codigo_unico           = mb_substr(trim($get['codigo_unico'] ?? ''), 0, 100);
+    $codigo_unico_like      = mb_substr(trim($get['codigo_unico_like'] ?? ''), 0, 100);
     $q                      = mb_substr(trim($get['q'] ?? ''), 0, 200);
     $id_tipo_documento      = filter_var($get['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
     $id_tipo_identificacion = filter_var($get['id_tipo_identificacion'] ?? '', FILTER_VALIDATE_INT);
@@ -54,6 +56,7 @@ function sanitizar_params_busqueda(array $get): array
     return compact(
         'dni_paciente',
         'codigo_unico',
+        'codigo_unico_like',
         'q',
         'id_tipo_documento',
         'id_tipo_identificacion',

@@ -69,3 +69,21 @@ function sanitizar_params_busqueda(array $get): array
         'limite'
     );
 }
+
+/**
+ * Emite una respuesta JSON de error y termina la ejecución.
+ *
+ * @param int    $code       HTTP status code (400, 401, 405, 500)
+ * @param string $message    Mensaje legible
+ * @param string $error_code Código de error interno
+ */
+function jsonError(int $code, string $message, string $error_code = 'ERROR'): void
+{
+    http_response_code($code);
+    echo json_encode([
+        'status'     => 'error',
+        'message'    => $message,
+        'error_code' => $error_code,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}

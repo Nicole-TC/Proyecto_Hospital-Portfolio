@@ -47,6 +47,15 @@
  * }
  *
  * Errores: 400 (sin filtros, fecha inválida, pagina/limite inválidos, etiquetas inválidas), 401 (sin sesión), 405 (no GET), 500 (BD).
+ *
+ * Ejemplos de URL:
+ * - Buscar por DNI:           ?dni=48037023
+ * - Buscar por texto:         ?q=historia
+ * - Buscar por código parcial:?codigo_unico_like=DOC-2026
+ * - Buscar por fecha:         ?fecha_inicio=2026-01-01&fecha_fin=2026-06-30
+ * - Buscar por servicio:      ?id_servicio=3&fecha_inicio=2026-01-01
+ * - Buscar por etiquetas:     ?etiquetas=1,2,3
+ * - Paginación:               ?dni=48037023&pagina=2&limite=10
  */
 
 session_start();

@@ -68,9 +68,9 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/form_orden.php";
         break;
 
-        case 'gestion_cirugias':
-        $menu    = 'Catálogo de Cirugías (CQ)';
-        $require = 'vistas/circuitoquirurgico/'; // placeholder hasta que exista la vista de gestión
+    case 'gestion_cirugias':
+        $menu    = 'Administración de Catálogos (CQ)';
+        $require = 'vistas/circuitoquirurgico/crud_cirugiasEst.php';
         break;
 
 

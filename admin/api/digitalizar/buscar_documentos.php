@@ -17,7 +17,7 @@
  * - q (string, max 200 chars): búsqueda textual ILIKE sobre comentario, codigo_unico y apellidoynombre del paciente; ignorado si vacío tras trim.
  * - id_servicio (int): filtra por d.id_servicio.
  * - fecha_inicio (YYYY-MM-DD): filtra d.fecha_subido (desde / entre); responde 400 si formato inválido.
- * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hast@a / entre); responde 400 si formato inválido.
+ * - fecha_fin (YYYY-MM-DD): filtra d.fecha_subido (hasta / entre); responde 400 si formato inválido.
  * - etiquetas (int[]|string): IDs separados por coma o array; EXISTS en documento_etiquetas.
  * - tag_id (int): alias de una sola etiqueta.
  * - estado_documento (string): filtra por d.estado_documento; valores permitidos: pendiente, revisado, archivado.
@@ -31,7 +31,7 @@
  * - LEFT JOIN servicios s ON d.id_servicio = s.id
  * - EXISTS subconsulta sobre personal_identificaciones para filtro dni.
  * - WHERE d.estado = true
- * - Subconsulta: etiquetas agregadas por documento (STRING_AGG).
+ * - Subconsulta: etiquetas agregadas por documento via STRING_AGG(nombre_etiqueta, ', ') como string separado por comas.
  *
  * Respuesta 200 (JSON):
  * {
@@ -46,33 +46,23 @@
  *   }
  * }
  *
- * Errores: 400 (sin filtros), 401 (sin sesión), 405 (no GET), 500 (BD).
+ * Errores: 400 (sin filtros, fecha inválida, pagina/limite inválidos, etiquetas inválidas), 401 (sin sesión), 405 (no GET), 500 (BD).
  */
 
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['id'])) {
-    http_response_code(401);
-    echo json_encode([
-        "status" => "error",
-        "message" => "No autorizado. Por favor inicie sesión."
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
 // Incluir conexión a la base de datos
 require_once __DIR__ . '/../../model/conexion_dig.php';
 require_once __DIR__ . '/helpers_dig.php';
 
+if (!isset($_SESSION['id'])) {
+    jsonError(401, 'No autorizado. Por favor inicie sesión.', 'UNAUTHORIZED');
+}
+
 // Validar que la petición sea GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    http_response_code(405);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Método no permitido. Utilice GET."
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    jsonError(405, 'Método no permitido. Utilice GET.', 'METHOD_NOT_ALLOWED');
 }
 
 try {
@@ -95,44 +85,20 @@ try {
 
     // Validar formato de fechas
     if ($fecha_inicio !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio)) {
-        http_response_code(400);
-        echo json_encode([
-            "status"     => "error",
-            "message"    => "El parámetro fecha_inicio no tiene formato válido (YYYY-MM-DD).",
-            "error_code" => "INVALID_DATE"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        jsonError(400, 'El parámetro fecha_inicio no tiene formato válido (YYYY-MM-DD).', 'INVALID_DATE');
     }
 
     if ($fecha_fin !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)) {
-        http_response_code(400);
-        echo json_encode([
-            "status"     => "error",
-            "message"    => "El parámetro fecha_fin no tiene formato válido (YYYY-MM-DD).",
-            "error_code" => "INVALID_DATE"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        jsonError(400, 'El parámetro fecha_fin no tiene formato válido (YYYY-MM-DD).', 'INVALID_DATE');
     }
 
     // Validar pagina y limite
     if ($pagina === false || $pagina < 1) {
-        http_response_code(400);
-        echo json_encode([
-            "status"     => "error",
-            "message"    => "El parámetro pagina debe ser un entero mayor a 0.",
-            "error_code" => "INVALID_PAGINA"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        jsonError(400, 'El parámetro pagina debe ser un entero mayor a 0.', 'INVALID_PAGINA');
     }
 
     if ($limite === false || $limite < 1 || $limite > 100) {
-        http_response_code(400);
-        echo json_encode([
-            "status"     => "error",
-            "message"    => "El parámetro limite debe ser un entero entre 1 y 100.",
-            "error_code" => "INVALID_LIMITE"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        jsonError(400, 'El parámetro limite debe ser un entero entre 1 y 100.', 'INVALID_LIMITE');
     }
 
     // Consulta SQL base
@@ -221,21 +187,21 @@ if (!empty($dni_paciente)) {
         $params[':q3'] = '%' . $q . '%';
     }
 
-    // Filtros por rango de fechas
-    $tiene_dni       = $dni_paciente !== '';
-    $tiene_tipo_doc  = $id_tipo_documento !== false && $id_tipo_documento !== null;
-    $tiene_inicio    = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio) && $fecha_inicio <= date('Y-m-d');
-    $tiene_fin       = !empty($fecha_fin)    && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)    && $fecha_fin   <= date('Y-m-d');
-    $tiene_etiquetas = !empty($etiquetas);
+    // Validar que al menos un filtro esté presente
+    $tiene_dni               = $dni_paciente !== '';
+    $tiene_tipo_doc          = $id_tipo_documento !== false && $id_tipo_documento !== null;
+    $tiene_inicio            = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio) && $fecha_inicio <= date('Y-m-d');
+    $tiene_fin               = !empty($fecha_fin)    && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)    && $fecha_fin   <= date('Y-m-d');
+    $tiene_etiquetas         = !empty($etiquetas);
+    $tiene_q                 = $q !== '';
+    $tiene_codigo_unico      = $codigo_unico !== '';
+    $tiene_codigo_unico_like = $codigo_unico_like !== '';
+    $tiene_estado            = $estado_documento !== null;
+    $tiene_servicio          = $id_servicio !== false && $id_servicio !== null;
 
-    if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas) {
-        http_response_code(400);
-        echo json_encode([
-            "status"     => "error",
-            "message"    => "Debe ingresar al menos un criterio de búsqueda (dni, tipo de documento, fecha o etiqueta).",
-            "error_code" => "NO_FILTER"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+    if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas
+        && !$tiene_q && !$tiene_codigo_unico && !$tiene_codigo_unico_like && !$tiene_estado && !$tiene_servicio) {
+        jsonError(400, 'Debe ingresar al menos un criterio de búsqueda (dni, tipo de documento, fecha o etiqueta).', 'NO_FILTER');
     }
 
     if ($tiene_inicio && $tiene_fin) {
@@ -273,9 +239,9 @@ if (!empty($dni_paciente)) {
     $query .= " LIMIT " . (int)$limite . " OFFSET " . (int)$offset;
 
     // Contar total de registros sin paginación
-    $query_count = preg_replace('/SELECT.*?FROM/s', 'SELECT COUNT(*) AS total FROM', $query);
-    $query_count = preg_replace('/ORDER BY.*$/s', '', $query_count);
-    $query_count = preg_replace('/LIMIT \d+ OFFSET \d+/s', '', $query_count);
+    $query_sin_orden = preg_replace('/ORDER BY.*$/s', '', $query);
+    $query_sin_orden = preg_replace('/LIMIT \d+ OFFSET \d+/s', '', $query_sin_orden);
+    $query_count = "SELECT COUNT(*) FROM (" . $query_sin_orden . ") AS subquery";
     $stmt_count = $bd_dig->prepare($query_count);
     $stmt_count->execute($params);
     $total_registros = (int)$stmt_count->fetchColumn();
@@ -317,18 +283,8 @@ if (!empty($dni_paciente)) {
 
 } catch (PDOException $e) {
     error_log("Error DB en buscar_documentos: " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        "status" => "error",
-        "message" => "Error en la base de datos. Por favor, intente nuevamente.",
-        "error_code" => "DB_ERROR"
-    ], JSON_UNESCAPED_UNICODE);
+    jsonError(500, 'Error en la base de datos. Por favor, intente nuevamente.', 'DB_ERROR');
 } catch (Exception $e) {
     $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
-    http_response_code($code);
-    echo json_encode([
-        "status" => "error",
-        "message" => $e->getMessage(),
-        "error_code" => "SERVER_ERROR"
-    ], JSON_UNESCAPED_UNICODE);
+    jsonError($code, $e->getMessage(), 'SERVER_ERROR');
 }

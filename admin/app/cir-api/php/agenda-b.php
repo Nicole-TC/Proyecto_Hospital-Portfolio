@@ -97,63 +97,34 @@ class ConsultasAgenda {
     public static function buscarPacienteConValidacion($dni, $id_tipo_turno) {
         $pdo = conexionCircuitoQuirurgico();
 
-        // 1. Buscar persona y su orden médica más reciente
-        $sql = "
+        // 1. Verificar que la persona existe y tiene admisión (persona_asiste)
+        $sqlPersona = "
             SELECT
                 p.id_persona,
                 p.dni,
                 p.nombre,
                 p.apellido,
-                pa.id_persona_asiste,
-                om.id_orden,
-                om.id_estado        AS id_estado_orden,
-                eo.codigo           AS codigo_estado_orden,
-                eo.descripcion      AS desc_estado_orden,
-                prf.id_profesional,
-                pr.nombre           AS medico_nombre,
-                pr.apellido         AS medico_apellido
+                pa.id_persona_asiste
             FROM persona p
-            JOIN persona_asiste pa  ON pa.id_persona      = p.id_persona
-            JOIN orden_medica om    ON om.id_persona_asiste = pa.id_persona_asiste
-            JOIN estado eo          ON eo.id_estado        = om.id_estado
-            LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
-            LEFT JOIN persona pr    ON pr.id_persona       = prf.id_persona
+            JOIN persona_asiste pa ON pa.id_persona = p.id_persona
             WHERE p.dni = :dni
-            ORDER BY om.id_orden DESC
             LIMIT 1
         ";
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':dni', $dni);
-        $stmt->execute();
-        $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmtP = $pdo->prepare($sqlPersona);
+        $stmtP->bindParam(':dni', $dni);
+        $stmtP->execute();
+        $persona = $stmtP->fetch(PDO::FETCH_ASSOC);
 
-        if (!$paciente) {
+        if (!$persona) {
             return [
-                'ok'        => true,
+                'ok'         => true,
                 'encontrado' => false,
-                'motivo'    => 'sin_admision',
-                'mensaje'   => 'El paciente no tiene una orden médica registrada. Debe pasar primero por Admisión.'
+                'motivo'     => 'sin_admision',
+                'mensaje'    => 'El paciente no tiene admisión registrada. Debe pasar primero por Admisión.'
             ];
         }
 
-        // 2. Validar estado de la orden
-        $codigosBloqueo = ['FIN', 'CANC', 'RECH', 'ELIM'];
-        if (in_array($paciente['codigo_estado_orden'], $codigosBloqueo)) {
-            $descripciones = [
-                'FIN'  => 'La orden médica del paciente ya fue finalizada.',
-                'CANC' => 'La orden médica del paciente fue cancelada.',
-                'RECH' => 'La orden médica del paciente fue rechazada.',
-                'ELIM' => 'La orden médica del paciente fue eliminada.',
-            ];
-            return [
-                'ok'        => true,
-                'encontrado' => false,
-                'motivo'    => 'orden_bloqueada',
-                'mensaje'   => $descripciones[$paciente['codigo_estado_orden']] . ' No es posible asignar un nuevo turno.'
-            ];
-        }
-
-        // 3. Validar turno activo del mismo tipo
+        // 2. Verificar turno duplicado ANTES de validar estado de orden
         $sqlTurno = "
             SELECT t.id_turno
             FROM turno t
@@ -164,30 +135,77 @@ class ConsultasAgenda {
             LIMIT 1
         ";
         $stmtT = $pdo->prepare($sqlTurno);
-        $stmtT->bindParam(':id_persona_asiste', $paciente['id_persona_asiste'], PDO::PARAM_INT);
+        $stmtT->bindParam(':id_persona_asiste', $persona['id_persona_asiste'], PDO::PARAM_INT);
         $stmtT->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
         $stmtT->execute();
         $turnoActivo = $stmtT->fetch(PDO::FETCH_ASSOC);
 
         if ($turnoActivo) {
             return [
-                'ok'        => true,
+                'ok'         => true,
                 'encontrado' => false,
-                'motivo'    => 'turno_duplicado',
-                'mensaje'   => 'El paciente ya tiene un turno prequirúrgico activo. No se puede asignar otro.'
+                'motivo'     => 'turno_duplicado',
+                'mensaje'    => 'El paciente ya tiene un turno prequirúrgico activo. No se puede asignar otro.'
+            ];
+        }
+
+        // 3. Buscar la orden médica más reciente y validar su estado
+        $sqlOrden = "
+            SELECT
+                om.id_orden,
+                om.id_estado        AS id_estado_orden,
+                eo.codigo           AS codigo_estado_orden,
+                eo.descripcion      AS desc_estado_orden,
+                pr.nombre           AS medico_nombre,
+                pr.apellido         AS medico_apellido
+            FROM orden_medica om
+            JOIN estado eo            ON eo.id_estado        = om.id_estado
+            LEFT JOIN profesional prf ON prf.id_profesional  = om.id_profesional
+            LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
+            WHERE om.id_persona_asiste = :id_persona_asiste
+            ORDER BY om.id_orden DESC
+            LIMIT 1
+        ";
+        $stmtO = $pdo->prepare($sqlOrden);
+        $stmtO->bindParam(':id_persona_asiste', $persona['id_persona_asiste'], PDO::PARAM_INT);
+        $stmtO->execute();
+        $orden = $stmtO->fetch(PDO::FETCH_ASSOC);
+
+        if (!$orden) {
+            return [
+                'ok'         => true,
+                'encontrado' => false,
+                'motivo'     => 'sin_admision',
+                'mensaje'    => 'El paciente no tiene una orden médica registrada. Debe pasar primero por Admisión.'
+            ];
+        }
+
+        $codigosBloqueo = ['FIN', 'CANC', 'RECH', 'ELIM'];
+        if (in_array($orden['codigo_estado_orden'], $codigosBloqueo)) {
+            $descripciones = [
+                'FIN'  => 'La orden médica del paciente ya fue finalizada.',
+                'CANC' => 'La orden médica del paciente fue cancelada.',
+                'RECH' => 'La orden médica del paciente fue rechazada.',
+                'ELIM' => 'La orden médica del paciente fue eliminada.',
+            ];
+            return [
+                'ok'         => true,
+                'encontrado' => false,
+                'motivo'     => 'orden_bloqueada',
+                'mensaje'    => $descripciones[$orden['codigo_estado_orden']] . ' No es posible asignar un nuevo turno.'
             ];
         }
 
         // 4. Todo OK
         return [
-            'ok'              => true,
-            'encontrado'      => true,
-            'id_persona_asiste' => (int)$paciente['id_persona_asiste'],
-            'id_orden'        => (int)$paciente['id_orden'],
-            'nombre'          => $paciente['nombre'],
-            'apellido'        => $paciente['apellido'],
-            'dni'             => $paciente['dni'],
-            'medico'          => trim($paciente['medico_apellido'] . ', ' . $paciente['medico_nombre']),
+            'ok'                => true,
+            'encontrado'        => true,
+            'id_persona_asiste' => (int)$persona['id_persona_asiste'],
+            'id_orden'          => (int)$orden['id_orden'],
+            'nombre'            => $persona['nombre'],
+            'apellido'          => $persona['apellido'],
+            'dni'               => $persona['dni'],
+            'medico'            => trim($orden['medico_apellido'] . ', ' . $orden['medico_nombre']),
         ];
     }
 

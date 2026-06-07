@@ -68,7 +68,7 @@ class ConsultasPacientes {
         $total = (int)$stmtCount->fetchColumn();
 
         $sql = "SELECT p.id_persona, p.dni, p.nombre, p.apellido, p.email, p.telefono,
-                       p.fecha_nacimiento, p.direccion, p.codigo_postal, p.id_estado
+                       p.fecha_nacimiento, p.direccion, p.codigo_postal, p.obra_social, p.id_estado
                 FROM persona p
                 $where
                 ORDER BY p.id_persona DESC
@@ -123,7 +123,7 @@ class ConsultasPacientes {
         $idRolPaciente = self::obtenerIdRolPaciente();
 
         $sql = "SELECT p.id_persona, p.dni, p.nombre, p.apellido, p.fecha_nacimiento,
-                       p.email, p.telefono, p.direccion, p.codigo_postal, p.id_rol
+                       p.email, p.telefono, p.direccion, p.codigo_postal, p.obra_social, p.id_rol
                 FROM persona p
                 WHERE p.id_persona = :id_persona AND p.id_rol = :id_rol
                 LIMIT 1";

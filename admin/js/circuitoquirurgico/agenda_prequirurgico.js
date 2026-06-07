@@ -1,14 +1,3 @@
-/* ── Reloj en vivo ── */
-function updateClock() {
-    const now = new Date();
-    document.getElementById('clockTime').textContent = now.toLocaleTimeString('es-AR');
-    document.getElementById('clockDate').textContent = now.toLocaleDateString('es-AR', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-}
-updateClock();
-setInterval(updateClock, 1000);
-
 /* ── Constantes ── */
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -16,8 +5,10 @@ const MONTHS_LONG = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'jul
 const ENDPOINT_AGENDA = 'app/cir-api/endpoints/agenda-e.php';
 
 let currentWeekOffset = 0;
-let diaSeleccionado = null; // fecha string 'YYYY-MM-DD' del día clickeado
-let idTipoTurnoPreq = null; // se carga al iniciar
+let currentMonthOffset = 0;   // <-- nuevo
+let currentView = 'week';     // <-- nuevo: 'week' | 'month'
+let diaSeleccionado = null;
+let idTipoTurnoPreq = null;
 
 /* ── Feriados Argentina ── */
 let feriadosCache = {};
@@ -34,6 +25,7 @@ function cargarFeriados(anio, callback) {
         .catch(function () { feriadosCache[anio] = {}; callback({}); });
 }
 
+/* ── Helpers de fecha ── */
 function getWeekStart(offset) {
     const now = new Date();
     const monday = new Date(now);
@@ -42,15 +34,33 @@ function getWeekStart(offset) {
     return monday;
 }
 
-/*  Calendario con click por día ── */
+function getMonthReference(offset) {
+    // Devuelve un Date apuntando al primer día del mes con el offset aplicado
+    const now = new Date();
+    const ref = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    return ref;
+}
+
+/* ── Render principal ── */
 function renderCalendar() {
+    if (currentView === 'week') {
+        renderCalendarSemana();
+    } else {
+        renderCalendarMes();
+    }
+}
+
+/* ════════════════════════════════
+   VISTA SEMANAL
+════════════════════════════════ */
+function renderCalendarSemana() {
     const weekStart = getWeekStart(currentWeekOffset);
     cargarFeriados(weekStart.getFullYear(), function (feriados) {
-        _renderCalendarConFeriados(feriados);
+        _renderSemanaConFeriados(feriados);
     });
 }
 
-function _renderCalendarConFeriados(feriados) {
+function _renderSemanaConFeriados(feriados) {
     const grid = document.getElementById('calGrid');
     const label = document.getElementById('weekLabel');
     const weekStart = getWeekStart(currentWeekOffset);
@@ -62,7 +72,6 @@ function _renderCalendarConFeriados(feriados) {
         ' – ' + weekEnd.getDate() + ' ' + MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
     grid.innerHTML = '';
 
-    // Cargar cupos de todos los días de la semana
     var fechas = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
@@ -82,14 +91,19 @@ function _renderCalendarConFeriados(feriados) {
             .catch(function () { cuposSemana[fecha] = 0; })
             .finally(function () {
                 pendientes--;
-                if (pendientes === 0) _pintarCalendario(weekStart, today, feriados, cuposSemana);
+                if (pendientes === 0) _pintarSemana(weekStart, today, feriados, cuposSemana);
             });
     });
 }
 
-function _pintarCalendario(weekStart, today, feriados, ocupadosPorFecha) {
+function _pintarSemana(weekStart, today, feriados, ocupadosPorFecha) {
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
+
+    // Grilla de 7 columnas
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+    grid.style.gap = '8px';
 
     for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
@@ -102,7 +116,6 @@ function _pintarCalendario(weekStart, today, feriados, ocupadosPorFecha) {
         const esSeleccionado = dateStr === diaSeleccionado;
 
         const col = document.createElement('div');
-        col.className = 'col';
 
         var borderClass = '';
         if (esSeleccionado) borderClass = 'border-primary border-2';
@@ -128,7 +141,6 @@ function _pintarCalendario(weekStart, today, feriados, ocupadosPorFecha) {
             '<div class="mt-1">' + badgeOcupados + '</div>' +
             '</div></div>';
 
-        //  click abre panel del día
         col.querySelector('.dia-calendario').addEventListener('click', function () {
             var fecha = this.dataset.fecha;
             if (diaSeleccionado === fecha) {
@@ -146,7 +158,134 @@ function _pintarCalendario(weekStart, today, feriados, ocupadosPorFecha) {
     }
 }
 
-/* Panel de turnos del día ── */
+/* ════════════════════════════════
+   VISTA MENSUAL
+════════════════════════════════ */
+function renderCalendarMes() {
+    const ref = getMonthReference(currentMonthOffset);
+    cargarFeriados(ref.getFullYear(), function (feriados) {
+        _renderMesConFeriados(ref, feriados);
+    });
+}
+
+function _renderMesConFeriados(ref, feriados) {
+    const label = document.getElementById('weekLabel');
+    label.textContent = MONTHS_LONG[ref.getMonth()] + ' ' + ref.getFullYear();
+
+    // Primer y último día del mes
+    const primerDia = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const ultimoDia = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+
+    // Fechas del mes
+    var fechas = [];
+    for (let d = 1; d <= ultimoDia.getDate(); d++) {
+        const fecha = new Date(ref.getFullYear(), ref.getMonth(), d);
+        fechas.push(fecha.toISOString().split('T')[0]);
+    }
+
+    // Cargar cupos en paralelo
+    var cuposMes = {};
+    var pendientes = fechas.length;
+
+    fechas.forEach(function (fecha) {
+        fetch(ENDPOINT_AGENDA + '?action=turnos_del_dia&fecha=' + fecha)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                cuposMes[fecha] = data.ok ? data.turnos.length : 0;
+            })
+            .catch(function () { cuposMes[fecha] = 0; })
+            .finally(function () {
+                pendientes--;
+                if (pendientes === 0) _pintarMes(ref, primerDia, ultimoDia, feriados, cuposMes);
+            });
+    });
+}
+
+function _pintarMes(ref, primerDia, ultimoDia, feriados, cuposPorFecha) {
+    const grid = document.getElementById('calGrid');
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+
+    grid.innerHTML = '';
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+    grid.style.gap = '4px';
+
+    // Encabezados
+    const DAYS_ORDER = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    DAYS_ORDER.forEach(function (d) {
+        const hdr = document.createElement('div');
+        hdr.className = 'text-center text-secondary pb-1';
+        hdr.style.cssText = 'font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;';
+        hdr.textContent = d;
+        grid.appendChild(hdr);
+    });
+
+    var startDow = (primerDia.getDay() + 6) % 7;
+    for (let i = 0; i < startDow; i++) {
+        grid.appendChild(document.createElement('div'));
+    }
+
+    for (let d = 1; d <= ultimoDia.getDate(); d++) {
+        const fecha = new Date(ref.getFullYear(), ref.getMonth(), d);
+        const dateStr = fecha.toISOString().split('T')[0];
+        const isToday = fecha.getTime() === today.getTime();
+        const isPast = fecha < today;
+        const esFeriado = feriados[dateStr];
+        const ocupados = cuposPorFecha[dateStr] || 0;
+        const esSeleccionado = dateStr === diaSeleccionado;
+
+        var borderClass = '';
+        if (esSeleccionado) borderClass = 'border-primary border-2';
+        else if (isToday) borderClass = 'border-primary';
+        else if (esFeriado) borderClass = 'border-warning';
+
+        // ── Fix 2: badge "Sin turnos" igual que semana ──
+        var badgeOcupados = ocupados > 0
+            ? '<span class="badge bg-primary-subtle text-primary" style="font-size:9px;">' +
+            ocupados + (ocupados !== 1 ? ' turnos' : ' turno') + '</span>'
+            : '<span class="badge bg-secondary-subtle text-secondary" style="font-size:9px;">Sin turnos</span>';
+
+        const cell = document.createElement('div');
+        cell.innerHTML =
+            '<div class="card border ' + borderClass + ' dia-calendario' + (isPast ? ' opacity-50' : '') + '" ' +
+            'data-fecha="' + dateStr + '" ' +
+            // ── Fix 1: alto fijo, overflow hidden ──
+            'style="border-radius:0.55rem;height:90px;overflow:hidden;cursor:pointer;transition:box-shadow .15s;' +
+            (esSeleccionado ? 'box-shadow:0 0 0 3px rgba(13,110,253,.25);' : '') + '">' +
+            '<div class="card-body p-1 text-center">' +
+            (isToday
+                ? '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mt-1 fw-bold" style="width:26px;height:26px;font-size:13px;">' + d + '</div>'
+                : '<div class="fw-semibold  ' + (esFeriado ? 'text-warning' : '') + '" style="font-size:14px;">' + d + '</div>'
+            ) +
+            // ── feriado truncado con ellipsis ──
+            (esFeriado
+                ? '<div style="font-size:8px;color:var(--bs-warning);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;" class="mb-1">' + esFeriado + '</div>'
+                : '') +
+            '<div>' + badgeOcupados + '</div>' +
+            '</div></div>';
+
+        // ── Fix 3: colapso al seleccionar día ──
+        cell.querySelector('.dia-calendario').addEventListener('click', function () {
+            var fecha = this.dataset.fecha;
+            if (diaSeleccionado === fecha) {
+                diaSeleccionado = null;
+                cerrarPanelDia();
+                expandirCalendario();
+                renderCalendar();
+            } else {
+                diaSeleccionado = fecha;
+                renderCalendar();
+                abrirPanelDia(fecha);
+                colapsarCalendario();
+            }
+        });
+
+        grid.appendChild(cell);
+    }
+}
+
+
+/* ── Panel de turnos del día ── */
 function abrirPanelDia(fecha) {
     var panel = document.getElementById('panelDia');
     if (!panel) return;
@@ -156,8 +295,6 @@ function abrirPanelDia(fecha) {
 
     document.getElementById('panelDiaTitulo').textContent = titulo;
     panel.classList.remove('d-none');
-
-    // Guardar fecha seleccionada en el modal
     document.getElementById('modalFechaOculta').value = fecha;
 
     cargarTurnosDia(fecha);
@@ -218,29 +355,57 @@ function cargarTurnosDia(fecha) {
         });
 }
 
-/* ── Navegación calendario ── */
-document.getElementById('btnPrevWeek').addEventListener('click', function () {
-    currentWeekOffset--;
-    diaSeleccionado = null;
-    cerrarPanelDia();
-    renderCalendar();
-});
-document.getElementById('btnNextWeek').addEventListener('click', function () {
-    currentWeekOffset++;
-    diaSeleccionado = null;
-    cerrarPanelDia();
-    renderCalendar();
-});
-document.getElementById('btnToday').addEventListener('click', function () {
+/* ── Toggle vista Semana / Mes ── */
+document.getElementById('btnVistaSemana').addEventListener('click', function () {
+    if (currentView === 'week') return;
+    currentView = 'week';
     currentWeekOffset = 0;
     diaSeleccionado = null;
     cerrarPanelDia();
+    document.getElementById('btnVistaSemana').classList.replace('btn-outline-secondary', 'btn-primary');
+    document.getElementById('btnVistaMes').classList.replace('btn-primary', 'btn-outline-secondary');
+    document.getElementById('calTitulo').textContent = 'Calendario Semanal';
     renderCalendar();
 });
 
-/*Modal Nuevo Turno ── */
+document.getElementById('btnVistaMes').addEventListener('click', function () {
+    if (currentView === 'month') return;
+    currentView = 'month';
+    currentMonthOffset = 0;
+    diaSeleccionado = null;
+    cerrarPanelDia();
+    document.getElementById('btnVistaMes').classList.replace('btn-outline-secondary', 'btn-primary');
+    document.getElementById('btnVistaSemana').classList.replace('btn-primary', 'btn-outline-secondary');
+    document.getElementById('calTitulo').textContent = 'Calendario Mensual';
+    renderCalendar();
+});
 
-// Buscar paciente por DNI con validación de circuito
+/* ── Navegación (prev / next / hoy) ── */
+document.getElementById('btnPrevWeek').addEventListener('click', function () {
+    diaSeleccionado = null;
+    cerrarPanelDia();
+    if (currentView === 'week') { currentWeekOffset--; }
+    else { currentMonthOffset--; }
+    renderCalendar();
+});
+
+document.getElementById('btnNextWeek').addEventListener('click', function () {
+    diaSeleccionado = null;
+    cerrarPanelDia();
+    if (currentView === 'week') { currentWeekOffset++; }
+    else { currentMonthOffset++; }
+    renderCalendar();
+});
+
+document.getElementById('btnToday').addEventListener('click', function () {
+    currentWeekOffset = 0;
+    currentMonthOffset = 0;
+    diaSeleccionado = null;
+    cerrarPanelDia();
+    renderCalendar();
+});
+
+/* ── Modal Nuevo Turno ── */
 document.addEventListener('blur', function (e) {
     if (e.target.id !== 'modalDni') return;
 
@@ -265,9 +430,7 @@ document.addEventListener('blur', function (e) {
                 feedback.innerHTML = '<span class="text-danger small"><i class="bi bi-x-circle me-1"></i>Error al conectar.</span>';
                 return;
             }
-
             if (data.encontrado) {
-                // Autorellena
                 document.getElementById('modalNombre').value = data.nombre || '';
                 document.getElementById('modalApellido').value = data.apellido || '';
                 document.getElementById('modalMedico').value = data.medico || '';
@@ -276,22 +439,30 @@ document.addEventListener('blur', function (e) {
                 document.getElementById('btnGuardarTurnoModal').disabled = false;
                 feedback.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Paciente encontrado.</span>';
             } else {
-                // Mensaje de error específico según motivo
-                var icono = 'bi-x-circle';
-                var color = 'text-danger';
-                var accion = '';
-
                 if (data.motivo === 'sin_admision') {
-                    accion = ' <a href="index.php?modulo=menu_circuitoquirurgico&accion=admision" class="alert-link">Ir a Admisión →</a>';
+                    feedback.innerHTML =
+                        '<div class="border border-danger-subtle bg-danger-subtle rounded-3 p-3 mt-2">' +
+                        '<div class="d-flex align-items-start gap-2 mb-2">' +
+                        '<i class="bi bi-person-x-fill text-danger fs-5 flex-shrink-0 mt-1"></i>' +
+                        '<div><div class="fw-semibold text-danger small">Paciente sin admisión</div>' +
+                        '<div class="text-secondary small">' + data.mensaje + '</div></div></div>' +
+                        '<a href="index.php?modulo=menu_circuitoquirurgico&accion=admision" ' +
+                        'class="btn btn-danger btn-sm w-100 fw-semibold mt-1" style="border-radius:0.5rem;">' +
+                        '<i class="bi bi-box-arrow-right me-1"></i> Ir a Admisión</a></div>';
                 } else if (data.motivo === 'turno_duplicado') {
-                    icono = 'bi-calendar-x';
-                    color = 'text-warning';
+                    feedback.innerHTML =
+                        '<div class="border border-warning-subtle bg-warning-subtle rounded-3 p-3 mt-2">' +
+                        '<div class="d-flex align-items-center gap-2">' +
+                        '<i class="bi bi-calendar-x-fill text-warning fs-5 flex-shrink-0"></i>' +
+                        '<div><div class="fw-semibold text-warning small">Turno duplicado</div>' +
+                        '<div class="text-secondary small">' + data.mensaje + '</div></div></div></div>';
+                } else {
+                    feedback.innerHTML =
+                        '<div class="border border-danger-subtle bg-danger-subtle rounded-3 p-3 mt-2">' +
+                        '<div class="d-flex align-items-center gap-2">' +
+                        '<i class="bi bi-x-circle-fill text-danger fs-5 flex-shrink-0"></i>' +
+                        '<div class="text-secondary small">' + data.mensaje + '</div></div></div>';
                 }
-
-                feedback.innerHTML =
-                    '<div class="alert alert-' + (data.motivo === 'turno_duplicado' ? 'warning' : 'danger') +
-                    ' py-2 px-3 small mt-1 mb-0" style="border-radius:0.5rem;">' +
-                    '<i class="bi ' + icono + ' me-1"></i>' + data.mensaje + accion + '</div>';
             }
         })
         .catch(function () {
@@ -299,7 +470,6 @@ document.addEventListener('blur', function (e) {
         });
 }, true);
 
-// Solo números en DNI del modal
 document.addEventListener('input', function (e) {
     if (e.target.id === 'modalDni') {
         e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
@@ -315,14 +485,12 @@ function limpiarDatosPacienteModal() {
     document.getElementById('btnGuardarTurnoModal').disabled = true;
 }
 
-// Limpiar modal al cerrar
 document.getElementById('modalNuevoTurno').addEventListener('hidden.bs.modal', function () {
     document.getElementById('modalDni').value = '';
     document.getElementById('modalDniFeedback').innerHTML = '';
     limpiarDatosPacienteModal();
 });
 
-// Submit guardar turno
 document.getElementById('formNuevoTurno').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -433,10 +601,6 @@ function buscarTurnos(filtro, valor) {
 }
 
 /* ── Inicialización ── */
-
-fetch(ENDPOINT_AGENDA + '?action=buscar_paciente&dni=00000000&id_tipo_turno=0')
-    .catch(function () { });
-
 fetch(ENDPOINT_AGENDA + '?action=obtener_tipo_turno_preq')
     .then(function (r) { return r.json(); })
     .then(function (data) {

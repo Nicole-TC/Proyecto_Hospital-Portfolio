@@ -4,6 +4,7 @@
 let estudiosDisponibles = [];  // Catálogo completo desde API
 let estudiosSeleccionados = new Set();           // IDs marcados
 let pasoActual = 1;
+let creandoNuevaCirugia = false;
 
 let nombreCirugiaValido = false;
 let timeoutValidacionNombre = null;
@@ -34,7 +35,18 @@ function mostrarFeedback(idDiv, esValido, mensaje) {
    ========================================================= */
 const RGX_NOMBRE_CIR = /^[A-ZÁÉÍÓÚÜÑ0-9\s\-\/\(\)\.]{3,150}$/;
 
+function validarSelectCirugia() {
+    const val = document.getElementById('select_cirugia_existente').value;
+    if (!val) {
+        mostrarFeedback('select-cirugia-feedback', false, 'Debe seleccionar una cirugía existente.');
+        return false;
+    }
+    mostrarFeedback('select-cirugia-feedback', '', '');
+    return true;
+}
+
 function validarNombreCirugia() {
+    if (!creandoNuevaCirugia) return true;
     const val = document.getElementById('nombre_cirugia').value.trim();
     if (!val) {
         mostrarFeedback('nombre-cirugia-feedback', false, 'El nombre de la cirugía es obligatorio.');
@@ -73,6 +85,7 @@ function validarNombreCirugia() {
 }
 
 function validarDescripcion() {
+    if (!creandoNuevaCirugia) return true;
     const val = document.getElementById('descripcion_cirugia').value;
     if (val.length > 500) {
         mostrarFeedback('descripcion-feedback', false, 'Máximo 500 caracteres.');
@@ -83,6 +96,10 @@ function validarDescripcion() {
 }
 
 function validarFormularioPaso1() {
+    if (!creandoNuevaCirugia) {
+        return validarSelectCirugia();
+    }
+
     const r2 = validarDescripcion();
     
     if (!nombreCirugiaValido) {
@@ -150,6 +167,15 @@ function aplicarSanitizacion() {
 /* =========================================================
    NAVEGACIÓN ENTRE PASOS
    ========================================================= */
+function obtenerNombreCirugiaSeleccionada() {
+    if (creandoNuevaCirugia) {
+        return document.getElementById('nombre_cirugia').value.trim();
+    } else {
+        const sel = document.getElementById('select_cirugia_existente');
+        return sel.options[sel.selectedIndex]?.text || '';
+    }
+}
+
 function irAPaso2() {
     if (!validarFormularioPaso1()) {
         // Scroll al primer campo con error
@@ -169,7 +195,7 @@ function irAPaso2() {
     document.getElementById('txt-paso2').style.color = '#00cec9';
 
     // Mostrar nombre de cirugía en paso 2
-    const nombreCir = document.getElementById('nombre_cirugia').value.trim();
+    const nombreCir = obtenerNombreCirugiaSeleccionada();
     document.getElementById('nombre-cirugia-display').textContent = nombreCir;
 
     document.getElementById('seccion-paso1').style.display = 'none';
@@ -314,7 +340,7 @@ function actualizarBadgeYBoton() {
     const badge = document.getElementById('badge-seleccionados');
     const btnGuardar = document.getElementById('btn-guardar-vinculacion');
     const hint = document.getElementById('txt-guardar-hint');
-    const nombreCir = document.getElementById('nombre_cirugia').value.trim();
+    const nombreCir = obtenerNombreCirugiaSeleccionada();
 
     badge.style.display = count > 0 ? 'inline-block' : 'none';
     badge.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
@@ -458,10 +484,14 @@ function guardarVinculacion() {
 
     const payload = {
         accion: 'crear',
-        nombre_cirugia: document.getElementById('nombre_cirugia').value.trim(),
-        descripcion: document.getElementById('descripcion_cirugia').value.trim(),
         estudios: [...estudiosSeleccionados]
     };
+    if (creandoNuevaCirugia) {
+        payload.nombre_cirugia = document.getElementById('nombre_cirugia').value.trim();
+        payload.descripcion = document.getElementById('descripcion_cirugia').value.trim();
+    } else {
+        payload.id_cirugia = document.getElementById('select_cirugia_existente').value;
+    }
 
     const btnGuardar = document.getElementById('btn-guardar-vinculacion');
     const originalText = btnGuardar.innerHTML;
@@ -524,6 +554,13 @@ function aplicarAjustesModoOscuro() {
     const panelBody = document.querySelector('#panel-nuevo-estudio .p-3');
     if (panelBody) panelBody.style.background = '#2a2a2a';
 
+    // Panel nueva cirugía
+    const panelCirHeader = document.querySelector('#panel-nueva-cirugia > div:first-child');
+    if (panelCirHeader) panelCirHeader.style.background = '#1a2a3a';
+
+    const panelCirBody = document.querySelector('#panel-nueva-cirugia .p-3');
+    if (panelCirBody) panelCirBody.style.background = '#2a2a2a';
+
     // Lista estudios
     const lista = document.getElementById('lista-estudios');
     if (lista) lista.style.borderColor = '#444';
@@ -554,11 +591,75 @@ function cargarEstudios() {
         });
 }
 
+/* =========================================================
+   NUEVA CIRUGÍA (PASO 1)
+   ========================================================= */
+function abrirPanelNuevaCirugia() {
+    creandoNuevaCirugia = true;
+    document.getElementById('panel-nueva-cirugia').style.display = 'block';
+    document.getElementById('btn-abrir-nueva-cirugia').style.display = 'none';
+    document.getElementById('seccion-select-cirugia').style.display = 'none';
+    
+    document.getElementById('nombre_cirugia').value = '';
+    document.getElementById('descripcion_cirugia').value = '';
+    document.getElementById('contador-desc').textContent = '0';
+    mostrarFeedback('nombre-cirugia-feedback', '', '');
+    mostrarFeedback('descripcion-feedback', '', '');
+    mostrarFeedback('select-cirugia-feedback', '', '');
+    nombreCirugiaValido = false;
+    document.getElementById('nombre_cirugia').focus();
+}
+
+function cerrarPanelNuevaCirugia() {
+    creandoNuevaCirugia = false;
+    document.getElementById('panel-nueva-cirugia').style.display = 'none';
+    document.getElementById('btn-abrir-nueva-cirugia').style.display = 'flex';
+    document.getElementById('seccion-select-cirugia').style.display = 'block';
+    mostrarFeedback('nombre-cirugia-feedback', '', '');
+    mostrarFeedback('descripcion-feedback', '', '');
+}
+
+function cargarCirugiasSelect() {
+    fetch('app/cir-api/endpoints/cirugias-e.php?accion=listar_cirugias_sin_combo')
+        .then(res => res.json())
+        .then(data => {
+            const sel = document.getElementById('select_cirugia_existente');
+            sel.innerHTML = '<option value="">-- Seleccione una Cirugía --</option>';
+            if (data.status === 'success' && data.cirugias && data.cirugias.length > 0) {
+                data.cirugias.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.nombre;
+                    sel.appendChild(opt);
+                });
+            } else {
+                sel.innerHTML = '<option value="">No hay cirugías sin combo disponibles</option>';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            const sel = document.getElementById('select_cirugia_existente');
+            sel.innerHTML = '<option value="">Error al cargar</option>';
+        });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     aplicarSanitizacion();
     cargarEstudios();
+    cargarCirugiasSelect();
     aplicarAjustesModoOscuro();
+
+    // Nueva Cirugía (Paso 1)
+    document.getElementById('btn-abrir-nueva-cirugia').addEventListener('click', abrirPanelNuevaCirugia);
+    document.getElementById('btn-cerrar-nueva-cirugia').addEventListener('click', cerrarPanelNuevaCirugia);
+    document.getElementById('select_cirugia_existente').addEventListener('change', validarSelectCirugia);
+
+    const btnNuevaCir = document.getElementById('btn-abrir-nueva-cirugia');
+    if (btnNuevaCir) {
+        btnNuevaCir.addEventListener('mouseenter', () => { btnNuevaCir.style.background = '#e0f7fa'; });
+        btnNuevaCir.addEventListener('mouseleave', () => { btnNuevaCir.style.background = 'transparent'; });
+    }
 
     // Botón: continuar a paso 2
     document.getElementById('btn-paso2').addEventListener('click', irAPaso2);

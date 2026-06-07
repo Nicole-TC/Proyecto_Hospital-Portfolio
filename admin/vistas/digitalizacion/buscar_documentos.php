@@ -85,6 +85,61 @@
 .rounded-4 { border-radius: 1rem !important; }
 .bg-light { background-color: #f8f9fa !important; }
 .table-hover tbody tr:hover { background-color: #f8f9fa; }
+
+/* === Modo Oscuro === */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .card-header.bg-white {
+    background-color: transparent !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #fff !important;
+}
+body.modo-oscuro .form-control.border-0,
+body.modo-oscuro .form-select.border-0,
+body.modo-oscuro .input-group-text.border-0 {
+    border: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #80bdff !important;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+body.modo-oscuro .input-group-text {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .text-muted {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .table-hover tbody tr:hover {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+body.modo-oscuro .table-light {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+body.modo-oscuro ::placeholder {
+    color: #888 !important;
+}
+body.modo-oscuro .btn-light {
+    background-color: #3a3a3a !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .btn-light:hover {
+    background-color: #4a4a4a !important;
+    color: #fff !important;
+}
 </style>
 
 <!-- Librerías DataTables -->
@@ -114,7 +169,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         console.error("Error al cargar etiquetas:", error);
     }
 
-    // 2. Inicializar DataTables
+// 2. Inicializar DataTables sin ajax
     let tablaBusqueda = $('#tabla-busqueda').DataTable({
         paging: true,
         lengthChange: true,
@@ -124,23 +179,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
-        ajax: {
-            url: 'api/digitalizar/buscar_documentos.php', 
-            type: 'GET',
-            dataSrc: 'data.documentos', 
-            data: function (d) {
-                d.dni = $('#buscar_dni').val();
-                const tag = $('#buscar_tag').val();
-                if(tag) { 
-                    d.etiquetas = [tag];
-                    d.tag_id = tag;
-                }
-                d.fecha_inicio = $('#fecha_desde').val();
-                d.fecha_fin = $('#fecha_hasta').val();
-            }
-        },
         columns: [
-            { data: "id" },
+            { data: "id", visible: false },
             { 
                 data: null, 
                 render: function(data, type, row) { 
@@ -164,9 +204,34 @@ document.addEventListener("DOMContentLoaded", async function() {
                     return `<a href="${row.ruta_archivo}" target="_blank" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-eye"></i> Ver</a>`;
                 }
             }
-        ],
-        deferLoading: 0 // No carga hasta que aprietes buscar
+        ]
     });
+
+    // Función que llama a la API solo cuando el usuario busca
+    function ejecutarBusqueda() {
+        const params = new URLSearchParams();
+        const dni = $('#buscar_dni').val();
+        const tag = $('#buscar_tag').val();
+        const desde = $('#fecha_desde').val();
+        const hasta = $('#fecha_hasta').val();
+
+        if (dni) params.append('dni', dni);
+        if (tag) params.append('tag_id', tag);
+        if (desde) params.append('fecha_inicio', desde);
+        if (hasta) params.append('fecha_fin', hasta);
+
+        fetch('api/digitalizar/buscar_documentos.php?' + params.toString())
+            .then(r => r.json())
+            .then(json => {
+                tablaBusqueda.clear();
+                if (json.status === 'success') {
+                    tablaBusqueda.rows.add(json.data.documentos).draw();
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            })
+            .catch(err => console.error('Error en búsqueda:', err));
+    }
 
     // 3. Programar el Botón Limpiar
     const btnLimpiar = document.getElementById("btn-limpiar");
@@ -184,7 +249,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         e.preventDefault();
         const cardRes = document.getElementById("card-resultados");
         if(cardRes) cardRes.style.display = "block";
-        tablaBusqueda.ajax.reload();
+        ejecutarBusqueda();
     });
 });
 </script>

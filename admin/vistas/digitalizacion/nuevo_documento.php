@@ -273,6 +273,14 @@ document.getElementById('numero_identificacion').addEventListener('input', funct
     } else {
         this.value = this.value.toUpperCase(); // Para pasaportes, ID extranjero, etc.
     }
+
+    //Autocompletado de DNI
+    clearTimeout(window.dniTimeout);
+    if (this.value.length >= 7) {
+        window.dniTimeout = setTimeout(() => {
+            document.getElementById("btnBuscarDni").click();
+        }, 500);
+    }
 });
 
 document.getElementById('telefono').addEventListener('input', function(e) {
@@ -498,18 +506,49 @@ async function enviarFormulario() {
 
         if(data.status === 'ok' || data.status === 'success') {
             modalConfirmacion.hide();
-            Swal.fire({
-                icon: 'success',
-                title: '¡Guardado!',
-                html: `Documento guardado correctamente.<br>Código de Seguimiento: <strong>${data.data?.documento?.codigo_unico || ''}</strong>`,
-                confirmButtonText: 'Aceptar'
-            });
-            form.reset();
-            tagChoices.removeActiveItems();
-            document.getElementById('preview-container').classList.add('d-none');
-            document.getElementById("id_persona").value = "";
-            document.getElementById("mensaje_persona").innerHTML = "";
-            document.getElementById("respuesta").innerHTML = "";
+            // Guardar lo que queremos mantener ANTES del reset
+const _tipo    = document.getElementById("id_tipo_identificacion").value;
+const _numero  = document.getElementById("numero_identificacion").value;
+const _nombre  = document.getElementById("nombre").value;
+const _apellido= document.getElementById("apellido").value;
+const _idP     = document.getElementById("id_persona").value;
+const _msg     = document.getElementById("mensaje_persona").innerHTML;
+const _sector  = document.getElementById("id_servicio").value;
+
+// Reset completo igual que antes
+form.reset();
+tagChoices.removeActiveItems();
+document.getElementById('preview-container').classList.add('d-none');
+document.getElementById("id_persona").value = "";
+document.getElementById("mensaje_persona").innerHTML = "";
+document.getElementById("respuesta").innerHTML = "";
+
+Swal.fire({
+    icon: 'success',
+    title: '¡Guardado!',
+    html: `Documento guardado correctamente.<br>Código de Seguimiento: <strong>${data.data?.documento?.codigo_unico || ''}</strong>`,
+    showCancelButton: true,
+    confirmButtonText: 'Otro documento',
+    cancelButtonText: 'Nuevo documento',
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#6c757d',
+}).then((result) => {
+    if (result.isConfirmed) {
+        // Restaurar solo los datos guardados
+        document.getElementById("id_tipo_identificacion").value = _tipo;
+        document.getElementById("numero_identificacion").value  = _numero;
+        document.getElementById("nombre").value                 = _nombre;
+        document.getElementById("apellido").value               = _apellido;
+        document.getElementById("id_persona").value             = _idP;
+        document.getElementById("mensaje_persona").innerHTML    = _msg;
+        document.getElementById("id_servicio").value            = _sector;
+        if (_idP) {
+            document.getElementById("nombre").readOnly   = true;
+            document.getElementById("apellido").readOnly = true;
+        }
+        document.getElementById("titulo").focus();
+    }
+});
         } else if (data.status === 'duplicate') {
             // Mostrar alerta de duplicado en el modal
             document.getElementById("res_alerta").classList.remove("d-none");

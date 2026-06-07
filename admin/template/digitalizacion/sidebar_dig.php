@@ -23,3 +23,10 @@
         <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Buscar Documento
     </a>
 </li>
+<?php if (@$_SESSION["admin"] == 1 || @$_SESSION["admin"] == TRUE) { ?>
+<li>
+    <a class="dropdown-item" href="index.php?modulo=menu_digitalizar&accion=servicios_digitalizar">
+        <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Administrar Servicios
+    </a>
+</li>
+<?php } ?>

@@ -3,6 +3,16 @@ session_start();
 ini_set('display_errors', '0');
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED);
 header('Content-Type: application/json; charset=utf-8');
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No autorizado. Por favor inicie sesión."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 require_once __DIR__ . '/../../model/conexion_dig.php';
 
 // Validar que la solicitud sea POST
@@ -116,8 +126,8 @@ try {
         $stmt = $bd_dig->prepare("
             INSERT INTO personal (
                 dni, activo, legajo, apellidoynombre, apellido, nombre, 
-                encasillamiento, cargo, rh, dependencia, regimen, turno, telefono, correo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+                encasillamiento, cargo, rh, dependencia, regimen, turno, telefono, correo, id_usuario
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
         ");
         $apellidoynombre = $apellido . ' ' . $nombre;
         $stmt->execute([
@@ -134,7 +144,8 @@ try {
             'Ninguno', // regimen
             'Ninguno', // turno
             $telefono, 
-            $email
+            $email,
+            $id_usuario
         ]);
         $id_persona = $stmt->fetchColumn();
 

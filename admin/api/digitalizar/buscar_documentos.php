@@ -221,14 +221,20 @@ if (!empty($dni_paciente)) {
         $params[':q3'] = '%' . $q . '%';
     }
 
-    // Filtros por rango de fechas
-    $tiene_dni       = $dni_paciente !== '';
-    $tiene_tipo_doc  = $id_tipo_documento !== false && $id_tipo_documento !== null;
-    $tiene_inicio    = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio) && $fecha_inicio <= date('Y-m-d');
-    $tiene_fin       = !empty($fecha_fin)    && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)    && $fecha_fin   <= date('Y-m-d');
-    $tiene_etiquetas = !empty($etiquetas);
+    // Validar que al menos un filtro esté presente
+    $tiene_dni               = $dni_paciente !== '';
+    $tiene_tipo_doc          = $id_tipo_documento !== false && $id_tipo_documento !== null;
+    $tiene_inicio            = !empty($fecha_inicio) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio) && $fecha_inicio <= date('Y-m-d');
+    $tiene_fin               = !empty($fecha_fin)    && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)    && $fecha_fin   <= date('Y-m-d');
+    $tiene_etiquetas         = !empty($etiquetas);
+    $tiene_q                 = $q !== '';
+    $tiene_codigo_unico      = $codigo_unico !== '';
+    $tiene_codigo_unico_like = $codigo_unico_like !== '';
+    $tiene_estado            = $estado_documento !== null;
+    $tiene_servicio          = $id_servicio !== false && $id_servicio !== null;
 
-    if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas) {
+    if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas
+        && !$tiene_q && !$tiene_codigo_unico && !$tiene_codigo_unico_like && !$tiene_estado && !$tiene_servicio) {
         http_response_code(400);
         echo json_encode([
             "status"     => "error",
@@ -273,9 +279,9 @@ if (!empty($dni_paciente)) {
     $query .= " LIMIT " . (int)$limite . " OFFSET " . (int)$offset;
 
     // Contar total de registros sin paginación
-    $query_count = preg_replace('/SELECT.*?FROM/s', 'SELECT COUNT(*) AS total FROM', $query);
-    $query_count = preg_replace('/ORDER BY.*$/s', '', $query_count);
-    $query_count = preg_replace('/LIMIT \d+ OFFSET \d+/s', '', $query_count);
+    $query_sin_orden = preg_replace('/ORDER BY.*$/s', '', $query);
+    $query_sin_orden = preg_replace('/LIMIT \d+ OFFSET \d+/s', '', $query_sin_orden);
+    $query_count = "SELECT COUNT(*) FROM (" . $query_sin_orden . ") AS subquery";
     $stmt_count = $bd_dig->prepare($query_count);
     $stmt_count->execute($params);
     $total_registros = (int)$stmt_count->fetchColumn();

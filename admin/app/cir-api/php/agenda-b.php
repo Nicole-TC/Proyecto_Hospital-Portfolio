@@ -45,53 +45,79 @@ class ConsultasAgenda {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // ── Buscar turnos (buscador) ────────────────────────────────────────
-    public static function buscarTurnos($filtro, $query) {
-        $pdo = conexionCircuitoQuirurgico();
+   public static function buscarTurnos($filtro, $query, $limite = 10, $orden = 'desc', $pagina = 1) {
+    $pdo = conexionCircuitoQuirurgico();
 
-        if ($filtro === 'nombre') {
-            $campo = 'LOWER(p.nombre)';
-        } elseif ($filtro === 'dni') {
-            $campo = 'p.dni';
-        } else {
-            $campo = 'LOWER(p.apellido)';
-        }
+    $mapCampos = [
+        'apellido' => 'LOWER(p.apellido)',
+        'nombre'   => 'LOWER(p.nombre)',
+        'dni'      => 'p.dni',
+    ];
+    $campo  = $mapCampos[$filtro] ?? 'LOWER(p.apellido)';
+    $limite = in_array((int)$limite, [5, 10, 20]) ? (int)$limite : 10;
+    $orden  = strtoupper($orden) === 'ASC' ? 'ASC' : 'DESC';
+    $pagina = max(1, (int)$pagina);
+    $offset = ($pagina - 1) * $limite;
 
-        $where = '';
-        $params = [];
-        if (!empty($query) && strlen($query) >= 2) {
-            $like = '%' . strtolower($query) . '%';
-            $where = "WHERE $campo LIKE :like";
-            $params[':like'] = $like;
-        }
+    // Filtro solo pre-quirúrgico
+    $where  = "WHERE LOWER(tt.codigo) = 'pre'";
+    $params = [];
 
-        $sql = "
-            SELECT
-                t.id_turno,
-                p.nombre,
-                p.apellido,
-                p.dni,
-                t.fecha_hora,
-                tt.descripcion AS tipo_turno,
-                e.descripcion  AS estado,
-                e.codigo       AS estado_codigo
-            FROM turno t
-            JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
-            JOIN persona p          ON p.id_persona         = pa.id_persona
-            JOIN tipo_turno tt      ON tt.id_tipo_turno     = t.id_tipo_turno
-            JOIN estado e           ON e.id_estado          = t.id_estado
-            $where
-            ORDER BY t.fecha_hora DESC
-            LIMIT 100
-        ";
-        $stmt = $pdo->prepare($sql);
-        foreach ($params as $key => $val) {
-            $stmt->bindValue($key, $val);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($query) && strlen(trim($query)) >= 2) {
+        $like = '%' . strtolower(trim($query)) . '%';
+        $where .= " AND $campo LIKE :like";
+        $params[':like'] = $like;
     }
 
+    // Total para paginación
+    $sqlTotal = "
+        SELECT COUNT(*) FROM turno t
+        JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
+        JOIN persona p          ON p.id_persona         = pa.id_persona
+        JOIN tipo_turno tt      ON tt.id_tipo_turno     = t.id_tipo_turno
+        JOIN estado e           ON e.id_estado          = t.id_estado
+        $where
+    ";
+    $stmtTotal = $pdo->prepare($sqlTotal);
+    foreach ($params as $k => $v) $stmtTotal->bindValue($k, $v);
+    $stmtTotal->execute();
+    $total = (int)$stmtTotal->fetchColumn();
+
+    // Registros de la página
+    $sql = "
+        SELECT
+            t.id_turno,
+            p.nombre,
+            p.apellido,
+            p.dni,
+            t.fecha_hora,
+            tt.descripcion AS tipo_turno,
+            e.descripcion  AS estado,
+            e.codigo       AS estado_codigo
+        FROM turno t
+        JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
+        JOIN persona p          ON p.id_persona         = pa.id_persona
+        JOIN tipo_turno tt      ON tt.id_tipo_turno     = t.id_tipo_turno
+        JOIN estado e           ON e.id_estado          = t.id_estado
+        $where
+        ORDER BY t.fecha_hora $orden
+        LIMIT :limite OFFSET :offset
+    ";
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $turnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    return [
+        'turnos'       => $turnos,
+        'total'        => $total,
+        'pagina'       => $pagina,
+        'limite'       => $limite,
+        'total_paginas' => (int)ceil($total / $limite),
+    ];
+}
     // ── Buscar paciente y validar circuito ──────────────────────
 
     public static function buscarPacienteConValidacion($dni, $id_tipo_turno) {

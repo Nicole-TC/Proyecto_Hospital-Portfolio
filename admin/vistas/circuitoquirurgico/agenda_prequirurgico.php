@@ -1,6 +1,3 @@
-<div class="col-12 mb-5 px-3">
-  <div class="card shadow-sm border-0" style="border-radius: 1rem;">
-    <div class="card-body p-4">
 <!-- ── Calendario Semanal/Mensual ── -->
 <div class="card shadow-sm border-0 mb-3" style="border-radius: 0.85rem;">
   <div class="card-body p-4">
@@ -54,66 +51,102 @@
           </div>
         </div>
       </div>
+<!-- ── Buscador de Turnos ── -->
+<!-- Card 1: Filtros de búsqueda -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
+  <div class="card-body p-4">
+    <div class="row g-3 align-items-end">
 
-      <!-- ── Buscador de Turnos ── -->
-      <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.85rem;">
-        <div class="card-body p-4">
-          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-            <div>
-              <h5 class="fw-bold mb-1">Buscador de Turnos</h5>
-              <p class="text-secondary small mb-0">Buscá turnos por paciente</p>
-            </div>
-          </div>
+      <div class="col-md-3">
+        <label class="form-label text-secondary small fw-bold">BUSCAR POR</label>
+        <select class="form-select border-0 bg-light" id="filtroTipoTurno" style="border-radius:0.5rem;height:45px;">
+          <option value="apellido">Apellido</option>
+          <option value="nombre">Nombre</option>
+          <option value="dni">DNI</option>
+        </select>
+      </div>
 
-          <div class="row g-3 align-items-end mb-3">
-            <div class="col-md-3">
-              <label class="form-label text-secondary small fw-bold">BUSCAR POR</label>
-              <select class="form-select border-0 bg-light" id="filtroTipoTurno" style="border-radius:0.5rem;height:45px;">
-                <option value="apellido">Apellido</option>
-                <option value="nombre">Nombre</option>
-                <option value="dni">DNI</option>
-              </select>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-secondary small fw-bold">VALOR A BUSCAR</label>
-              <input type="text" class="form-control border-0 bg-light" id="valorBuscadorTurnos"
-                placeholder="Ingrese el dato..."
-                style="border-radius:0.5rem;height:45px;"
-                onkeyup="if(event.key === 'Enter') ejecutarBusquedaTurnos()">
-            </div>
-            <div class="col-md-3">
-              <button class="btn btn-primary w-100 fw-bold" onclick="ejecutarBusquedaTurnos()" style="border-radius:0.5rem;height:45px;border:none;">
-                <i class="bi bi-search me-2"></i> BUSCAR TURNO
-              </button>
-            </div>
-          </div>
+      <div class="col-md-6">
+        <label class="form-label text-secondary small fw-bold">VALOR A BUSCAR</label>
+        <input type="text" class="form-control border-0 bg-light" id="valorBuscadorTurnos"
+          placeholder="Ingrese el dato..."
+          style="border-radius:0.5rem;height:45px;"
+          onkeyup="if(event.key === 'Enter') ejecutarBusquedaTurnos()">
+      </div>
 
-          <div id="resultadosBuscador" class="d-none">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th class="text-secondary small text-uppercase fw-semibold">Paciente</th>
-                    <th class="text-secondary small text-uppercase fw-semibold">DNI</th>
-                    <th class="text-secondary small text-uppercase fw-semibold">Fecha</th>
-                    <th class="text-secondary small text-uppercase fw-semibold">Tipo</th>
-                    <th class="text-secondary small text-uppercase fw-semibold">Estado</th>
-                  </tr>
-                </thead>
-                <tbody id="tbodyBuscador"></tbody>
-              </table>
-            </div>
-            <div id="emptyBuscador" class="text-center text-secondary py-4 small d-none">
-              <i class="bi bi-search fs-2 d-block mb-2 opacity-25"></i>
-              No se encontraron turnos para esa búsqueda
-            </div>
-          </div>
-        </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary w-100 fw-bold" onclick="ejecutarBusquedaTurnos()" style="border-radius:0.5rem;height:45px;border:none;">
+          <i class="bi bi-search me-2"></i> BUSCAR
+        </button>
       </div>
 
     </div>
   </div>
 </div>
+
+<!-- Card 2: Tabla de resultados -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 py-3 border-0 text-secondary small text-uppercase fw-semibold">Paciente</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">DNI</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Fecha</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Tipo</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyBuscador">
+          <!-- Mensaje inicial seteado por JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="emptyBuscador" class="text-center text-secondary py-4 small d-none">
+      <i class="bi bi-search fs-2 d-block mb-2 opacity-25"></i>
+      No se encontraron turnos para esa búsqueda
+    </div>
+  </div>
+
+  <!-- Footer: info + orden + límite + paginación -->
+  <div class="card-footer bg-white border-0 py-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+
+    <div class="text-secondary small" id="infoPaginacion">Mostrando 0 registros</div>
+
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-secondary small fw-bold mb-0 text-nowrap">ORDEN</label>
+        <select class="form-select form-select-sm border-0 bg-light" id="filtroOrden"
+          style="border-radius:0.5rem;min-width:130px;"
+          onchange="paginaActual=1; ejecutarBusquedaTurnos()">
+          <option value="desc" selected>↓ Más reciente</option>
+          <option value="asc">↑ Más antiguo</option>
+        </select>
+      </div>
+
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-secondary small fw-bold mb-0 text-nowrap">VER</label>
+        <select class="form-select form-select-sm border-0 bg-light" id="filtroLimite"
+          style="border-radius:0.5rem;min-width:110px;"
+          onchange="paginaActual=1; ejecutarBusquedaTurnos()">
+          <option value="5">5 por pág.</option>
+          <option value="10" selected>10 por pág.</option>
+          <option value="20">20 por pág.</option>
+        </select>
+      </div>
+
+      <nav>
+        <ul class="pagination pagination-sm mb-0" id="paginacionBuscador"></ul>
+      </nav>
+
+    </div>
+  </div>
+</div>
+
+
 
 <!--  Modal Nuevo Turno ── -->
 <div class="modal fade" id="modalNuevoTurno" tabindex="-1" aria-labelledby="modalNuevoTurnoLabel" aria-hidden="true">

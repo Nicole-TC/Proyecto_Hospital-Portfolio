@@ -59,9 +59,12 @@ if ($method === 'GET' && $action === 'obtener_tipo_turno_preq') {
 if ($method === 'GET' && $action === 'buscar_turnos') {
     $query  = trim($_GET['q']      ?? '');
     $filtro = trim($_GET['filtro'] ?? 'apellido');
+    $limite = (int)($_GET['limite'] ?? 10);
+    $orden  = trim($_GET['orden']  ?? 'desc');
+    $pagina = (int)($_GET['pagina'] ?? 1);
     try {
-        $turnos = ConsultasAgenda::buscarTurnos($filtro, $query);
-        echo json_encode(['ok' => true, 'turnos' => $turnos]);
+        $resultado = ConsultasAgenda::buscarTurnos($filtro, $query, $limite, $orden, $pagina);
+        echo json_encode(array_merge(['ok' => true], $resultado));
     } catch (Exception $e) {
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
     }

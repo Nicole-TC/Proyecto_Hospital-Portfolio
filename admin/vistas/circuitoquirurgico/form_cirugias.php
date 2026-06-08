@@ -49,47 +49,89 @@
 
                 <form id="formCirugia" novalidate>
 
-                    <!-- Nombre de la cirugía -->
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <label for="nombre_cirugia" class="form-label text-secondary mb-1" style="font-size:0.9rem;">
-                                Nombre de la Cirugía <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                class="form-control text-secondary"
-                                id="nombre_cirugia"
-                                name="nombre_cirugia"
-                                placeholder="Ej: HERNIOPLASTIA INGUINAL"
-                                maxlength="150"
-                                autocomplete="off"
-                                required
-                            >
-                            <div id="nombre-cirugia-feedback" class="mt-1" style="font-size:0.82rem;"></div>
-                            <small class="text-muted d-block mt-1" style="font-size:0.8rem;">
-                                <i class="bi bi-info-circle me-1"></i>Solo letras mayúsculas, números, acentos y Ñ. Entre 3 y 150 caracteres.
-                            </small>
-                        </div>
+                    <!-- Seleccionar cirugía existente -->
+                    <div class="mb-3" id="seccion-select-cirugia">
+                        <label for="select_cirugia_existente" class="form-label text-secondary mb-1" style="font-size:0.9rem;">
+                            Seleccione una Cirugía <span class="text-danger">*</span>
+                        </label>
+                        <select id="select_cirugia_existente" name="select_cirugia_existente" class="form-select text-secondary border-0 bg-light">
+                            <option value="">Cargando cirugías...</option>
+                        </select>
+                        <div id="select-cirugia-feedback" class="mt-1" style="font-size:0.82rem;"></div>
                     </div>
 
-                    <!-- Descripción -->
-                    <div class="mb-3">
-                        <label for="descripcion_cirugia" class="form-label text-secondary mb-1" style="font-size:0.9rem;">
-                            Descripción
-                        </label>
-                        <textarea
-                            class="form-control text-secondary"
-                            id="descripcion_cirugia"
-                            name="descripcion_cirugia"
-                            rows="4"
-                            maxlength="500"
-                            placeholder="Breve descripción del procedimiento quirúrgico..."
-                        ></textarea>
-                        <div id="descripcion-feedback" class="mt-1" style="font-size:0.82rem;"></div>
-                        <div class="d-flex justify-content-end mt-1">
-                            <small class="text-muted" style="font-size:0.78rem;">
-                                <span id="contador-desc">0</span>/500 caracteres
-                            </small>
+                    <!-- Botón Agregar nueva cirugía -->
+                    <button type="button"
+                            id="btn-abrir-nueva-cirugia"
+                            class="btn w-100 mt-3 border d-flex align-items-center justify-content-center gap-2"
+                            style="border-color:#00cec9!important;color:#00cec9;background:transparent;border-radius:8px;padding:12px;font-size:0.95rem;transition:all 0.2s;">
+                        <i class="bi bi-plus-circle" style="font-size:1.1rem;"></i>
+                        Agregar Nueva Cirugía
+                    </button>
+
+                    <!-- ======= FORMULARIO INLINE: Nueva Cirugía ======= -->
+                    <div id="panel-nueva-cirugia"
+                         style="display:none;margin-top:12px;border:2px solid #00cec9;border-radius:8px;overflow:hidden;">
+
+                        <div class="d-flex align-items-center justify-content-between px-3 py-2"
+                             style="background:#e0f7fa;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-plus-square-fill" style="color:#00cec9;font-size:1rem;"></i>
+                                <span class="fw-semibold" style="font-size:0.93rem;color:#00cec9;">
+                                    Nueva Cirugía
+                                </span>
+                            </div>
+                            <button type="button"
+                                    id="btn-cerrar-nueva-cirugia"
+                                    class="btn btn-sm p-0 border-0"
+                                    style="color:#6c757d;line-height:1;"
+                                    title="Cerrar">
+                                <i class="bi bi-x-lg" style="font-size:0.9rem;"></i>
+                            </button>
+                        </div>
+
+                        <div class="p-3" style="background:#fff;">
+                            <!-- Nombre de la cirugía -->
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label for="nombre_cirugia" class="form-label text-secondary mb-1" style="font-size:0.87rem;">
+                                        Nombre de la Cirugía <span class="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="form-control text-secondary border-0 bg-light"
+                                        id="nombre_cirugia"
+                                        name="nombre_cirugia"
+                                        placeholder="Ej: HERNIOPLASTIA INGUINAL"
+                                        maxlength="150"
+                                        autocomplete="off"
+                                    >
+                                    <div id="nombre-cirugia-feedback" class="mt-1" style="font-size:0.79rem;"></div>
+                                    <small class="text-muted d-block mt-1" style="font-size:0.77rem;">
+                                        <i class="bi bi-info-circle me-1"></i>Solo letras mayúsculas, números, acentos y Ñ. Entre 3 y 150 caracteres.
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="mb-3">
+                                <label for="descripcion_cirugia" class="form-label text-secondary mb-1" style="font-size:0.87rem;">
+                                    Descripción
+                                </label>
+                                <textarea
+                                    class="form-control text-secondary border-0 bg-light"
+                                    id="descripcion_cirugia"
+                                    name="descripcion_cirugia"
+                                    rows="2"
+                                    maxlength="500"
+                                    placeholder="Breve descripción del procedimiento quirúrgico..."
+                                ></textarea>
+                                <div class="d-flex justify-content-end mt-1">
+                                    <small class="text-muted" style="font-size:0.76rem;">
+                                        <span id="contador-desc">0</span>/500 caracteres
+                                    </small>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

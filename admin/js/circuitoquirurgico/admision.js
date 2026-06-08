@@ -421,7 +421,7 @@ function parsearQRCode(texto) {
     if (partes.length >= nameIdx + 3) {
       var primerCampo = partes[nameIdx > 0 ? nameIdx - 1 : 0];
       var nombApell = primerCampo.replace(/^[\d&]+/, '');
-      var nomPartes = nombApell.split(/\d/).filter(function(p){return p.trim().length > 0;});
+      var nomPartes = nombApell.split(/\d/).filter(function (p) { return p.trim().length > 0; });
       if (nomPartes.length >= 2) {
         apellido = nomPartes[0].trim().toUpperCase();
         nombre = nomPartes.slice(1).join(' ').trim().toUpperCase();
@@ -526,7 +526,7 @@ function cancelarEscaneo() {
 
 // ─── DETECTOR DE ESCANER USB ──────────────────────
 
-document.addEventListener('keydown', function (e) {
+/*document.addEventListener('keydown', function (e) {
   var now = Date.now();
   var timeSinceLast = lastKeyTime ? now - lastKeyTime : 999;
   lastKeyTime = now;
@@ -568,3 +568,4 @@ document.addEventListener('keydown', function (e) {
     }, 300);
   }
 });
+*/

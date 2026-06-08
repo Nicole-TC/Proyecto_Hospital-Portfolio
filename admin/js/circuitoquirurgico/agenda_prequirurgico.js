@@ -548,34 +548,59 @@ document.getElementById('formNuevoTurno').addEventListener('submit', function (e
 });
 
 /* ── Buscador de Turnos ── */
+var paginaActual = 1;
+
+// Mensaje inicial (igual que gestion_usuarios.js)
+(function initBuscador() {
+    var tbody = document.getElementById('tbodyBuscador');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-secondary">' +
+                          '<i class="bi bi-search me-2"></i> Ingrese un criterio de búsqueda para listar los turnos.' +
+                          '</td></tr>';
+    }
+})();
+
 function ejecutarBusquedaTurnos() {
+    paginaActual = 1;   // siempre volver a página 1 al buscar
     var filtro = document.getElementById('filtroTipoTurno').value;
     var valor = document.getElementById('valorBuscadorTurnos').value.trim();
-    buscarTurnos(filtro, valor);
+    var limite = document.getElementById('filtroLimite').value;
+    var orden = document.getElementById('filtroOrden').value;
+
+    buscarTurnos(filtro, valor, limite, orden, paginaActual);
 }
 
-function buscarTurnos(filtro, valor) {
-    var resultados = document.getElementById('resultadosBuscador');
+function buscarTurnos(filtro, valor, limite, orden, pagina) {
     var tbody = document.getElementById('tbodyBuscador');
     var empty = document.getElementById('emptyBuscador');
 
-    resultados.classList.remove('d-none');
     tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary">' +
         '<div class="spinner-border spinner-border-sm text-primary me-2"></div>Buscando...</td></tr>';
     empty.classList.add('d-none');
 
-    var url = ENDPOINT_AGENDA + '?action=buscar_turnos&filtro=' + encodeURIComponent(filtro);
-    if (valor.length >= 2) url += '&q=' + encodeURIComponent(valor);
+    var url = ENDPOINT_AGENDA +
+        '?action=buscar_turnos' +
+        '&filtro=' + encodeURIComponent(filtro) +
+        '&q=' + encodeURIComponent(valor) +
+        '&limite=' + encodeURIComponent(limite) +
+        '&orden=' + encodeURIComponent(orden) +
+        '&pagina=' + encodeURIComponent(pagina);
 
     fetch(url)
         .then(function (r) { return r.json(); })
         .then(function (data) {
             tbody.innerHTML = '';
+
             if (!data.ok || !data.turnos || data.turnos.length === 0) {
                 empty.classList.remove('d-none');
+                document.getElementById('infoPaginacion').textContent = 'Sin resultados';
+                document.getElementById('paginacionBuscador').innerHTML = '';
                 return;
             }
+
             empty.classList.add('d-none');
+
+            // Filas
             data.turnos.forEach(function (t) {
                 var dt = new Date(t.fecha_hora);
                 var fecha = dt.toLocaleDateString('es-AR');
@@ -593,6 +618,15 @@ function buscarTurnos(filtro, valor) {
                     '<td><span class="badge ' + badgeClass + '">' + t.estado + '</span></td>';
                 tbody.appendChild(tr);
             });
+
+            // Info "Mostrando X a Y de Z registros"
+            var desde = (data.pagina - 1) * data.limite + 1;
+            var hasta = Math.min(data.pagina * data.limite, data.total);
+            document.getElementById('infoPaginacion').textContent =
+                'Mostrando ' + desde + ' a ' + hasta + ' de ' + data.total + ' registros';
+
+            // Paginación
+            renderPaginacion(data.pagina, data.total_paginas, filtro, valor, limite, orden);
         })
         .catch(function () {
             tbody.innerHTML = '';
@@ -600,7 +634,57 @@ function buscarTurnos(filtro, valor) {
         });
 }
 
+function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite, orden) {
+    var ul = document.getElementById('paginacionBuscador');
+    ul.innerHTML = '';
+
+    if (totalPaginas <= 1) return;
+
+    // Anterior
+    var liPrev = document.createElement('li');
+    liPrev.className = 'page-item' + (paginaActualLocal === 1 ? ' disabled' : '');
+    liPrev.innerHTML = '<a class="page-link" href="#">Anterior</a>';
+    liPrev.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (paginaActualLocal > 1) {
+            paginaActual = paginaActualLocal - 1;
+            buscarTurnos(filtro, valor, limite, orden, paginaActual);
+        }
+    });
+    ul.appendChild(liPrev);
+
+    // Números
+    for (var i = 1; i <= totalPaginas; i++) {
+        (function (num) {
+            var li = document.createElement('li');
+            li.className = 'page-item' + (num === paginaActualLocal ? ' active' : '');
+            li.innerHTML = '<a class="page-link" href="#">' + num + '</a>';
+            li.addEventListener('click', function (e) {
+                e.preventDefault();
+                paginaActual = num;
+                buscarTurnos(filtro, valor, limite, orden, paginaActual);
+            });
+            ul.appendChild(li);
+        })(i);
+    }
+
+    // Siguiente
+    var liNext = document.createElement('li');
+    liNext.className = 'page-item' + (paginaActualLocal === totalPaginas ? ' disabled' : '');
+    liNext.innerHTML = '<a class="page-link" href="#">Siguiente</a>';
+    liNext.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (paginaActualLocal < totalPaginas) {
+            paginaActual = paginaActualLocal + 1;
+            buscarTurnos(filtro, valor, limite, orden, paginaActual);
+        }
+    });
+    ul.appendChild(liNext);
+}
+
 /* ── Inicialización ── */
+renderCalendar();
+
 fetch(ENDPOINT_AGENDA + '?action=obtener_tipo_turno_preq')
     .then(function (r) { return r.json(); })
     .then(function (data) {
@@ -609,5 +693,3 @@ fetch(ENDPOINT_AGENDA + '?action=obtener_tipo_turno_preq')
         }
     })
     .catch(function () { });
-
-renderCalendar();

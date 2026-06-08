@@ -1,131 +1,156 @@
-<!-- Contenido principal -->
-<main class="p-4">
-  <div class="card shadow bg-white">
-    <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
-      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 13A6 6 0 1 1 8 2a6 6 0 0 1 0 12z"/>
-        <path d="M8 4a.5.5 0 0 1 .5.5v3.793l2.146 2.147a.5.5 0 0 1-.708.707L7.5 8.707V4.5A.5.5 0 0 1 8 4z"/>
-      </svg>
-      <h3 class="mb-0 fw-bold">Auditoría Global</h3>
-    </div>
-    <div class="card-body">
-      <p class="text-muted mb-4">Historial completo de actividades del sistema</p>
+<!-- ── Buscador de Auditoría Global ── -->
 
-      <!-- Filtros de búsqueda -->
-      <div class="border rounded p-3 mb-4">
-        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
-          </svg>
-          Filtros de Búsqueda
-        </h6>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="input-group">
-              <span class="input-group-text bg-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#6c757d" viewBox="0 0 16 16">
-                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
-                </svg>
-              </span>
-              <input type="text" class="form-control" id="busqueda" placeholder="Buscar por paciente, usuario o acción...">
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="input-group">
-              <input type="date" class="form-control" id="fecha">
-            </div>
-          </div>
+<!-- Card 1: Encabezado y filtros de búsqueda -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 0.85rem;">
+  <div class="card-body p-4">
+
+    <!-- Título -->
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-4">
+      <div>
+        <h5 class="fw-bold mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-clock-history text-primary"></i>
+          Auditoría Global
+        </h5>
+        <p class="text-secondary small mb-0">Historial completo de actividades registradas en el sistema.</p>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row g-3 align-items-end">
+
+      <div class="col-md-3">
+        <label class="form-label text-secondary small fw-bold">BUSCAR POR</label>
+        <select class="form-select border-0 bg-light" id="filtroTipoAuditoria" style="border-radius:0.5rem; height:45px;">
+          <option value="todo">Todo</option>
+          <option value="paciente">Paciente / DNI</option>
+          <option value="usuario">Usuario responsable</option>
+          <option value="accion">Acción realizada</option>
+        </select>
       </div>
 
-      <!-- Tabla de auditoría -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle" id="tablaAuditoria">
-          <thead class="table-light">
-            <tr>
-              <th>Fecha/Hora</th>
-              <th>Usuario Responsable</th>
-              <th>Rol</th>
-              <th>Acción Realizada</th>
-              <th>Paciente Afectado</th>
-              <th>Detalles</th>
-            </tr>
-          </thead>
-        </table>
+      <div class="col-md-5">
+        <label class="form-label text-secondary small fw-bold">VALOR A BUSCAR</label>
+        <input
+          type="text"
+          class="form-control border-0 bg-light"
+          id="valorBuscadorAuditoria"
+          placeholder="Ingrese el dato..."
+          style="border-radius:0.5rem; height:45px;"
+          onkeyup="if(event.key === 'Enter') ejecutarBusquedaAuditoria()"
+        >
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label text-secondary small fw-bold">FECHA</label>
+        <input
+          type="date"
+          class="form-control border-0 bg-light"
+          id="filtroFechaAuditoria"
+          style="border-radius:0.5rem; height:45px;"
+          onchange="ejecutarBusquedaAuditoria()"
+        >
+      </div>
+
+      <div class="col-md-2">
+        <button
+          class="btn btn-primary w-100 fw-bold"
+          onclick="ejecutarBusquedaAuditoria()"
+          style="border-radius:0.5rem; height:45px; border:none;"
+        >
+          <i class="bi bi-search me-2"></i> BUSCAR
+        </button>
       </div>
 
     </div>
   </div>
-</main>
+</div>
+
+<!-- Card 2: Tabla de resultados -->
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="tablaAuditoria">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4 py-3 border-0 text-secondary small text-uppercase fw-semibold">Fecha / Hora</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Usuario responsable</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Acción realizada</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Paciente afectado</th>
+            <th class="py-3 border-0 text-secondary small text-uppercase fw-semibold">Detalles</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyAuditoria">
+          <!-- Resultados dinámicos -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Estado vacío -->
+    <div id="emptyAuditoria" class="text-center text-secondary py-5">
+      <i class="bi bi-clock-history fs-1 d-block mb-3 opacity-25"></i>
+      <p class="fw-semibold mb-1">No hay datos para mostrar</p>
+      <p class="small opacity-75">Usá los filtros de búsqueda para consultar el historial de actividades.</p>
+    </div>
+
+  </div>
+
+  <!-- Footer: info + orden + límite + paginación -->
+  <div class="card-footer bg-white border-0 py-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+
+    <div class="text-secondary small" id="infoAuditoria">Mostrando 0 registros</div>
+
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-secondary small fw-bold mb-0 text-nowrap">ORDEN</label>
+        <select
+          class="form-select form-select-sm border-0 bg-light"
+          id="filtroOrdenAuditoria"
+          style="border-radius:0.5rem; min-width:140px;"
+          onchange="paginaAuditoria=1; ejecutarBusquedaAuditoria()"
+        >
+          <option value="desc" selected>↓ Más reciente</option>
+          <option value="asc">↑ Más antiguo</option>
+        </select>
+      </div>
+
+      <div class="d-flex align-items-center gap-1">
+        <label class="text-secondary small fw-bold mb-0 text-nowrap">VER</label>
+        <select
+          class="form-select form-select-sm border-0 bg-light"
+          id="filtroLimiteAuditoria"
+          style="border-radius:0.5rem; min-width:120px;"
+          onchange="paginaAuditoria=1; ejecutarBusquedaAuditoria()"
+        >
+          <option value="5">5 por pág.</option>
+          <option value="10" selected>10 por pág.</option>
+          <option value="20">20 por pág.</option>
+          <option value="50">50 por pág.</option>
+        </select>
+      </div>
+
+      <nav>
+        <ul class="pagination pagination-sm mb-0" id="paginacionAuditoria"></ul>
+      </nav>
+
+    </div>
+  </div>
+</div>
 
 <script>
-  const TOTAL = 15;
+  // Variable de paginación (lista para cuando llegue el back)
+  let paginaAuditoria = 1;
 
-  function filtrarTabla() {
-    const textoBusqueda = document.getElementById('busqueda').value.toLowerCase().trim();
-    // input type="date" devuelve YYYY-MM-DD → convertir a DD/MM/YYYY para comparar con la tabla
-    const valorFecha = document.getElementById('fecha').value.trim();
-    let textofecha = '';
-    if (valorFecha) {
-      const [anio, mes, dia] = valorFecha.split('-');
-      textofecha = `${dia}/${mes}/${anio}`;
-    }
+  function ejecutarBusquedaAuditoria() {
+    // TODO: conectar con el backend cuando esté disponible
+    const tipo  = document.getElementById('filtroTipoAuditoria').value;
+    const valor = document.getElementById('valorBuscadorAuditoria').value.trim();
+    const fecha = document.getElementById('filtroFechaAuditoria').value;
 
-    const filas = document.querySelectorAll('#tablaAuditoria tbody tr');
-    let visibles = 0;
-
-    filas.forEach(fila => {
-      const textoFila = fila.textContent.toLowerCase();
-      const fechaFila = fila.querySelector('td')?.textContent.trim() ?? '';
-
-      const coincideTexto = textoBusqueda === '' || textoFila.includes(textoBusqueda);
-      const coincideFecha  = textofecha   === '' || fechaFila.startsWith(textofecha);
-
-      if (coincideTexto && coincideFecha) {
-        fila.style.display = '';
-        visibles++;
-      } else {
-        fila.style.display = 'none';
-      }
-    });
-
-    // Actualizar contador
-    const contador = document.getElementById('contadorResultados');
-    if (visibles === 0) {
-      contador.textContent = 'No se encontraron resultados para la búsqueda.';
-      contador.classList.add('text-danger');
-      contador.classList.remove('text-muted');
-
-      // Mostrar fila de "sin resultados" si no existe
-      let filaVacia = document.getElementById('filaVacia');
-      if (!filaVacia) {
-        const tbody = document.querySelector('#tablaAuditoria tbody');
-        filaVacia = document.createElement('tr');
-        filaVacia.id = 'filaVacia';
-        filaVacia.innerHTML = `<td colspan="6" class="text-center text-muted py-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="mb-2 d-block mx-auto" viewBox="0 0 16 16">
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
-          </svg>
-          Sin resultados para "<strong>${escapeHtml(textoBusqueda || textofecha)}</strong>"
-        </td>`;
-        tbody.appendChild(filaVacia);
-      } else {
-        filaVacia.querySelector('strong').textContent = textoBusqueda || textofecha;
-        filaVacia.style.display = '';
-      }
-    } else {
-      contador.textContent = `Mostrando ${visibles} de ${TOTAL} eventos registrados`;
-      contador.classList.remove('text-danger');
-      contador.classList.add('text-muted');
-
-      const filaVacia = document.getElementById('filaVacia');
-      if (filaVacia) filaVacia.style.display = 'none';
-    }
+    // Por ahora mostramos el estado vacío
+    document.getElementById('tbodyAuditoria').innerHTML = '';
+    document.getElementById('emptyAuditoria').classList.remove('d-none');
+    document.getElementById('infoAuditoria').textContent  = 'Mostrando 0 registros';
+    document.getElementById('paginacionAuditoria').innerHTML = '';
   }
-
-  function escapeHtml(text) {
-    return text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  document.getElementById('busqueda').addEventListener('input', filtrarTabla);
-  document.getElementById('fecha').addEventListener('input', filtrarTabla);
 </script>

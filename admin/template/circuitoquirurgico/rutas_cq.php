@@ -68,6 +68,12 @@ switch (@$_GET["accion"]) {
         $require = "vistas/circuitoquirurgico/form_orden.php";
         break;
 
+    case 'gestion_cirugias':
+        $menu    = 'Administración de Catálogos (CQ)';
+        $require = 'vistas/circuitoquirurgico/crud_cirugiasEst.php';
+        break;
+
+
     case 'form_cirugias':
         $menu    = 'Gestión de Cirugías y Estudios Prequirúrgicos (CQ)';
         $require = 'vistas/circuitoquirurgico/form_cirugias.php';

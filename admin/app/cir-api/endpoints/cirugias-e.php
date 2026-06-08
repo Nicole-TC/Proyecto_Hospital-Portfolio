@@ -41,6 +41,19 @@ try {
             ]);
             break;
 
+        case 'listar_cirugias_sin_combo':
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                http_response_code(405);
+                echo json_encode(["status" => "error", "message" => "Método no permitido."]);
+                exit;
+            }
+            $cirugias = ConsultasCirugias::listarCirugiasSinComboSelect();
+            echo json_encode([
+                "status" => "success",
+                "cirugias" => $cirugias
+            ]);
+            break;
+
         case 'validar_nombre_cirugia':
             if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
                 http_response_code(405);
@@ -67,47 +80,60 @@ try {
                 exit;
             }
             
+            $id_cirugia = isset($data['id_cirugia']) ? (int)$data['id_cirugia'] : 0;
             $nombre_cirugia = trim($data['nombre_cirugia'] ?? '');
             $descripcion = trim($data['descripcion'] ?? '');
             $estudios = $data['estudios'] ?? [];
-            
-            // Validaciones
-            if (empty($nombre_cirugia)) {
-                echo json_encode(["status" => "error", "message" => "El nombre de la cirugía es obligatorio."]);
-                exit;
-            }
-            
-            if (mb_strlen($nombre_cirugia, 'UTF-8') < 3) {
-                echo json_encode(["status" => "error", "message" => "El nombre de la cirugía debe tener al menos 3 caracteres."]);
-                exit;
-            }
-            
-            if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]+$/u', $nombre_cirugia)) {
-                echo json_encode(["status" => "error", "message" => "El nombre de la cirugía contiene caracteres no permitidos."]);
-                exit;
-            }
-
-            if (ConsultasCirugias::existeNombreCirugia($nombre_cirugia)) {
-                echo json_encode(["status" => "error", "message" => "Ya existe una cirugía con ese nombre."]);
-                exit;
-            }
             
             if (empty($estudios)) {
                 echo json_encode(["status" => "error", "message" => "Debe seleccionar o crear al menos un estudio prequirúrgico."]);
                 exit;
             }
+
+            if ($id_cirugia > 0) {
+                // Usar cirugía existente
+                $guardado = ConsultasCirugias::guardarCombo($id_cirugia, $estudios);
+            } else {
+                // Validaciones para cirugía nueva
+                if (empty($nombre_cirugia)) {
+                    echo json_encode(["status" => "error", "message" => "El nombre de la cirugía es obligatorio."]);
+                    exit;
+                }
+                
+                if (mb_strlen($nombre_cirugia, 'UTF-8') < 3) {
+                    echo json_encode(["status" => "error", "message" => "El nombre de la cirugía debe tener al menos 3 caracteres."]);
+                    exit;
+                }
+                
+                if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]+$/u', $nombre_cirugia)) {
+                    echo json_encode(["status" => "error", "message" => "El nombre de la cirugía contiene caracteres no permitidos."]);
+                    exit;
+                }
+
+                if (ConsultasCirugias::existeNombreCirugia($nombre_cirugia)) {
+                    echo json_encode(["status" => "error", "message" => "Ya existe una cirugía con ese nombre."]);
+                    exit;
+                }
+                
+                // Crear nueva cirugía
+                $id_cirugia = ConsultasCirugias::crearCirugiaCatalogo($nombre_cirugia, $descripcion);
+                if (!$id_cirugia) {
+                    echo json_encode(["status" => "error", "message" => "No se pudo crear la cirugía."]);
+                    exit;
+                }
+                
+                // Guardar combo
+                $guardado = ConsultasCirugias::guardarCombo($id_cirugia, $estudios);
+            }
             
-            // Guardar
-            $id_cirugia = ConsultasCirugias::guardarCirugia($nombre_cirugia, $descripcion, $estudios);
-            
-            if ($id_cirugia) {
+            if ($guardado) {
                 echo json_encode([
                     "status" => "success",
                     "message" => "Cirugía y estudios vinculados guardados correctamente.",
                     "id_cirugia" => $id_cirugia
                 ]);
             } else {
-                echo json_encode(["status" => "error", "message" => "No se pudo guardar la cirugía."]);
+                echo json_encode(["status" => "error", "message" => "No se pudo vincular los estudios."]);
             }
             break;
 

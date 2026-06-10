@@ -29,6 +29,8 @@ function deshabilitarCamposPaciente(disabled) {
     var e = el(id);
     if (e) e.disabled = disabled;
   });
+  var btn = el('btnObraSocial');
+  if (btn) btn.disabled = disabled;
 }
 
 function limpiarCamposPaciente() {
@@ -118,7 +120,7 @@ function reiniciarFormulario() {
 }
 
 function buscarPaciente(dni) {
-  if (!dni || dni.length < 8) {
+  if (!dni || dni.length < 5) {
     limpiarCamposPaciente();
     deshabilitarCamposPaciente(true);
     habilitarSelects(true);
@@ -363,27 +365,28 @@ function parsearQRCode(texto) {
   if (sexoMatch) {
     var sexoPos = sexoMatch.index;
     var afterSexo = texto.substring(sexoPos + 1).replace(/^[^0-9]*/, '');
-    var digitMatch = afterSexo.match(/^(\d{7,10})/);
+    var digitMatch = afterSexo.match(/^(\d{5,10})/);
     if (digitMatch) {
       var digits = digitMatch[1];
       if (digits.length > 8) {
         dni = digits.slice(-8);
-      } else if (/^\d{7,8}$/.test(digits)) {
+      } else if (/^\d{5,8}$/.test(digits)) {
         dni = digits;
       }
     }
   }
 
   if (!dni) {
-    var digitos = texto.match(/\d{7,9}/g);
+    var digitos = texto.match(/\d{5,9}/g);
     if (digitos && digitos.length > 0) {
       dni = digitos[digitos.length - 1];
-      if (dni.length === 9 && dni[0] === '2') {
+      if (dni.length > 8 && dni[0] === '2') {
         dni = dni.slice(1);
       }
     }
   }
-  if (!dni || !/^\d{7,8}$/.test(dni)) return null;
+
+  if (!dni || !/^\d{5,8}$/.test(dni)) return null;
 
   var partes = texto.split('@').filter(function (p) { return p.length > 0; });
   var apellido = '', nombre = '';
@@ -392,7 +395,7 @@ function parsearQRCode(texto) {
   if (partes.length >= 3 && (/^\d{1,3}$/.test(partes[0]) || partes[0].length <= 1)) {
     nameIdx = 1;
   }
-  if (nameIdx + 1 < partes.length && /^\d{7,8}$/.test(partes[nameIdx])) {
+  if (nameIdx + 1 < partes.length && /^\d{5,8}$/.test(partes[nameIdx])) {
     nameIdx++;
   }
 
@@ -569,3 +572,5 @@ function cancelarEscaneo() {
   }
 });
 */
+
+

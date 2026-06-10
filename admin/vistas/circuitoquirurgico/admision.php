@@ -61,7 +61,7 @@
           <div class="row mb-3">
             <div class="col-md-6">
               <button type="button" id="btnObraSocial" class="btn btn-danger rounded-pill px-4 w-auto"
-                      style="cursor: pointer;">
+                      style="cursor: pointer;" disabled>
                 <span id="obraSocialLabel">Obra Social</span>
               </button>
               <input type="checkbox" class="d-none" id="obraSocial" name="obraSocial">

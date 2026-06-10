@@ -37,7 +37,7 @@ if ($method === 'GET' && ($_GET['action'] ?? '') === 'obtener_cirujanos') {
 if ($method === 'GET' && ($_GET['action'] ?? '') === 'buscar_dni') {
     $dni = $_GET['dni'] ?? '';
 
-    if (!preg_match('/^\d{2}\.?\d{3}\.?\d{3}$/', $dni)) {
+    if (!preg_match('/^\d{5,8}$/', $dni)) {
         echo json_encode(['ok' => false, 'error' => 'Formato de DNI inválido']);
         exit;
     }

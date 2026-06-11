@@ -11,6 +11,100 @@ const form = document.getElementById('form-admision');
 
 var estudiosPorCirugia = {};
 
+// ─── VALIDACIÓN EN TIEMPO REAL ───────────────────
+
+var validators = {
+  dni: function (v) {
+    if (!v) return 'El DNI es obligatorio.';
+    return /^\d{5,8}$/.test(v) ? '' : 'El DNI debe tener entre 5 y 8 dígitos.';
+  },
+  apellido: function (v) {
+    if (!v) return 'El apellido es obligatorio.';
+    return /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{2,100}$/.test(v) ? '' : 'Solo letras, mínimo 2 caracteres.';
+  },
+  nombre: function (v) {
+    if (!v) return 'El nombre es obligatorio.';
+    return /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{2,100}$/.test(v) ? '' : 'Solo letras, mínimo 2 caracteres.';
+  },
+  fechaNacimiento: function (v) {
+    if (!v) return 'La fecha de nacimiento es obligatoria.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return 'Formato YYYY-MM-DD.';
+    var p = v.split('-');
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    if (d.getFullYear() !== +p[0] || d.getMonth() + 1 !== +p[1] || d.getDate() !== +p[2]) return 'Fecha no válida.';
+    if (+p[0] < 1900) return 'El año debe ser 1900 o posterior.';
+    if (v > new Date().toISOString().split('T')[0]) return 'No puede ser posterior a hoy.';
+    return '';
+  },
+  direccion: function (v) {
+    if (!v) return 'La dirección es obligatoria.';
+    return /^[a-zA-Z0-9áéíóúüñÁÉÍÓÚÜÑ\s\.,#\-\/]{5,255}$/.test(v) ? '' : 'Mín. 5 caracteres.';
+  },
+  codigoPostal: function (v) {
+    if (!v) return 'El código postal es obligatorio.';
+    return /^[a-zA-Z0-9]{1,8}$/.test(v) ? '' : 'Hasta 8 caracteres alfanuméricos.';
+  },
+  email: function (v) {
+    if (!v) return 'El email es obligatorio.';
+    return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v) ? '' : 'Email inválido.';
+  },
+  telefono: function (v) {
+    if (!v) return 'El teléfono es obligatorio.';
+    return /^[\d\s\-\(\)\+]{7,20}$/.test(v) ? '' : 'Mín. 7 dígitos.';
+  },
+  tipoCirugia: function (v) {
+    if (!v) return 'Seleccione un tipo de cirugía.';
+    return '';
+  },
+  cirujano: function (v) {
+    if (!v) return 'Seleccione un cirujano.';
+    return '';
+  }
+};
+
+function validarCampo(id) {
+  var el = document.getElementById(id);
+  if (!el || el.disabled) { limpiarValidacion(id); return true; }
+  var val = el.value.trim();
+  var fn = validators[id];
+  if (!fn) return true;
+  var error = fn(val);
+  var fb = el.parentElement.querySelector('.invalid-feedback');
+  if (error) {
+    el.classList.add('is-invalid');
+    el.classList.remove('is-valid');
+    if (fb) fb.textContent = error;
+    return false;
+  } else {
+    el.classList.remove('is-invalid');
+    el.classList.add('is-valid');
+    if (fb) fb.textContent = '';
+    return true;
+  }
+}
+
+function limpiarValidacion(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('is-invalid', 'is-valid');
+  var fb = el.parentElement.querySelector('.invalid-feedback');
+  if (fb) fb.textContent = '';
+}
+
+function validarTodo() {
+  var ok = true;
+  var primero = null;
+  var ids = ['dni', 'apellido', 'nombre', 'fechaNacimiento', 'direccion', 'codigoPostal', 'email', 'telefono', 'tipoCirugia', 'cirujano'];
+  ids.forEach(function (id) {
+    var e = document.getElementById(id);
+    if (e && !e.disabled) {
+      if (!validarCampo(id)) { ok = false; if (!primero) primero = e; }
+    }
+  });
+  if (primero) primero.focus();
+  return ok;
+}
+
 // ─── VARIABLES DEL ESCÁNER ──────────────────────
 
 var scanBuffer = '';
@@ -173,6 +267,7 @@ function serializarFormulario() {
 
 form.addEventListener('submit', function (e) {
   e.preventDefault();
+  if (!validarTodo()) return;
 
   var datos = serializarFormulario();
 
@@ -306,6 +401,22 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('direccion').addEventListener('input', filtrarInput);
   document.getElementById('codigoPostal').addEventListener('input', filtrarInput);
   document.getElementById('telefono').addEventListener('input', filtrarInput);
+
+  // ─── Validación en tiempo real ─────────────────────
+  var camposAValidar = ['dni', 'apellido', 'nombre', 'fechaNacimiento', 'direccion', 'codigoPostal', 'email', 'telefono'];
+  camposAValidar.forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function () {
+      if (el.classList.contains('is-invalid') || el.classList.contains('is-valid')) {
+        validarCampo(id);
+      }
+    });
+    el.addEventListener('blur', function () { validarCampo(id); });
+  });
+
+  document.getElementById('tipoCirugia').addEventListener('change', function () { validarCampo('tipoCirugia'); });
+  document.getElementById('cirujano').addEventListener('change', function () { validarCampo('cirujano'); });
 });
 
 selectCirugia.addEventListener('change', function () {
@@ -510,6 +621,9 @@ function procesarEscaneo(texto) {
         el('fechaNacimiento').value = datos.fechaNacimiento;
         deshabilitarCamposPaciente(false);
         habilitarSelects(false);
+        validarCampo('apellido');
+        validarCampo('nombre');
+        validarCampo('fechaNacimiento');
       }
     })
     .catch(function () {
@@ -518,6 +632,9 @@ function procesarEscaneo(texto) {
       el('fechaNacimiento').value = datos.fechaNacimiento;
       deshabilitarCamposPaciente(false);
       habilitarSelects(false);
+      validarCampo('apellido');
+      validarCampo('nombre');
+      validarCampo('fechaNacimiento');
     });
 }
 

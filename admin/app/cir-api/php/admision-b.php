@@ -51,6 +51,8 @@ class ConsultasAdmision {
                 $parts = explode('-', $fechaNacimiento);
                 if (!checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0])) {
                     $errores[] = 'La fecha de nacimiento no es una fecha real.';
+                } elseif ((int)$parts[0] < 1900) {
+                    $errores[] = 'El año debe ser 1900 o posterior.';
                 } elseif ($fechaNacimiento > date('Y-m-d')) {
                     $errores[] = 'La fecha de nacimiento no puede ser posterior al día de hoy.';
                 }

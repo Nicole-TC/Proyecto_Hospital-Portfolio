@@ -139,6 +139,8 @@ try {
                 $errores[] = "La fecha de nacimiento tiene un formato inválido.";
             } elseif ($fecha > $hoy) {
                 $errores[] = "La fecha de nacimiento no puede ser posterior al día de hoy.";
+            } elseif ((int)$fecha_nacimiento < 1900) {
+                $errores[] = "El año debe ser 1900 o posterior.";
             }
         }
 

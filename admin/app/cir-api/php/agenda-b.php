@@ -307,6 +307,77 @@ class ConsultasAgenda {
         $stmtEv->bindParam(':id_orden',  $datos['id_orden'],  PDO::PARAM_INT);
         $stmtEv->bindParam(':id_turno',  $id_turno,           PDO::PARAM_INT);
         $stmtEv->execute();
+            /*
+|--------------------------------------------------------------------------
+| ENVÍO DE MAIL (service-mail)
+|--------------------------------------------------------------------------
+*/
+
+try {
+
+    // 1. Obtener email del paciente
+    $sqlEmail = "
+        SELECT p.email
+        FROM persona p
+        JOIN persona_asiste pa ON pa.id_persona = p.id_persona
+        WHERE pa.id_persona_asiste = :id
+        LIMIT 1
+    ";
+
+    $stmtEmail = $pdo->prepare($sqlEmail);
+    $stmtEmail->bindParam(':id', $datos['id_persona_asiste'], PDO::PARAM_INT);
+    $stmtEmail->execute();
+
+    $emailPaciente = $stmtEmail->fetchColumn();
+
+    // 2. Solo enviar si hay email
+    error_log("DEBUG EMAIL PACIENTE: " . $emailPaciente);
+    error_log("DEBUG ID TURNO: " . $id_turno);
+    
+    if ($emailPaciente) {
+
+        $payload = [
+            'to' => $emailPaciente,
+            'subject' => 'Turno programado',
+            'body' => "Su turno fue registrado correctamente. ID Turno: {$id_turno}"
+        ];
+
+        $ch = curl_init('http://149.50.137.127:3080/public/index.php');
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD => 'cirugia:Cirugia2026',
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_TIMEOUT => 5
+        ]);
+
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        curl_close($ch);
+
+        // 3. LOGS (no interrumpe flujo)
+        error_log("MAIL RESPONSE: " . $response);
+        error_log("MAIL ERROR: " . $curlError);
+        error_log("MAIL HTTP CODE: " . $httpCode);
+
+        // 4. fallback silencioso
+        if ($curlError || $httpCode !== 200) {
+            error_log("MAIL FAIL - turno {$id_turno}");
+        }
+
+    } else {
+        error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
+    }
+
+} catch (Exception $e) {
+    error_log("MAIL EXCEPTION: " . $e->getMessage());
+}
 
         return ['ok' => true, 'id_turno' => $id_turno];
     }

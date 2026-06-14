@@ -190,7 +190,25 @@ document.addEventListener("DOMContentLoaded", async function() {
             },
             { data: "tipo_documento", defaultContent: "Sin Tipo" },
             { data: "comentario", defaultContent: "-" }, 
-            { data: "fecha_subido" },
+            { 
+                data: "fecha_subido",
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        if (!data) return '-';
+                        const [fecha, hora] = data.split(' ');
+                        const partes = fecha.split('-');
+                        if (partes.length !== 3) return data;
+                        const [anio, mes, dia] = partes;
+                        let resultado = `${dia}/${mes}/${anio}`;
+                        if (hora) {
+                            const [hh, mm] = hora.split(':');
+                            resultado += ` ${hh}:${mm}`;
+                        }
+                        return resultado;
+                    }
+                    return data; // usar valor ISO original para ordenar/filtrar correctamente
+                }
+            },
             { 
                 data: "etiquetas",
                 render: function(data, type, row) {

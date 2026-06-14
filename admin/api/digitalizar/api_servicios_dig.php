@@ -4,6 +4,7 @@ session_start();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../model/conexion_dig.php';
+require_once __DIR__ . '/helpers_dig.php';
 
 if (!isset($_SESSION['id'])) {
     http_response_code(401);
@@ -67,8 +68,8 @@ switch ($method) {
         $data = json_decode(file_get_contents('php://input'), true);
         $errores = [];
 
-        $nombre = trim($data['nombre'] ?? '');
-        $area = trim($data['area'] ?? '');
+        $nombre = capitalizar($data['nombre'] ?? '');
+        $area = capitalizar($data['area'] ?? '');
         $responsable = trim($data['responsable'] ?? ''); 
                 
         if ($nombre === '') {
@@ -134,8 +135,8 @@ switch ($method) {
             }
         }
 
-        $nombre = trim($data['nombre'] ?? '');
-        $area = trim($data['area'] ?? '');
+        $nombre = capitalizar($data['nombre'] ?? '');
+        $area = capitalizar($data['area'] ?? '');
         $responsable = trim($data['responsable'] ?? '');
         
         if ($nombre === '') {

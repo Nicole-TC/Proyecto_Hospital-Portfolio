@@ -4,6 +4,16 @@
  */
 
 /**
+ * Convierte un texto a: primera letra mayúscula, resto minúsculas.
+ * Ej: "hola" -> "Hola", "HOLA" -> "Hola"
+ */
+function capitalizar(string $valor): string
+{
+    $valor = mb_strtolower(trim($valor), 'UTF-8');
+    return mb_strtoupper(mb_substr($valor, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($valor, 1, null, 'UTF-8');
+}
+
+/**
  * Sanitiza y normaliza los parámetros GET de búsqueda de documentos.
  *
  * @param array $get  Normalmente $_GET

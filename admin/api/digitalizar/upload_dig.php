@@ -14,6 +14,7 @@ if (!isset($_SESSION['id'])) {
 }
 
 require_once __DIR__ . '/../../model/conexion_dig.php';
+require_once __DIR__ . '/helpers_dig.php';
 
 // Validar que la solicitud sea POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -33,13 +34,13 @@ try {
     $bd_dig->beginTransaction();
 
     // 1. Obtener y validar datos del formulario
-    $titulo = trim($_POST['titulo'] ?? '');
+    $titulo = capitalizar($_POST['titulo'] ?? '');
     
     // Campo de identificación único
     $dni = trim($_POST['dni'] ?? $_POST['numero_identificacion'] ?? '');
     
-    $nombre = trim($_POST['nombre'] ?? '');
-    $apellido = trim($_POST['apellido'] ?? '');
+    $nombre = capitalizar($_POST['nombre'] ?? '');
+    $apellido = capitalizar($_POST['apellido'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
     $id_tipo_documento = filter_var($_POST['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);

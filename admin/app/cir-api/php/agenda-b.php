@@ -439,8 +439,17 @@ try {
         $cuerpo .= "\n";
         $cuerpo .= "Importante: los estudios se realizan por orden de llegada.\n";
 
-        
-        
+          // ==========================
+        // PASO 6 - PAYLOAD
+        // ==========================
+
+        $payload = [
+            'to' => $emailPaciente,
+            'subject' => $asunto,
+            'body' => $cuerpo
+        ];
+
+
         $ch = curl_init('http://149.50.137.127:3080/public/index.php');
 
         curl_setopt_array($ch, [

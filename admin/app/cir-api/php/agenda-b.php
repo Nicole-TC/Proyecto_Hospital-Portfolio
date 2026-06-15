@@ -427,23 +427,40 @@ try {
          // ==========================
         // PASO 5 - COMPLETAR PLANTILLA
         // ==========================
+         $cuerpo = str_replace('{PACIENTE}', $nombreCompleto, $cuerpo);
 
         $cuerpo = str_replace(
-            '{PACIENTE}',
-            $nombreCompleto,
-            $cuerpo
+         '{FECHA}',
+          date('d/m/Y', strtotime($datos['fecha_hora'])),
+          $cuerpo
         );
 
-        $cuerpo .= "\n\n";
-        $cuerpo .= "Cirugía:\n";
-        $cuerpo .= $cirugia . "\n\n";
+        $cuerpo = str_replace(
+         '{HORA}',
+         date('H:i', strtotime($datos['fecha_hora'])),
+         $cuerpo
+        );
 
-        $cuerpo .= "Estudios requeridos:\n";
-        $cuerpo .= $textoEstudios . "\n";
+         $cuerpo .= "\n\n";
+         $cuerpo .= "====================================\n";
+         $cuerpo .= "CIRUGÍA PROGRAMADA\n";
+         $cuerpo .= "====================================\n\n";
 
-        $cuerpo .= "\n";
-        $cuerpo .= "Importante: los estudios se realizan por orden de llegada.\n";
-        
+         $cuerpo .= $cirugia . "\n\n";
+
+         $cuerpo .= "ESTUDIOS REQUERIDOS\n";
+         $cuerpo .= "------------------------------------\n\n";
+
+         $cuerpo .= $textoEstudios;
+
+         $cuerpo .= "IMPORTANTE\n";
+         $cuerpo .= "------------------------------------\n";
+         $cuerpo .= "• Los estudios se realizan por orden de llegada.\n";
+         $cuerpo .= "• Concurra con DNI.\n";
+         $cuerpo .= "• Respete las indicaciones de cada estudio.\n\n";
+
+         $cuerpo .= "Saludos.\n";
+         $cuerpo .= "Circuito Quirúrgico.\n";
 
         error_log("MAIL ASUNTO: " . $asunto);
         error_log("MAIL BODY: " . $cuerpo);   
@@ -492,9 +509,9 @@ try {
         error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
     }
 
-} catch (Exception $e) {
+       } catch (Exception $e) {
     error_log("MAIL EXCEPTION: " . $e->getMessage());
-}
+       }
 
         return ['ok' => true, 'id_turno' => $id_turno];
     }

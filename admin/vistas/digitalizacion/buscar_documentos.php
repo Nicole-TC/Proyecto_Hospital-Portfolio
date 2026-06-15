@@ -172,6 +172,54 @@ body.modo-oscuro .btn-light:hover {
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
     
+    // Escapa HTML para evitar inyección al pintar datos del servidor
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Convierte un texto a "Oración": primera letra en mayúscula, resto en minúscula
+    function capitalizarTexto(str) {
+        if (!str) return str;
+        const limpio = String(str).trim();
+        if (limpio.length === 0) return limpio;
+        return limpio.charAt(0).toUpperCase() + limpio.slice(1).toLowerCase();
+    }
+
+    // Convierte un texto a "Título por palabra": cada palabra empieza con mayúscula
+    function capitalizarPorPalabra(str) {
+        if (!str) return str;
+        return String(str).trim().toLowerCase()
+            .split(' ')
+            .map(palabra => palabra.length ? palabra.charAt(0).toUpperCase() + palabra.slice(1) : palabra)
+            .join(' ');
+    }
+
+    // Parsea el comentario con formato "Título: X\nDescripción: Y"
+    // y lo normaliza igual que se muestra en el formulario de Nuevo Documento.
+    function formatComentario(comentario) {
+        if (!comentario) return '-';
+        const matchTitulo = comentario.match(/T[ií]tulo:\s*([^\n]*)/i);
+        const matchDesc = comentario.match(/Descripci[oó]n:\s*([\s\S]*)/i);
+
+        const titulo = matchTitulo ? matchTitulo[1].trim() : '';
+        const descripcion = matchDesc ? matchDesc[1].trim() : '';
+
+        if (!titulo && !descripcion) {
+            return escapeHtml(comentario);
+        }
+
+        let html = '';
+        if (titulo) html += `<strong>${escapeHtml(capitalizarTexto(titulo))}</strong>`;
+        if (descripcion) html += `<br><small class="text-muted">${escapeHtml(capitalizarTexto(descripcion))}</small>`;
+        return html || '-';
+    }
+
     // 1. Cargar dinámicamente los selectores de Etiquetas (Tag) y Servicio
     try {
         const response = await fetch("api/digitalizar/get_opciones.php");
@@ -221,13 +269,33 @@ document.addEventListener("DOMContentLoaded", async function() {
             { 
                 data: null, 
                 render: function(data, type, row) { 
-                    const nombre = row.paciente ? row.paciente : 'Desconocido';
-                    return `<strong>${nombre}</strong> <br><small class="text-muted">DNI: ${row.dni}</small>`; 
+                    const nombre = row.paciente ? capitalizarPorPalabra(row.paciente) : 'Desconocido';
+                    return `<strong>${escapeHtml(nombre)}</strong> <br><small class="text-muted">DNI: ${escapeHtml(row.dni)}</small>`; 
                 } 
             },
-            { data: "tipo_documento", defaultContent: "Sin Tipo" },
-            { data: "servicio", defaultContent: '<span class="text-muted">Sin servicio</span>' },
-            { data: "comentario", defaultContent: "-" },
+            { 
+                data: "tipo_documento", 
+                defaultContent: "Sin Tipo",
+                render: function(data, type, row) {
+                    if (type !== 'display') return data || '';
+                    return data ? escapeHtml(capitalizarTexto(data)) : 'Sin Tipo';
+                }
+            },
+            { 
+                data: "servicio", 
+                defaultContent: '<span class="text-muted">Sin servicio</span>',
+                render: function(data, type, row) {
+                    if (type !== 'display') return data || '';
+                    return data ? escapeHtml(capitalizarTexto(data)) : '<span class="text-muted">Sin servicio</span>';
+                }
+            },
+            { 
+                data: "comentario",
+                render: function(data, type, row) {
+                    if (type !== 'display') return data || '';
+                    return formatComentario(data);
+                }
+            },
             { 
                 data: "fecha_subido",
                 render: function(data, type, row) {
@@ -244,14 +312,15 @@ document.addEventListener("DOMContentLoaded", async function() {
                         }
                         return resultado;
                     }
-                    return data; // usar valor ISO original para ordenar/filtrar correctamente
+                    return data; // valor ISO original para ordenar/filtrar
                 }
             },
             { 
                 data: "etiquetas",
                 render: function(data, type, row) {
+                    if (type !== 'display') return data || '';
                     if (!data) return '<span class="badge bg-secondary">Sin etiquetas</span>';
-                    return data.split(', ').map(tag => `<span class="badge bg-info text-white me-1">${tag}</span>`).join('');
+                    return data.split(', ').map(tag => `<span class="badge bg-info text-white me-1">${escapeHtml(capitalizarTexto(tag))}</span>`).join('');
                 }
             },
             { 

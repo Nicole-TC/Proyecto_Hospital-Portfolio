@@ -438,6 +438,10 @@ try {
 
         $cuerpo .= "\n";
         $cuerpo .= "Importante: los estudios se realizan por orden de llegada.\n";
+        
+
+        error_log("MAIL ASUNTO: " . $asunto);
+        error_log("MAIL BODY: " . $cuerpo);   
 
           // ==========================
         // PASO 6 - PAYLOAD

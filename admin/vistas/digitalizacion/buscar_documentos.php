@@ -58,7 +58,7 @@
                             <div class="col-12">
                                 <div id="alerta-sin-filtros" class="alert alert-warning d-none mb-0" role="alert">
                                     <i class="fa-solid fa-triangle-exclamation me-2"></i>
-                                    Ingresá al menos un filtro (DNI, etiqueta o fecha) para poder buscar.
+                                    <span id="alerta-sin-filtros-texto">Ingresá al menos un filtro (DNI, etiqueta o fecha) para poder buscar.</span>
                                 </div>
                             </div>
                         </div>
@@ -382,8 +382,18 @@ document.addEventListener("DOMContentLoaded", async function() {
         const hasta = $('#fecha_hasta').val();
 
         const alerta = document.getElementById("alerta-sin-filtros");
+        const alertaTexto = document.getElementById("alerta-sin-filtros-texto");
 
         if (!dni && !tag && !servicio && !desde && !hasta) {
+            alertaTexto.textContent = "Ingresá al menos un filtro (DNI, etiqueta, servicio o fecha) para poder buscar.";
+            alerta.classList.remove("d-none");
+            document.getElementById("card-resultados").style.display = "none";
+            return;
+        }
+
+        // Validar que la fecha "desde" no sea posterior a la fecha "hasta"
+        if (desde && hasta && desde > hasta) {
+            alertaTexto.textContent = "La fecha 'desde' no puede ser posterior a la fecha 'hasta'. Revisá el rango de fechas.";
             alerta.classList.remove("d-none");
             document.getElementById("card-resultados").style.display = "none";
             return;

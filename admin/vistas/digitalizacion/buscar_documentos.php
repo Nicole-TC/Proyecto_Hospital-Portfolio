@@ -41,6 +41,15 @@
                             </div>
                         </div>
                         
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div id="alerta-sin-filtros" class="alert alert-warning d-none mb-0" role="alert">
+                                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                                    Ingresá al menos un filtro (DNI, etiqueta o fecha) para poder buscar.
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row mt-4">
                             <div class="col-12 text-end">
                                 <button type="button" id="btn-limpiar" class="btn btn-light rounded-pill px-4 me-2">Limpiar</button>
@@ -265,6 +274,21 @@ document.addEventListener("DOMContentLoaded", async function() {
     // 4. Programar el Botón Buscar
     $('#form-buscar-documentos').on('submit', function(e) {
         e.preventDefault();
+
+        const dni = $('#buscar_dni').val().trim();
+        const tag = $('#buscar_tag').val();
+        const desde = $('#fecha_desde').val();
+        const hasta = $('#fecha_hasta').val();
+
+        const alerta = document.getElementById("alerta-sin-filtros");
+
+        if (!dni && !tag && !desde && !hasta) {
+            alerta.classList.remove("d-none");
+            document.getElementById("card-resultados").style.display = "none";
+            return;
+        }
+
+        alerta.classList.add("d-none");
         const cardRes = document.getElementById("card-resultados");
         if(cardRes) cardRes.style.display = "block";
         ejecutarBusqueda();

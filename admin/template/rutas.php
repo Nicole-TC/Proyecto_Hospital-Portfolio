@@ -77,10 +77,8 @@ switch (@$_GET["modulo"]) {
         break;
 
     // BOT
-    case 'bot':
-        $menu = 'Bot';
-        $modal = FALSE;
-        $require = "vistas/en_construccion.php";
+    case 'menu_bot':
+        require_once "template/chatbot/rutas_bot.php";
         break;
 }
 ?>

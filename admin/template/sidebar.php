@@ -168,9 +168,9 @@ hr.my-0 {
     </li>
     <?php } ?>
 
-    <?php if (@$_SESSION["bot"] == TRUE || @$_SESSION["admin"] == 1) { ?>
+    <?php if (@$_SESSION["menu_bot"] == TRUE || @$_SESSION["admin"] == 1) { ?>
     <li>
-      <a href="index.php?modulo=bot">
+      <a href="index.php?modulo=menu_bot">
         <i class="fa-solid fa-robot menu-icon icon-bot"></i> Bot
       </a>
     </li>

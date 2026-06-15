@@ -79,7 +79,7 @@ if (isset($_POST['submit'])) {
             $_SESSION['menu_circuitoquirurgico'] = isset($user['menu_circuitoquirurgico']) ? $user['menu_circuitoquirurgico'] : 0;
 
             // BOT
-            $_SESSION['bot'] = 1;
+            $_SESSION['menu_bot'] = 1;
 
             // Construir la URL relativa para redirigir al módulo/valor correcto
             if (!empty($redirect_modulo)) {

@@ -410,15 +410,20 @@ try {
 
         foreach ($estudios as $fila) {
 
-            if (!$cirugia) {
-                $cirugia = $fila['cirugia'];
-            }
+        if (!$cirugia) {
+        $cirugia = $fila['cirugia'];
+       }
 
-            $textoEstudios .= "\n";
-            $textoEstudios .= "• " . $fila['estudio'] . "\n";
-            $textoEstudios .= "Indicaciones: " . $fila['observacion'] . "\n";
-        }
+        $textoEstudios .= "• " . $fila['estudio'] . "\n";
 
+        if (!empty($fila['observacion'])) {
+        $textoEstudios .= "  Indicaciones:\n";
+        $textoEstudios .= "  " . trim($fila['observacion']) . "\n";
+       }
+
+         $textoEstudios .= "\n";
+       }
+        
          // ==========================
         // PASO 5 - COMPLETAR PLANTILLA
         // ==========================

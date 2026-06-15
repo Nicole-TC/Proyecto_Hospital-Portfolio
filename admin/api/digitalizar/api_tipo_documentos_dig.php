@@ -13,6 +13,7 @@ if (!isset($_SESSION['id'])) {
 }
 
 require_once __DIR__ . '/../../model/conexion_dig.php';
+require_once __DIR__ . '/helpers_dig.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -29,7 +30,7 @@ switch ($method) {
         $data = json_decode(file_get_contents('php://input'), true);
         $errores = [];
 
-        $nombre = trim($data['nombre'] ?? '');
+        $nombre = capitalizar($data['nombre'] ?? '');
         if ($nombre === '') {
             $errores[] = 'El nombre es obligatorio';
         } elseif (preg_match('/\d/', $nombre)) {
@@ -79,7 +80,7 @@ switch ($method) {
             }
         }
 
-        $nombre = trim($data['nombre'] ?? '');
+        $nombre = capitalizar($data['nombre'] ?? '');
         if ($nombre === '') {
             $errores[] = 'El nombre es obligatorio';
         } elseif (preg_match('/\d/', $nombre)) {

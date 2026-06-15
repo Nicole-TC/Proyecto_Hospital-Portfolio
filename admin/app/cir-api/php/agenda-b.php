@@ -401,7 +401,23 @@ try {
 
         $estudios = $stmtEstudios->fetchAll(PDO::FETCH_ASSOC);
 
+         // ==========================
+        // PASO 4 - ARMAR TEXTO
+        // ==========================
 
+        $cirugia = '';
+        $textoEstudios = '';
+
+        foreach ($estudios as $fila) {
+
+            if (!$cirugia) {
+                $cirugia = $fila['cirugia'];
+            }
+
+            $textoEstudios .= "\n";
+            $textoEstudios .= "• " . $fila['estudio'] . "\n";
+            $textoEstudios .= "Indicaciones: " . $fila['observacion'] . "\n";
+        }
 
         $ch = curl_init('http://149.50.137.127:3080/public/index.php');
 

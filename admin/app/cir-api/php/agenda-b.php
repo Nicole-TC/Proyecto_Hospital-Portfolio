@@ -353,7 +353,28 @@ try {
 
         $asunto = $plantilla['asunto'] ?? 'Turno Prequirúrgico Confirmado';
         $cuerpo = $plantilla['cuerpo'] ?? '';
-        
+
+         // ==========================
+        // PASO 2 - PACIENTE
+        // ==========================
+
+        $sqlPaciente = "
+            SELECT p.nombre, p.apellido
+            FROM persona p
+            JOIN persona_asiste pa
+                ON pa.id_persona = p.id_persona
+            WHERE pa.id_persona_asiste = :id
+        ";
+
+        $stmtPaciente = $pdo->prepare($sqlPaciente);
+        $stmtPaciente->bindParam(':id', $datos['id_persona_asiste']);
+        $stmtPaciente->execute();
+
+        $paciente = $stmtPaciente->fetch(PDO::FETCH_ASSOC);
+
+        $nombreCompleto =
+            trim($paciente['nombre'] . ' ' . $paciente['apellido']);
+
 
 
         $ch = curl_init('http://149.50.137.127:3080/public/index.php');

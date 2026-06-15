@@ -30,8 +30,21 @@
                                 </div>
                             </div>
 
-                            <!-- Filtro por Rango de Fechas -->
+                            <!-- Filtro por Servicio -->
                             <div class="col-md-4">
+                                <label for="buscar_servicio" class="form-label fw-bold">Servicio</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-0"><i class="fa-solid fa-hospital text-muted"></i></span>
+                                    <select class="form-select bg-light border-0" id="buscar_servicio" name="id_servicio">
+                                        <option value="">-- Todos los servicios --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-3">
+                            <!-- Filtro por Rango de Fechas -->
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold">Subido entre (Fechas)</label>
                                 <div class="input-group">
                                     <input type="date" class="form-control bg-light border-0" id="fecha_desde" name="fecha_desde" title="Fecha Desde">
@@ -72,6 +85,7 @@
                                     <th>ID</th>
                                     <th>Paciente (DNI)</th>
                                     <th>Documento</th>
+                                    <th>Servicio</th>
                                     <th>Comentario</th>
                                     <th>Fecha</th>
                                     <th>Etiquetas</th>
@@ -158,24 +172,38 @@ body.modo-oscuro .btn-light:hover {
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
     
-    // 1. Cargar dinámicamente el selector de Etiquetas (Tag)
+    // 1. Cargar dinámicamente los selectores de Etiquetas (Tag) y Servicio
     try {
         const response = await fetch("api/digitalizar/get_opciones.php");
         const json = await response.json();
         
-        if (json.status === 'success' && json.data.etiquetas) {
-            const selectTag = document.getElementById("buscar_tag");
-            if(selectTag) {
-                json.data.etiquetas.forEach(etiqueta => {
-                    const option = document.createElement("option");
-                    option.value = etiqueta.id;
-                    option.textContent = etiqueta.name;
-                    selectTag.appendChild(option);
-                });
+        if (json.status === 'success') {
+            if (json.data.etiquetas) {
+                const selectTag = document.getElementById("buscar_tag");
+                if(selectTag) {
+                    json.data.etiquetas.forEach(etiqueta => {
+                        const option = document.createElement("option");
+                        option.value = etiqueta.id;
+                        option.textContent = etiqueta.name;
+                        selectTag.appendChild(option);
+                    });
+                }
+            }
+
+            if (json.data.servicios) {
+                const selectServicio = document.getElementById("buscar_servicio");
+                if(selectServicio) {
+                    json.data.servicios.forEach(servicio => {
+                        const option = document.createElement("option");
+                        option.value = servicio.id;
+                        option.textContent = servicio.nombre;
+                        selectServicio.appendChild(option);
+                    });
+                }
             }
         }
     } catch(error) {
-        console.error("Error al cargar etiquetas:", error);
+        console.error("Error al cargar opciones (etiquetas/servicios):", error);
     }
 
 // 2. Inicializar DataTables sin ajax
@@ -198,7 +226,8 @@ document.addEventListener("DOMContentLoaded", async function() {
                 } 
             },
             { data: "tipo_documento", defaultContent: "Sin Tipo" },
-            { data: "comentario", defaultContent: "-" }, 
+            { data: "servicio", defaultContent: '<span class="text-muted">Sin servicio</span>' },
+            { data: "comentario", defaultContent: "-" },
             { 
                 data: "fecha_subido",
                 render: function(data, type, row) {
@@ -239,11 +268,13 @@ document.addEventListener("DOMContentLoaded", async function() {
         const params = new URLSearchParams();
         const dni = $('#buscar_dni').val();
         const tag = $('#buscar_tag').val();
+        const servicio = $('#buscar_servicio').val();
         const desde = $('#fecha_desde').val();
         const hasta = $('#fecha_hasta').val();
 
         if (dni) params.append('dni', dni);
         if (tag) params.append('tag_id', tag);
+        if (servicio) params.append('id_servicio', servicio);
         if (desde) params.append('fecha_inicio', desde);
         if (hasta) params.append('fecha_fin', hasta);
 
@@ -277,12 +308,13 @@ document.addEventListener("DOMContentLoaded", async function() {
 
         const dni = $('#buscar_dni').val().trim();
         const tag = $('#buscar_tag').val();
+        const servicio = $('#buscar_servicio').val();
         const desde = $('#fecha_desde').val();
         const hasta = $('#fecha_hasta').val();
 
         const alerta = document.getElementById("alerta-sin-filtros");
 
-        if (!dni && !tag && !desde && !hasta) {
+        if (!dni && !tag && !servicio && !desde && !hasta) {
             alerta.classList.remove("d-none");
             document.getElementById("card-resultados").style.display = "none";
             return;

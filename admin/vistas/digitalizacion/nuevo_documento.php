@@ -141,7 +141,9 @@
                         <div class="row">
                             <div class="form-group col-md-12 mb-3">
                                 <label for="archivo">Seleccionar Archivo <span class="text-danger">*</span></label>
-                                <div id="drop-zone" class="border border-primary border-2 rounded text-center p-5 mb-2" style="border-style: dashed !important; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background-color: #f8f9fa; transition: all 0.2s;">
+                                
+                                <!-- Zona Drag & Drop -->
+                                <div id="drop-zone" class="border border-primary border-2 rounded text-center p-5 mb-2" style="border-style: dashed !important; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Arrastrá y soltá tu archivo acá">
                                     <i class="fa-solid fa-cloud-arrow-up fa-3x text-primary mb-2"></i>
                                     <h6 class="text-primary mb-1" id="drop-title">Arrastrá y soltá tu archivo acá</h6>
                                     <small class="text-muted">o usá el botón de abajo para buscar en tu PC</small>
@@ -747,7 +749,15 @@ body.modo-oscuro .bg-light {
 
 /* === Drag & Drop Zone === */
 #drop-zone {
-    border: 2px dashed #0d6efd !important;
+    border-style: dashed !important;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    transition: all 0.2s;
 }
 body.modo-oscuro #drop-zone {
     background-color: #1e2a3a !important;

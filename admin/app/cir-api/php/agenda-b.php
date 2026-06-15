@@ -374,6 +374,32 @@ try {
 
         $nombreCompleto =
             trim($paciente['nombre'] . ' ' . $paciente['apellido']);
+        
+          // ==========================
+        // PASO 3 - ESTUDIOS
+        // ==========================
+
+        $sqlEstudios = "
+            SELECT
+                cc.nombre AS cirugia,
+                e.nombre AS estudio,
+                e.observacion
+            FROM orden_medica om
+            JOIN catalogo_cirugia cc
+                ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
+            JOIN combo_cirugia c
+                ON c.id_cirugia_catalogo = cc.id_cirugia_catalogo
+            JOIN estudio e
+                ON e.id_estudio = c.id_estudio
+            WHERE om.id_orden = :id_orden
+            ORDER BY e.nombre
+        ";
+
+        $stmtEstudios = $pdo->prepare($sqlEstudios);
+        $stmtEstudios->bindParam(':id_orden', $datos['id_orden']);
+        $stmtEstudios->execute();
+
+        $estudios = $stmtEstudios->fetchAll(PDO::FETCH_ASSOC);
 
 
 

@@ -419,6 +419,28 @@ try {
             $textoEstudios .= "Indicaciones: " . $fila['observacion'] . "\n";
         }
 
+         // ==========================
+        // PASO 5 - COMPLETAR PLANTILLA
+        // ==========================
+
+        $cuerpo = str_replace(
+            '{PACIENTE}',
+            $nombreCompleto,
+            $cuerpo
+        );
+
+        $cuerpo .= "\n\n";
+        $cuerpo .= "Cirugía:\n";
+        $cuerpo .= $cirugia . "\n\n";
+
+        $cuerpo .= "Estudios requeridos:\n";
+        $cuerpo .= $textoEstudios . "\n";
+
+        $cuerpo .= "\n";
+        $cuerpo .= "Importante: los estudios se realizan por orden de llegada.\n";
+
+        
+        
         $ch = curl_init('http://149.50.137.127:3080/public/index.php');
 
         curl_setopt_array($ch, [

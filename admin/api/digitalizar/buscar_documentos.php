@@ -130,6 +130,7 @@ try {
                 FROM documento_etiquetas de
                 JOIN etiquetas e ON de.id_etiqueta = e.id
                 WHERE de.id_documento = d.id
+                AND e.estado = true
             ) AS etiquetas
         FROM documentos d
         JOIN personal p ON d.id_persona = p.id

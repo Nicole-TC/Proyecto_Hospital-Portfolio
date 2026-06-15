@@ -336,11 +336,25 @@ try {
     
     if ($emailPaciente) {
 
-        $payload = [
-            'to' => $emailPaciente,
-            'subject' => 'Turno programado',
-            'body' => "Su turno fue registrado correctamente. ID Turno: {$id_turno}"
-        ];
+
+         // ==========================
+        // PASO 1 - PLANTILLA
+        // ==========================
+
+        $sqlPlantilla = "
+            SELECT asunto, cuerpo, id_plantilla
+            FROM plantilla_mensaje
+            WHERE tipo_evento = 'TURNO_PROGRAMADO'
+            LIMIT 1
+        ";
+
+        $stmtPlantilla = $pdo->query($sqlPlantilla);
+        $plantilla = $stmtPlantilla->fetch(PDO::FETCH_ASSOC);
+
+        $asunto = $plantilla['asunto'] ?? 'Turno Prequirúrgico Confirmado';
+        $cuerpo = $plantilla['cuerpo'] ?? '';
+        
+
 
         $ch = curl_init('http://149.50.137.127:3080/public/index.php');
 

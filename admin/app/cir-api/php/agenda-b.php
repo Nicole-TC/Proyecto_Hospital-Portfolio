@@ -307,6 +307,211 @@ class ConsultasAgenda {
         $stmtEv->bindParam(':id_orden',  $datos['id_orden'],  PDO::PARAM_INT);
         $stmtEv->bindParam(':id_turno',  $id_turno,           PDO::PARAM_INT);
         $stmtEv->execute();
+            /*
+|--------------------------------------------------------------------------
+| ENVÍO DE MAIL (service-mail)
+|--------------------------------------------------------------------------
+*/
+
+try {
+
+    // 1. Obtener email del paciente
+    $sqlEmail = "
+        SELECT p.email
+        FROM persona p
+        JOIN persona_asiste pa ON pa.id_persona = p.id_persona
+        WHERE pa.id_persona_asiste = :id
+        LIMIT 1
+    ";
+
+    $stmtEmail = $pdo->prepare($sqlEmail);
+    $stmtEmail->bindParam(':id', $datos['id_persona_asiste'], PDO::PARAM_INT);
+    $stmtEmail->execute();
+
+    $emailPaciente = $stmtEmail->fetchColumn();
+
+    // 2. Solo enviar si hay email
+    error_log("DEBUG EMAIL PACIENTE: " . $emailPaciente);
+    error_log("DEBUG ID TURNO: " . $id_turno);
+    
+    if ($emailPaciente) {
+
+
+         // ==========================
+        // PASO 1 - PLANTILLA
+        // ==========================
+
+        $sqlPlantilla = "
+            SELECT asunto, cuerpo, id_plantilla
+            FROM plantilla_mensaje
+            WHERE tipo_evento = 'TURNO_PROGRAMADO'
+            LIMIT 1
+        ";
+
+        $stmtPlantilla = $pdo->query($sqlPlantilla);
+        $plantilla = $stmtPlantilla->fetch(PDO::FETCH_ASSOC);
+
+        $asunto = $plantilla['asunto'] ?? 'Turno Prequirúrgico Confirmado';
+        $cuerpo = $plantilla['cuerpo'] ?? '';
+
+         // ==========================
+        // PASO 2 - PACIENTE
+        // ==========================
+
+        $sqlPaciente = "
+            SELECT p.nombre, p.apellido
+            FROM persona p
+            JOIN persona_asiste pa
+                ON pa.id_persona = p.id_persona
+            WHERE pa.id_persona_asiste = :id
+        ";
+
+        $stmtPaciente = $pdo->prepare($sqlPaciente);
+        $stmtPaciente->bindParam(':id', $datos['id_persona_asiste']);
+        $stmtPaciente->execute();
+
+        $paciente = $stmtPaciente->fetch(PDO::FETCH_ASSOC);
+
+        $nombreCompleto =
+            trim($paciente['nombre'] . ' ' . $paciente['apellido']);
+        
+          // ==========================
+        // PASO 3 - ESTUDIOS
+        // ==========================
+
+        $sqlEstudios = "
+            SELECT
+                cc.nombre AS cirugia,
+                e.nombre AS estudio,
+                e.observacion
+            FROM orden_medica om
+            JOIN catalogo_cirugia cc
+                ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
+            JOIN combo_cirugia c
+                ON c.id_cirugia_catalogo = cc.id_cirugia_catalogo
+            JOIN estudio e
+                ON e.id_estudio = c.id_estudio
+            WHERE om.id_orden = :id_orden
+            ORDER BY e.nombre
+        ";
+
+        $stmtEstudios = $pdo->prepare($sqlEstudios);
+        $stmtEstudios->bindParam(':id_orden', $datos['id_orden']);
+        $stmtEstudios->execute();
+
+        $estudios = $stmtEstudios->fetchAll(PDO::FETCH_ASSOC);
+
+         // ==========================
+        // PASO 4 - ARMAR TEXTO
+        // ==========================
+
+        $cirugia = '';
+        $textoEstudios = '';
+
+        foreach ($estudios as $fila) {
+
+        if (!$cirugia) {
+        $cirugia = $fila['cirugia'];
+       }
+
+        $textoEstudios .= "• " . $fila['estudio'] . "\n";
+
+        if (!empty($fila['observacion'])) {
+        $textoEstudios .= "  Indicaciones:\n";
+        $textoEstudios .= "  " . trim($fila['observacion']) . "\n";
+       }
+
+         $textoEstudios .= "\n";
+       }
+        
+         // ==========================
+        // PASO 5 - COMPLETAR PLANTILLA
+        // ==========================
+         $cuerpo = str_replace('{PACIENTE}', $nombreCompleto, $cuerpo);
+
+        $cuerpo = str_replace(
+         '{FECHA}',
+          date('d/m/Y', strtotime($datos['fecha_hora'])),
+          $cuerpo
+        );
+
+        $cuerpo = str_replace(
+         '{HORA}',
+         date('H:i', strtotime($datos['fecha_hora'])),
+         $cuerpo
+        );
+
+         $cuerpo .= "\n\n";
+         $cuerpo .= "====================================\n";
+         $cuerpo .= "CIRUGÍA PROGRAMADA\n";
+         $cuerpo .= "====================================\n\n";
+
+         $cuerpo .= $cirugia . "\n\n";
+
+         $cuerpo .= "ESTUDIOS REQUERIDOS\n";
+         $cuerpo .= "------------------------------------\n\n";
+
+         $cuerpo .= $textoEstudios;
+
+         $cuerpo .= "IMPORTANTE\n";
+         $cuerpo .= "------------------------------------\n";
+         $cuerpo .= "• Los estudios se realizan por orden de llegada.\n";
+         $cuerpo .= "• Concurra con DNI.\n";
+         $cuerpo .= "• Respete las indicaciones de cada estudio.\n\n";
+
+         $cuerpo .= "Saludos.\n";
+         $cuerpo .= "Circuito Quirúrgico.\n";
+
+        error_log("MAIL ASUNTO: " . $asunto);
+        error_log("MAIL BODY: " . $cuerpo);   
+
+          // ==========================
+        // PASO 6 - PAYLOAD
+        // ==========================
+
+        $payload = [
+            'to' => $emailPaciente,
+            'subject' => $asunto,
+            'body' => $cuerpo
+        ];
+
+
+        $ch = curl_init('http://149.50.137.127:3080/public/index.php');
+
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERPWD => 'cirugia:Cirugia2026',
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_TIMEOUT => 5
+        ]);
+
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        curl_close($ch);
+
+        // 3. LOGS (no interrumpe flujo)
+        error_log("MAIL RESPONSE: " . $response);
+        error_log("MAIL ERROR: " . $curlError);
+        error_log("MAIL HTTP CODE: " . $httpCode);
+
+        // 4. fallback silencioso
+        if ($curlError || $httpCode !== 200) {
+            error_log("MAIL FAIL - turno {$id_turno}");
+        }
+
+    } else {
+        error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
+    }
+
+       } catch (Exception $e) {
+    error_log("MAIL EXCEPTION: " . $e->getMessage());
+       }
 
         return ['ok' => true, 'id_turno' => $id_turno];
     }

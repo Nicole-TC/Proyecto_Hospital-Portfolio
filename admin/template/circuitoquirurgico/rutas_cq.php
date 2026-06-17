@@ -79,6 +79,11 @@ switch (@$_GET["accion"]) {
         $require = 'vistas/circuitoquirurgico/form_cirugias.php';
         break;
 
+    case 'asistencia':
+        $menu = 'Control de Asistencia (CQ)';
+        $require = 'vistas/circuitoquirurgico/asistencia.php';
+        break;
+
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*
     case 'programar_cirugia':

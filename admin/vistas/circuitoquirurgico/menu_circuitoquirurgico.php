@@ -39,6 +39,9 @@
             <!-- Especialidades y Subespecialidades -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Especialidades", "Especialidades y subespecialidades", "fa-solid fa-stethoscope", "purple", "index.php?modulo=menu_circuitoquirurgico&accion=especialidades"); ?>
 
+            <!-- Asistencia -->
+            <?php HTML::tarjeta("menu_circuitoquirurgico", "Asistencia", "Control de asistencia a turnos", "fa-solid fa-clipboard-check", "success", "index.php?modulo=menu_circuitoquirurgico&accion=asistencia"); ?>
+
             <!-- CRUD cirugias y estudios-->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "CRUD Cirugias y Estudios", "CRUD de cirugias y estudios", "fa-solid fa-stethoscope", "blue", "index.php?modulo=menu_circuitoquirurgico&accion=gestion_cirugias"); ?>
         </div>

@@ -255,6 +255,12 @@ async function saveConfig() {
             });
             cancelarEdicion();
             cargarTabla();
+            
+            // Volver a la pestaña de gestión
+            const listTab = document.querySelector('#list-tab');
+            if (listTab) {
+                bootstrap.Tab.getInstance(listTab)?.show() || new bootstrap.Tab(listTab).show();
+            }
         } else {
             Swal.fire({
                 title: 'Error',
@@ -281,7 +287,9 @@ function editarCupo(cupo) {
     modoEdicion = true;
 
     // Mostrar alerta de modo edición
-    document.getElementById('alert-modo-edicion').classList.remove('d-none');
+    const alertEdicion = document.getElementById('alert-modo-edicion');
+    alertEdicion.classList.remove('d-none');
+    alertEdicion.classList.add('d-flex');
     document.getElementById('edit-id-label').textContent = '#' + cupo.id_cupo;
 
     // ID oculto
@@ -319,6 +327,12 @@ function editarCupo(cupo) {
     updateGlobalInfo();
     checkFormValidity();
 
+    // Cambiar a la pestaña del formulario
+    const formTab = document.querySelector('#form-tab');
+    if (formTab) {
+        bootstrap.Tab.getInstance(formTab)?.show() || new bootstrap.Tab(formTab).show();
+    }
+
     // Scroll al formulario
     document.getElementById('form-cupos').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -331,10 +345,31 @@ function cancelarEdicion() {
 
     document.getElementById('form-cupos').reset();
     document.getElementById('id_cupo_edit').value = '';
-    document.getElementById('alert-modo-edicion').classList.add('d-none');
+    
+    const alertEdicion = document.getElementById('alert-modo-edicion');
+    alertEdicion.classList.remove('d-flex');
+    alertEdicion.classList.add('d-none');
+    alertEdicion.style.display = 'none'; // Asegurar que se oculte
+    
     document.getElementById('btn-submit-label').innerHTML = 'Aplicar Configuración <i class="bi bi-arrow-right ms-1"></i>';
 
     resetUI();
+}
+
+// ────────────────────────────────────────────────────────────────
+//  CRUD — Ver Detalles (Modal)
+// ────────────────────────────────────────────────────────────────
+function verCupo(cupo) {
+    document.getElementById('ver-tipo-turno').textContent = cupo.tipo_turno_nombre || '—';
+    document.getElementById('ver-fecha-desde').textContent = cupo.fecha_desde ? formatFecha(cupo.fecha_desde) : '—';
+    document.getElementById('ver-fecha-hasta').textContent = cupo.fecha_hasta ? formatFecha(cupo.fecha_hasta) : 'Indefinido';
+    document.getElementById('ver-hora-inicio').textContent = cupo.hora_inicio ? formatTime(cupo.hora_inicio.substring(0, 5)) : '--:--';
+    document.getElementById('ver-cupos-total').textContent = cupo.cupos_total + ' pacientes/día';
+    
+    document.getElementById('ver-dias-activos').innerHTML = buildDiasBadges(cupo);
+
+    const modalVer = new bootstrap.Modal(document.getElementById('modalVerCupo'));
+    modalVer.show();
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -439,19 +474,24 @@ async function cargarTabla() {
             tr.innerHTML = `
                 <td class="ps-4 text-muted small">${cupo.id_cupo}</td>
                 <td>
-                    <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold px-2 py-1" style="font-size:12px;">
+                    <span class="badge bg-white text-primary border border-primary fw-semibold px-2 py-1 shadow-sm" style="font-size:12px;">
                         ${escapeHtml(cupo.tipo_turno_nombre || '—')}
                     </span>
                 </td>
                 <td class="small text-dark">${vigencia}</td>
                 <td class="small fw-semibold">${formatTime(cupo.hora_inicio ? cupo.hora_inicio.substring(0,5) : '')}</td>
                 <td class="text-center">
-                    <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1" style="font-size:13px;">
-                        ${cupo.cupos_total}
+                    <span class="badge bg-white text-success border border-success fw-bold px-2 py-1 shadow-sm" style="font-size:13px;">
+                        ${cupo.cupos_total} pacientes
                     </span>
                 </td>
                 <td>${diasBadges}</td>
                 <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info me-1" 
+                            onclick='verCupo(${JSON.stringify(cupo)})' 
+                            title="Ver Detalles">
+                        <i class="bi bi-eye"></i>
+                    </button>
                     <button class="btn btn-sm btn-outline-primary me-1" 
                             onclick='editarCupo(${JSON.stringify(cupo)})' 
                             title="Editar">
@@ -488,8 +528,8 @@ function buildDiasBadges(cupo) {
 
     return mapa.map(d => {
         const activo = cupo[d.key] === true || cupo[d.key] === 't' || cupo[d.key] === '1';
-        const cls    = activo ? 'bg-primary' : 'bg-secondary opacity-25';
-        return `<span class="badge ${cls} me-1" style="font-size:10px;">${d.label}</span>`;
+        if (!activo) return ''; // No mostrar días inactivos
+        return `<span class="badge bg-primary me-1" style="font-size:10px;">${d.label}</span>`;
     }).join('');
 }
 

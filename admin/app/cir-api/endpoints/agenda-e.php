@@ -10,12 +10,25 @@ $action = $_GET['action'] ?? '';
 // ── GET: turnos de un día  ───────────────────────────────────
 if ($method === 'GET' && $action === 'turnos_del_dia') {
     $fecha = $_GET['fecha'] ?? '';
+    $id_tipo_turno = (int)($_GET['id_tipo_turno'] ?? 0);
+
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
         echo json_encode(['ok' => false, 'error' => 'Fecha inválida.']); exit;
     }
     try {
-        $turnos = ConsultasAgenda::obtenerTurnosPorFecha($fecha);
-        echo json_encode(['ok' => true, 'turnos' => $turnos]);
+        $turnos = ConsultasAgenda::obtenerTurnosPorFecha($fecha, $id_tipo_turno);
+        
+        $cupoConfig = ['activo' => true, 'cupos_total' => 0];
+        if ($id_tipo_turno) {
+            $cupoConfig = ConsultasAgenda::obtenerConfiguracionCupo($fecha, $id_tipo_turno);
+        }
+
+        echo json_encode([
+            'ok' => true, 
+            'turnos' => $turnos,
+            'cupo_activo' => $cupoConfig['activo'],
+            'cupos_total' => $cupoConfig['cupos_total']
+        ]);
     } catch (Exception $e) {
         echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
     }

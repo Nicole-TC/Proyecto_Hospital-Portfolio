@@ -1,15 +1,6 @@
 <?php
-$envPath = __DIR__ . '/../../../../.env';
-if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
-    $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue;
-        $parts = explode('=', $line, 2);
-        if (count($parts) === 2) putenv(trim($parts[0]) . '=' . trim($parts[1]));
-    }
-}
-
 require_once __DIR__ . '/../../../model/cir_conexion.php';
+require_once __DIR__ . '/funciones.php';
 
 class ConsultasCupos {
 
@@ -31,33 +22,59 @@ class ConsultasCupos {
             return ['ok' => false, 'error' => implode(' ', $errores)];
         }
 
+        // Convertimos los días a booleanos reales
         return [
-            'ok'           => true,
+            'ok'            => true,
             'id_tipo_turno' => $id_tipo_turno,
-            'fecha_desde'  => $fecha_desde,
-            'fecha_hasta'  => $fecha_hasta,
-            'hora_inicio'  => $hora_inicio,
-            'cupos_total'  => $cupos_total,
-            'lunes'        => (isset($datos['lunes']) && $datos['lunes'] == '1') ? 'true' : 'false',
-            'martes'       => (isset($datos['martes']) && $datos['martes'] == '1') ? 'true' : 'false',
-            'miercoles'    => (isset($datos['miercoles']) && $datos['miercoles'] == '1') ? 'true' : 'false',
-            'jueves'       => (isset($datos['jueves']) && $datos['jueves'] == '1') ? 'true' : 'false',
-            'viernes'      => (isset($datos['viernes']) && $datos['viernes'] == '1') ? 'true' : 'false',
+            'fecha_desde'   => $fecha_desde,
+            'fecha_hasta'   => $fecha_hasta,
+            'hora_inicio'   => $hora_inicio,
+            'cupos_total'   => $cupos_total,
+            'lunes'         => isset($datos['lunes']) && $datos['lunes'] == '1' ? 'true' : 'false',
+            'martes'        => isset($datos['martes']) && $datos['martes'] == '1' ? 'true' : 'false',
+            'miercoles'     => isset($datos['miercoles']) && $datos['miercoles'] == '1' ? 'true' : 'false',
+            'jueves'        => isset($datos['jueves']) && $datos['jueves'] == '1' ? 'true' : 'false',
+            'viernes'       => isset($datos['viernes']) && $datos['viernes'] == '1' ? 'true' : 'false',
         ];
     }
 
-    // ── CREATE ──────────────────────────────────────────────────────────
+    // ── READ: Obtener los tipos de turno desde la BD ───────────────────
+    public static function obtenerTiposTurno() {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT id_tipo_turno, codigo, descripcion FROM tipo_turno ORDER BY id_tipo_turno";
+        
+        try {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo tipos de turno: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // ── CREATE: Guardar un nuevo cupo ──────────────────────────────────
     public static function guardarCupo($datos) {
         $v = self::validarDatos($datos);
         if (!$v['ok']) return $v;
 
+        // Obtenemos la conexión de forma limpia
         $pdo = conexionCircuitoQuirurgico();
+        
+        // Obtener el ID de estado Activo usando la función
+        // IMPORTANTE: Asegúrate de que 'AGENDA_CUPOS' y 'ACT' sean correctos para tu tabla estado
+        $id_estado_act = id_estado('USUARIO', 'ACT');
+        if (!$id_estado_act) {
+            // Si no existe, podemos usar un default o fallar. Aquí lanzamos un error claro.
+            return ['ok' => false, 'error' => "No se encontró el estado ACTIVO para AGENDA_CUPOS en la tabla estado."];
+        }
+
         $sql = "INSERT INTO agenda_cupos
                     (id_tipo_turno, fecha_desde, fecha_hasta, hora_inicio, cupos_total,
                      lunes, martes, miercoles, jueves, viernes, creado_en, id_estado)
                 VALUES
                     (:id_tipo_turno, :fecha_desde, :fecha_hasta, :hora_inicio, :cupos_total,
-                     :lunes, :martes, :miercoles, :jueves, :viernes, current_timestamp, 1)";
+                     :lunes, :martes, :miercoles, :jueves, :viernes, CURRENT_TIMESTAMP, :id_estado)";
 
         try {
             $stmt = $pdo->prepare($sql);
@@ -71,17 +88,24 @@ class ConsultasCupos {
             $stmt->bindParam(':miercoles',     $v['miercoles']);
             $stmt->bindParam(':jueves',        $v['jueves']);
             $stmt->bindParam(':viernes',       $v['viernes']);
+            $stmt->bindParam(':id_estado',     $id_estado_act, PDO::PARAM_INT);
+            
             $stmt->execute();
             return ['ok' => true, 'message' => 'Configuración guardada correctamente.'];
         } catch (PDOException $e) {
             error_log("Error guardando cupo: " . $e->getMessage());
-            throw new Exception("Error al guardar en la base de datos.");
+            return ['ok' => false, 'error' => "Error al guardar en la base de datos."];
         }
     }
 
-    // ── READ ────────────────────────────────────────────────────────────
+    // ── READ: Listar todos los cupos activos ───────────────────────────
     public static function listarCupos() {
         $pdo = conexionCircuitoQuirurgico();
+        
+        // Obtener el ID de estado Inactivo para filtrarlo usando la función
+        $id_estado_ina = id_estado('DATO', 'ELIM');
+        if (!$id_estado_ina) $id_estado_ina = 0; // Prevenir fallo en consulta SQL si la entidad es incorrecta
+
         $sql = "SELECT
                     ac.id_cupo,
                     ac.fecha_desde,
@@ -98,20 +122,22 @@ class ConsultasCupos {
                     tt.descripcion AS tipo_turno_nombre
                 FROM agenda_cupos ac
                 JOIN tipo_turno tt ON tt.id_tipo_turno = ac.id_tipo_turno
-                WHERE ac.id_estado != 42
+                WHERE ac.id_estado != :id_estado_ina
                 ORDER BY ac.creado_en DESC";
 
         try {
             $stmt = $pdo->prepare($sql);
+            $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
             $stmt->execute();
-            return ['ok' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)];
+            $datos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return ['ok' => true, 'data' => $datos];
         } catch (PDOException $e) {
             error_log("Error listando cupos: " . $e->getMessage());
-            throw new Exception("Error al obtener los cupos.");
+            return ['ok' => false, 'error' => "Error al obtener los cupos."];
         }
     }
 
-    // ── UPDATE ──────────────────────────────────────────────────────────
+    // ── UPDATE: Actualizar un cupo existente ───────────────────────────
     public static function actualizarCupo($datos) {
         $id_cupo = filter_var($datos['id_cupo'] ?? null, FILTER_VALIDATE_INT);
         if (!$id_cupo) return ['ok' => false, 'error' => 'ID de cupo inválido.'];
@@ -120,6 +146,9 @@ class ConsultasCupos {
         if (!$v['ok']) return $v;
 
         $pdo = conexionCircuitoQuirurgico();
+        $id_estado_ina = id_estado('DATO', 'ELIM');
+        if (!$id_estado_ina) $id_estado_ina = 0;
+
         $sql = "UPDATE agenda_cupos SET
                     id_tipo_turno = :id_tipo_turno,
                     fecha_desde   = :fecha_desde,
@@ -131,7 +160,7 @@ class ConsultasCupos {
                     miercoles     = :miercoles,
                     jueves        = :jueves,
                     viernes       = :viernes
-                WHERE id_cupo = :id_cupo AND id_estado != 42";
+                WHERE id_cupo = :id_cupo AND id_estado != :id_estado_ina";
 
         try {
             $stmt = $pdo->prepare($sql);
@@ -146,6 +175,8 @@ class ConsultasCupos {
             $stmt->bindParam(':miercoles',      $v['miercoles']);
             $stmt->bindParam(':jueves',         $v['jueves']);
             $stmt->bindParam(':viernes',        $v['viernes']);
+            $stmt->bindParam(':id_estado_ina',  $id_estado_ina, PDO::PARAM_INT);
+            
             $stmt->execute();
 
             if ($stmt->rowCount() === 0) {
@@ -154,21 +185,26 @@ class ConsultasCupos {
             return ['ok' => true, 'message' => 'Cupo actualizado correctamente.'];
         } catch (PDOException $e) {
             error_log("Error actualizando cupo: " . $e->getMessage());
-            throw new Exception("Error al actualizar en la base de datos.");
+            return ['ok' => false, 'error' => "Error al actualizar en la base de datos."];
         }
     }
 
-    // ── DELETE (borrado lógico) ─────────────────────────────────────────
+    // ── DELETE: Eliminar (Borrado lógico) de un cupo ───────────────────
     public static function eliminarCupo($id_cupo) {
         $id_cupo = filter_var($id_cupo, FILTER_VALIDATE_INT);
         if (!$id_cupo) return ['ok' => false, 'error' => 'ID de cupo inválido.'];
 
         $pdo = conexionCircuitoQuirurgico();
-        $sql = "UPDATE agenda_cupos SET id_estado = 42 WHERE id_cupo = :id_cupo AND id_estado != 42";
+        
+        // Uso de la función para no hardcodear el 42 (borrado lógico)
+        $id_estado_ina = id_estado('AGENDA_CUPOS', 'INA');
+        
+        $sql = "UPDATE agenda_cupos SET id_estado = :id_estado_ina WHERE id_cupo = :id_cupo AND id_estado != :id_estado_ina";
 
         try {
             $stmt = $pdo->prepare($sql);
             $stmt->bindParam(':id_cupo', $id_cupo, PDO::PARAM_INT);
+            $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
             $stmt->execute();
 
             if ($stmt->rowCount() === 0) {
@@ -177,7 +213,7 @@ class ConsultasCupos {
             return ['ok' => true, 'message' => 'Cupo eliminado correctamente.'];
         } catch (PDOException $e) {
             error_log("Error eliminando cupo: " . $e->getMessage());
-            throw new Exception("Error al eliminar en la base de datos.");
+            return ['ok' => false, 'error' => "Error al eliminar en la base de datos."];
         }
     }
 }

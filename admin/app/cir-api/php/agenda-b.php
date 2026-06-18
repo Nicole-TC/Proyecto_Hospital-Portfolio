@@ -14,7 +14,7 @@ require_once __DIR__ . '/../../../model/cir_conexion.php';
 class ConsultasAgenda {
 
     // ── Obtener turnos por fecha ────────────────────────────────────────
-    public static function obtenerTurnosPorFecha($fecha) {
+    public static function obtenerTurnosPorFecha($fecha, $id_tipo_turno = null) {
         $pdo = conexionCircuitoQuirurgico();
         $sql = "
             SELECT
@@ -36,13 +36,52 @@ class ConsultasAgenda {
             LEFT JOIN orden_medica om ON om.id_orden        = t.id_orden
             LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
             LEFT JOIN persona pr      ON pr.id_persona      = prf.id_persona
-            WHERE DATE(t.fecha_hora) = :fecha
+            WHERE DATE(t.fecha_hora) = :fecha " . ($id_tipo_turno ? "AND t.id_tipo_turno = :id_tipo_turno" : "") . "
             ORDER BY t.fecha_hora ASC
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':fecha', $fecha);
+        if ($id_tipo_turno) {
+            $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        }
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ── Obtener configuración de cupo ──────────────────────────────────
+    public static function obtenerConfiguracionCupo($fecha, $id_tipo_turno) {
+        $pdo = conexionCircuitoQuirurgico();
+        $id_estado_ina = id_estado('DATO', 'ELIM');
+        if (!$id_estado_ina) $id_estado_ina = 0;
+
+        $diaSemanaNum = date('N', strtotime($fecha));
+        $mapaDias = [1 => 'lunes', 2 => 'martes', 3 => 'miercoles', 4 => 'jueves', 5 => 'viernes'];
+        $columnaDia = $mapaDias[$diaSemanaNum] ?? null;
+
+        $sql = "SELECT cupos_total, lunes, martes, miercoles, jueves, viernes
+                FROM agenda_cupos
+                WHERE id_tipo_turno = :id_tipo_turno
+                  AND id_estado != :id_estado_ina
+                  AND fecha_desde <= :fecha
+                  AND (fecha_hasta IS NULL OR fecha_hasta >= :fecha)
+                ORDER BY creado_en DESC LIMIT 1";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
+        $stmt->bindParam(':fecha', $fecha);
+        $stmt->execute();
+        $config = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$config) return ['activo' => false, 'cupos_total' => 0];
+
+        $activo = false;
+        if ($columnaDia && isset($config[$columnaDia])) {
+            $val = $config[$columnaDia];
+            $activo = ($val === true || $val === 't' || $val === '1' || $val === 1);
+        }
+
+        return ['activo' => $activo, 'cupos_total' => (int)$config['cupos_total']];
     }
 
    public static function buscarTurnos($filtro, $query, $limite = 10, $orden = 'desc', $pagina = 1) {

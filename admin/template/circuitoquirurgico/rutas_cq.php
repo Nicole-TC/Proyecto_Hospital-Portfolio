@@ -84,6 +84,11 @@ switch (@$_GET["accion"]) {
         $require = 'vistas/circuitoquirurgico/asistencia.php';
         break;
 
+    case 'config_cupos':
+        $menu = 'Configuración de Cupos (CQ)';
+        $require = 'vistas/circuitoquirurgico/cupos.php';
+        break;
+
     // Aquí se pueden agregar más 'cases' libremente sin tocar admin/template/rutas.php
     /*
     case 'programar_cirugia':

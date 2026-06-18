@@ -25,16 +25,21 @@ $baseUrl = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
       </div>
 
       <!-- ── Tabs de vista ── -->
-      <ul class="nav nav-pills mb-4 gap-2" id="agendaTabs">
-
-        <li class="nav-item">
-          <a class="nav-link d-flex align-items-center gap-2 <?= $vista === 'prequirurgico' ? 'active' : '' ?>"
-             href="<?= $baseUrl ?>&vista=prequirurgico"
-             style="<?= $vista === 'prequirurgico' ? 'background:#185FA5;' : 'color:#185FA5;border:1px solid #B5D4F4;background:transparent;' ?> border-radius:0.65rem;">
-            <i class="bi bi-activity"></i> Pre-quirúrgico
-          </a>
-        </li>
-      </ul>
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <ul class="nav nav-pills gap-2" id="agendaTabs">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2 <?= $vista === 'prequirurgico' ? 'active' : '' ?>"
+               href="<?= $baseUrl ?>&vista=prequirurgico"
+               style="<?= $vista === 'prequirurgico' ? 'background:#185FA5;' : 'color:#185FA5;border:1px solid #B5D4F4;background:transparent;' ?> border-radius:0.65rem;">
+              <i class="bi bi-activity"></i> Pre-quirúrgico
+            </a>
+          </li>
+        </ul>
+        
+        <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos" class="btn btn-outline-primary fw-semibold" style="border-radius:0.65rem;">
+          <i class="bi bi-gear me-1"></i> Configurar Cupos
+        </a>
+      </div>
 
       <!-- ── Contenido de la vista activa ── -->
       <?php include __DIR__ . "/agenda_{$vista}.php"; ?>

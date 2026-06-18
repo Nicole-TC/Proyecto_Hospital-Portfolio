@@ -475,43 +475,47 @@ try {
             'body' => $cuerpo
         ];
 
+          $mailServiceUrl = getenv('MAIL_SERVICE_URL');
+          $mailServiceUser = getenv('MAIL_SERVICE_USER');
+          $mailServicePassword = getenv('MAIL_SERVICE_PASSWORD');
 
-        $ch = curl_init('http://149.50.137.127:3080/public/index.php');
+         $ch = curl_init($mailServiceUrl);
 
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERPWD => 'cirugia:Cirugia2026',
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json'
-            ],
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_TIMEOUT => 5
+         curl_setopt_array($ch, [
+           CURLOPT_POST => true,
+           CURLOPT_RETURNTRANSFER => true,
+           CURLOPT_USERPWD => $mailServiceUser . ':' . $mailServicePassword,
+           CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json'
+         ],
+           CURLOPT_POSTFIELDS => json_encode($payload),
+           CURLOPT_TIMEOUT => 5
         ]);
 
-        $response = curl_exec($ch);
-        $curlError = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$response = curl_exec($ch);
+$curlError = curl_error($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        curl_close($ch);
+curl_close($ch);
 
-        // 3. LOGS (no interrumpe flujo)
-        error_log("MAIL RESPONSE: " . $response);
-        error_log("MAIL ERROR: " . $curlError);
-        error_log("MAIL HTTP CODE: " . $httpCode);
+// 3. LOGS (no interrumpe flujo)
+error_log("MAIL RESPONSE: " . $response);
+error_log("MAIL ERROR: " . $curlError);
+error_log("MAIL HTTP CODE: " . $httpCode);
 
-        // 4. fallback silencioso
-        if ($curlError || $httpCode !== 200) {
-            error_log("MAIL FAIL - turno {$id_turno}");
-        }
+// 4. fallback silencioso
+if ($curlError || $httpCode !== 200) {
+    error_log("MAIL FAIL - turno {$id_turno}");
+}
 
-    } else {
-        error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
-    }
+} else {
+    error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
+}
 
-       } catch (Exception $e) {
+} catch (Exception $e) {
     error_log("MAIL EXCEPTION: " . $e->getMessage());
-       }
+}
+        
 
         return ['ok' => true, 'id_turno' => $id_turno];
     }

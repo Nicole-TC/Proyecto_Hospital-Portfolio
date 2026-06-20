@@ -36,7 +36,7 @@ $baseUrl = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
           </li>
         </ul>
         
-        <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos" class="btn btn-outline-primary fw-semibold" style="border-radius:0.65rem;">
+        <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos&tipo=pre" class="btn btn-outline-primary fw-semibold" style="border-radius:0.65rem;">
           <i class="bi bi-gear me-1"></i> Configurar Cupos
         </a>
       </div>

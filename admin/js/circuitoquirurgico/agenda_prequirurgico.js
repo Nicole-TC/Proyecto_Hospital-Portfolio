@@ -5,11 +5,61 @@ const MONTHS_LONG = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'jul
 const ENDPOINT_AGENDA = 'app/cir-api/endpoints/agenda-e.php';
 
 let currentWeekOffset = 0;
-let currentMonthOffset = 0;   // <-- nuevo
-let currentView = 'week';     // <-- nuevo: 'week' | 'month'
+let currentMonthOffset = 0;
+let currentView = 'week';     // 'week' | 'month'
 let diaSeleccionado = null;
 let idTipoTurnoPreq = null;
 let cuposCache = {};
+
+// Config activa: { sin_config, dias_activos[], cupos_total, hora_inicio }
+let configActiva = { sin_config: true, dias_activos: [], cupos_total: 0, hora_inicio: null };
+
+/* Mapa: número de getDay() => clave en dias_activos */
+const DAY_KEY_MAP = { 1: 'lunes', 2: 'martes', 3: 'miercoles', 4: 'jueves', 5: 'viernes', 6: 'sabado', 0: 'domingo' };
+
+function diaHabilitado(dateObj) {
+    if (configActiva.sin_config) return true;   // sin config => mostrar todo
+    var key = DAY_KEY_MAP[dateObj.getDay()];
+    return configActiva.dias_activos.indexOf(key) !== -1;
+}
+
+function cargarConfigActiva(callback) {
+    if (!idTipoTurnoPreq) { callback(); return; }
+    // Usar el ÚLTIMO día del período visible como fecha_ref y el PRIMERO como fecha_inicio
+    // Así una config que empiece el miércoles se encuentra aunque el lunes sea antes
+    var fechaRef, fechaInicio;
+    if (currentView === 'week') {
+        // Lunes → Domingo de la semana visible
+        var weekStart = getWeekStart(currentWeekOffset);
+        var sunday = new Date(weekStart);
+        sunday.setDate(weekStart.getDate() + 6);
+        fechaInicio = weekStart.toISOString().split('T')[0];
+        fechaRef    = sunday.toISOString().split('T')[0];
+    } else {
+        // Primer y último día del mes visible
+        var ref = getMonthReference(currentMonthOffset);
+        var firstDay = new Date(ref.getFullYear(), ref.getMonth(), 1);
+        var lastDay  = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+        fechaInicio = firstDay.toISOString().split('T')[0];
+        fechaRef    = lastDay.toISOString().split('T')[0];
+    }
+    var url = ENDPOINT_AGENDA + '?action=obtener_config_activa'
+            + '&id_tipo_turno=' + idTipoTurnoPreq
+            + '&fecha=' + fechaRef
+            + '&fecha_inicio=' + fechaInicio;
+    fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if (data.ok) {
+                configActiva.sin_config   = data.sin_config  || false;
+                configActiva.dias_activos = data.dias_activos || [];
+                configActiva.cupos_total  = data.cupos_total  || 0;
+                configActiva.hora_inicio  = data.hora_inicio  || null;
+            }
+        })
+        .catch(function(){ /* mantener config anterior */ })
+        .finally(callback);
+}
 
 /* ── Feriados Argentina ── */
 let feriadosCache = {};
@@ -71,16 +121,23 @@ function _renderSemanaConFeriados(feriados) {
 
     label.textContent = weekStart.getDate() + ' ' + MONTHS[weekStart.getMonth()] +
         ' – ' + weekEnd.getDate() + ' ' + MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
-    grid.innerHTML = '';
+    grid.innerHTML = '<div class="text-center text-secondary py-4 small"><div class="spinner-border spinner-border-sm text-primary me-1"></div> Cargando...</div>';
 
-    var fechas = [];
+    // Sólo incluir fechas de días habilitados por la config
+    var todasFechas = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
         d.setDate(weekStart.getDate() + i);
-        fechas.push(d.toISOString().split('T')[0]);
+        todasFechas.push(d);
+    }
+    var fechasHabilitadas = todasFechas.filter(function(d){ return diaHabilitado(d); });
+    var fechas = fechasHabilitadas.map(function(d){ return d.toISOString().split('T')[0]; });
+
+    if (fechas.length === 0) {
+        grid.innerHTML = '<div class="alert alert-warning m-3"><i class="bi bi-exclamation-triangle me-2"></i>No hay días habilitados en la configuración de cupos activa. <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos" class="alert-link">Configurar cupos</a></div>';
+        return;
     }
 
-    var cuposSemana = {};
     var pendientes = fechas.length;
 
     fechas.forEach(function (fecha) {
@@ -91,98 +148,88 @@ function _renderSemanaConFeriados(feriados) {
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
-                    ocupados: data.ok ? data.turnos.length : 0,
-                    cupos_total: data.ok ? data.cupos_total : 0,
-                    activo: data.ok ? data.cupo_activo : true
+                    ocupados:    data.ok ? data.turnos.length : 0,
+                    cupos_total: data.ok ? (data.cupos_total || configActiva.cupos_total) : configActiva.cupos_total,
+                    activo:      data.ok ? data.cupo_activo : true,
+                    sin_config:  data.ok ? (data.sin_config || false) : false
                 };
             })
-            .catch(function () { 
-                cuposCache[fecha] = { ocupados: 0, cupos_total: 0, activo: true };
+            .catch(function () {
+                cuposCache[fecha] = { ocupados: 0, cupos_total: configActiva.cupos_total, activo: true, sin_config: configActiva.sin_config };
             })
             .finally(function () {
                 pendientes--;
-                if (pendientes === 0) _pintarSemana(weekStart, today, feriados);
+                if (pendientes === 0) _pintarSemana(fechasHabilitadas, today, feriados);
             });
     });
 }
 
-function _pintarSemana(weekStart, today, feriados) {
+function _pintarSemana(diasHabilitados, today, feriados) {
     const grid = document.getElementById('calGrid');
     grid.innerHTML = '';
 
-    // Grilla de 7 columnas
+    var cols = diasHabilitados.length;
     grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
     grid.style.gap = '8px';
 
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(weekStart);
-        d.setDate(weekStart.getDate() + i);
+    diasHabilitados.forEach(function(d) {
         const isToday = d.getTime() === today.getTime();
-        const isPast = d < today;
+        const isPast  = d < today;
         const dateStr = d.toISOString().split('T')[0];
         const esFeriado = feriados[dateStr];
-        const dataCupo = cuposCache[dateStr] || { ocupados: 0, cupos_total: 0, activo: true };
-        const ocupados = dataCupo.ocupados;
+        const dataCupo  = cuposCache[dateStr] || { ocupados: 0, cupos_total: configActiva.cupos_total, activo: true };
+        const ocupados   = dataCupo.ocupados;
         const cupos_total = dataCupo.cupos_total;
-        const activo = dataCupo.activo;
         const esSeleccionado = dateStr === diaSeleccionado;
 
+        var borderClass = '';
+        if (esSeleccionado) borderClass = 'border-primary border-2';
+        else if (isToday)   borderClass = 'border-primary';
+        else if (esFeriado) borderClass = 'border-warning';
+
+        var isFull     = cupos_total > 0 && ocupados >= cupos_total;
+        var barColor   = isFull ? 'bg-danger' : (ocupados / cupos_total > 0.7 ? 'bg-warning' : 'bg-success');
+        var barPercent = cupos_total > 0 ? Math.min(100, Math.round((ocupados / cupos_total) * 100)) : 0;
+        var textCupos  = cupos_total > 0
+            ? ('<span class="fw-bold">' + ocupados + '</span> / ' + cupos_total + ' turnos')
+            : (ocupados + ' turno' + (ocupados !== 1 ? 's' : ''));
+        var colorCupos = isFull ? 'text-danger' : (cupos_total > 0 && ocupados / cupos_total > 0.7 ? 'text-warning' : 'text-primary');
+        var badgeOcupados = '<div class="small fw-semibold ' + colorCupos + '" style="font-size:11px;">' + textCupos + '</div>';
+        var progressBar = cupos_total > 0
+            ? '<div class="progress mt-2 mx-auto" style="height:6px;width:80%;"><div class="progress-bar ' + barColor + '" style="width:' + barPercent + '%"></div></div>'
+            : '';
+        var llenaLabel = isFull ? '<div class="badge bg-danger-subtle text-danger mt-1" style="font-size:9px;">CUPO LLENO</div>' : '';
+
         const col = document.createElement('div');
+        col.innerHTML =
+            '<div class="card border ' + borderClass + ' h-100 dia-calendario' + (isPast ? ' opacity-50' : '') + '" ' +
+            'data-fecha="' + dateStr + '" ' +
+            'style="border-radius:0.65rem;min-height:110px;cursor:pointer;transition:box-shadow .15s,transform .15s;' +
+            (esSeleccionado ? 'box-shadow:0 0 0 3px rgba(13,110,253,.25);' : '') + '">' +
+            '<div class="card-body p-2 text-center">' +
+            '<div class="text-secondary" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">' + DAYS[d.getDay()] + '</div>' +
+            (isToday
+                ? '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto my-1 fw-bold" style="width:32px;height:32px;font-size:15px;">' + d.getDate() + '</div>'
+                : '<div class="fw-bold fs-5 my-1 ' + (esFeriado ? 'text-warning' : '') + '">' + d.getDate() + '</div>') +
+            (esFeriado ? '<div class="badge bg-warning-subtle text-warning mb-1" style="font-size:9px;white-space:normal;">' + esFeriado + '</div>' : '') +
+            '<div class="mt-1">' + badgeOcupados + progressBar + llenaLabel + '</div>' +
+            '</div></div>';
 
-        if (!activo) {
-            col.innerHTML =
-                '<div class="card border border-light h-100 bg-light opacity-50" style="border-radius:0.65rem;min-height:110px;">' +
-                '<div class="card-body p-2 text-center d-flex flex-column justify-content-center">' +
-                '<div class="text-secondary" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">' + DAYS[d.getDay()] + '</div>' +
-                '<div class="fw-bold fs-5 my-1 text-secondary">' + d.getDate() + '</div>' +
-                '</div></div>';
-        } else {
-            var borderClass = '';
-            if (esSeleccionado) borderClass = 'border-primary border-2';
-            else if (isToday) borderClass = 'border-primary';
-            else if (esFeriado) borderClass = 'border-warning';
-
-            var isFull = cupos_total > 0 && ocupados >= cupos_total;
-            var barColor = isFull ? 'bg-danger' : 'bg-primary';
-            var barPercent = cupos_total > 0 ? Math.min(100, (ocupados / cupos_total) * 100) : 0;
-            
-            var textCupos = cupos_total > 0 ? (ocupados + ' / ' + cupos_total + ' turnos') : (ocupados + ' turno' + (ocupados !== 1 ? 's' : ''));
-            var badgeOcupados = '<div class="small fw-semibold ' + (isFull ? 'text-danger' : 'text-primary') + '" style="font-size:11px;">' + textCupos + '</div>';
-            
-            var progressBar = cupos_total > 0 ? 
-                '<div class="progress mt-2 mx-auto" style="height: 6px; width: 80%;"><div class="progress-bar ' + barColor + '" role="progressbar" style="width: ' + barPercent + '%" aria-valuenow="' + barPercent + '" aria-valuemin="0" aria-valuemax="100"></div></div>' : '';
-
-            col.innerHTML =
-                '<div class="card border ' + borderClass + ' h-100 dia-calendario' + (isPast ? ' opacity-50' : '') + '" ' +
-                'data-fecha="' + dateStr + '" ' +
-                'style="border-radius:0.65rem;min-height:110px;cursor:pointer;transition:box-shadow .15s,transform .15s;' +
-                (esSeleccionado ? 'box-shadow:0 0 0 3px rgba(13,110,253,.25);' : '') + '">' +
-                '<div class="card-body p-2 text-center">' +
-                '<div class="text-secondary" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">' + DAYS[d.getDay()] + '</div>' +
-                (isToday
-                    ? '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto my-1 fw-bold" style="width:32px;height:32px;font-size:15px;">' + d.getDate() + '</div>'
-                    : '<div class="fw-bold fs-5 my-1 ' + (esFeriado ? 'text-warning' : '') + '">' + d.getDate() + '</div>'
-                ) +
-                (esFeriado ? '<div class="badge bg-warning-subtle text-warning mb-1" style="font-size:9px;white-space:normal;">' + esFeriado + '</div>' : '') +
-                '<div class="mt-1">' + badgeOcupados + progressBar + '</div>' +
-                '</div></div>';
-
-            col.querySelector('.dia-calendario').addEventListener('click', function () {
-                var fecha = this.dataset.fecha;
-                if (diaSeleccionado === fecha) {
-                    diaSeleccionado = null;
-                    cerrarPanelDia();
-                    renderCalendar();
-                } else {
-                    diaSeleccionado = fecha;
-                    renderCalendar();
-                    abrirPanelDia(fecha);
-                }
-            });
-        }
+        col.querySelector('.dia-calendario').addEventListener('click', function () {
+            var fecha = this.dataset.fecha;
+            if (diaSeleccionado === fecha) {
+                diaSeleccionado = null;
+                cerrarPanelDia();
+                renderCalendar();
+            } else {
+                diaSeleccionado = fecha;
+                renderCalendar();
+                abrirPanelDia(fecha);
+            }
+        });
         grid.appendChild(col);
-    }
+    });
 }
 
 /* ════════════════════════════════
@@ -266,17 +313,17 @@ function _pintarMes(ref, primerDia, ultimoDia, feriados) {
         const isToday = fecha.getTime() === today.getTime();
         const isPast = fecha < today;
         const esFeriado = feriados[dateStr];
-        const dataCupo = cuposCache[dateStr] || { ocupados: 0, cupos_total: 0, activo: true };
+        const activo = diaHabilitado(fecha);
+        const dataCupo = cuposCache[dateStr] || { ocupados: 0, cupos_total: configActiva.cupos_total };
         const ocupados = dataCupo.ocupados;
         const cupos_total = dataCupo.cupos_total;
-        const activo = dataCupo.activo;
         const esSeleccionado = dateStr === diaSeleccionado;
 
         const cell = document.createElement('div');
 
         if (!activo) {
             cell.innerHTML =
-                '<div class="card border border-light bg-light opacity-50" style="border-radius:0.55rem;height:90px;">' +
+                '<div class="card border border-light bg-light opacity-40" style="border-radius:0.55rem;height:90px;">' +
                 '<div class="card-body p-1 text-center text-secondary d-flex flex-column justify-content-center">' +
                 '<div class="fw-semibold" style="font-size:14px;">' + d + '</div>' +
                 '</div></div>';
@@ -287,15 +334,14 @@ function _pintarMes(ref, primerDia, ultimoDia, feriados) {
             else if (esFeriado) borderClass = 'border-warning';
 
             var isFull = cupos_total > 0 && ocupados >= cupos_total;
-            var barColor = isFull ? 'bg-danger' : 'bg-primary';
-            var barPercent = cupos_total > 0 ? Math.min(100, (ocupados / cupos_total) * 100) : 0;
-            
+            var barColor = isFull ? 'bg-danger' : (cupos_total > 0 && ocupados / cupos_total > 0.7 ? 'bg-warning' : 'bg-success');
+            var barPercent = cupos_total > 0 ? Math.min(100, Math.round((ocupados / cupos_total) * 100)) : 0;
             var textCupos = cupos_total > 0 ? (ocupados + '/' + cupos_total) : (ocupados > 0 ? ocupados : '-');
             var badgeOcupados = cupos_total > 0 || ocupados > 0
                 ? '<span class="badge ' + (isFull ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary') + ' mt-1" style="font-size:9px;">' + textCupos + '</span>'
                 : '';
-            var progressBar = cupos_total > 0 ? 
-                '<div class="progress mt-1 mx-auto" style="height: 3px; width: 60%;"><div class="progress-bar ' + barColor + '" role="progressbar" style="width: ' + barPercent + '%"></div></div>' : '';
+            var progressBar = cupos_total > 0 ?
+                '<div class="progress mt-1 mx-auto" style="height:3px;width:60%;"><div class="progress-bar ' + barColor + '" style="width:' + barPercent + '%"></div></div>' : '';
 
             cell.innerHTML =
                 '<div class="card border ' + borderClass + ' dia-calendario' + (isPast ? ' opacity-50' : '') + '" ' +
@@ -305,7 +351,7 @@ function _pintarMes(ref, primerDia, ultimoDia, feriados) {
                 '<div class="card-body p-1 text-center">' +
                 (isToday
                     ? '<div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mt-1 fw-bold" style="width:26px;height:26px;font-size:13px;">' + d + '</div>'
-                    : '<div class="fw-semibold  ' + (esFeriado ? 'text-warning' : '') + '" style="font-size:14px;">' + d + '</div>'
+                    : '<div class="fw-semibold ' + (esFeriado ? 'text-warning' : '') + '" style="font-size:14px;">' + d + '</div>'
                 ) +
                 (esFeriado
                     ? '<div style="font-size:8px;color:var(--bs-warning);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;" class="mb-1">' + esFeriado + '</div>'
@@ -352,13 +398,45 @@ function abrirPanelDia(fecha) {
         msgLleno = document.createElement('span');
         msgLleno.id = 'msg-cupo-lleno';
         msgLleno.className = 'text-danger small fw-semibold me-3';
-        msgLleno.textContent = 'Cupo lleno o inactivo';
         btnNuevo.parentNode.insertBefore(msgLleno, btnNuevo);
     }
-    
-    const dataCupo = cuposCache[fecha] || { ocupados: 0, cupos_total: 0, activo: true };
-    if (!dataCupo.activo || (dataCupo.cupos_total > 0 && dataCupo.ocupados >= dataCupo.cupos_total)) {
+
+    // Indicador de cupos en el panel
+    var indicadorCupos = document.getElementById('indicador-cupos-panel');
+    if (!indicadorCupos) {
+        indicadorCupos = document.createElement('span');
+        indicadorCupos.id = 'indicador-cupos-panel';
+        indicadorCupos.style.fontSize = '12px';
+        btnNuevo.parentNode.insertBefore(indicadorCupos, msgLleno);
+    }
+
+    var dataCupo    = cuposCache[fecha] || { ocupados: 0, cupos_total: configActiva.cupos_total };
+    var ocupados    = dataCupo.ocupados;
+    var cupos_total = dataCupo.cupos_total;
+    var diaActivo   = diaHabilitado(d);
+    var cupoLleno   = cupos_total > 0 && ocupados >= cupos_total;
+
+    // Mostrar indicador X/Y si hay config de cupo
+    if (cupos_total > 0) {
+        var colorBadge = cupoLleno
+            ? 'badge border fw-semibold me-2 bg-danger-subtle text-danger'
+            : (ocupados / cupos_total > 0.7
+                ? 'badge border fw-semibold me-2 bg-warning-subtle text-warning'
+                : 'badge border fw-semibold me-2 bg-success-subtle text-success');
+        indicadorCupos.className = colorBadge;
+        indicadorCupos.textContent = ocupados + ' / ' + cupos_total + ' turnos asignados';
+        indicadorCupos.classList.remove('d-none');
+    } else {
+        indicadorCupos.className = 'd-none';
+    }
+
+    if (!diaActivo) {
         btnNuevo.disabled = true;
+        msgLleno.textContent = 'Día no habilitado en la configuración de cupos';
+        msgLleno.classList.remove('d-none');
+    } else if (cupoLleno) {
+        btnNuevo.disabled = true;
+        msgLleno.textContent = 'Cupo lleno (' + ocupados + '/' + cupos_total + ' turnos)';
         msgLleno.classList.remove('d-none');
     } else {
         btnNuevo.disabled = false;
@@ -457,7 +535,7 @@ document.getElementById('btnPrevWeek').addEventListener('click', function () {
     cerrarPanelDia();
     if (currentView === 'week') { currentWeekOffset--; }
     else { currentMonthOffset--; }
-    renderCalendar();
+    cargarConfigActiva(function() { renderCalendar(); });
 });
 
 document.getElementById('btnNextWeek').addEventListener('click', function () {
@@ -465,7 +543,7 @@ document.getElementById('btnNextWeek').addEventListener('click', function () {
     cerrarPanelDia();
     if (currentView === 'week') { currentWeekOffset++; }
     else { currentMonthOffset++; }
-    renderCalendar();
+    cargarConfigActiva(function() { renderCalendar(); });
 });
 
 document.getElementById('btnToday').addEventListener('click', function () {
@@ -473,7 +551,7 @@ document.getElementById('btnToday').addEventListener('click', function () {
     currentMonthOffset = 0;
     diaSeleccionado = null;
     cerrarPanelDia();
-    renderCalendar();
+    cargarConfigActiva(function() { renderCalendar(); });
 });
 
 /* ── Modal Nuevo Turno ── */
@@ -760,7 +838,10 @@ fetch(ENDPOINT_AGENDA + '?action=obtener_tipo_turno_preq')
         if (data.ok && data.id_tipo_turno) {
             idTipoTurnoPreq = data.id_tipo_turno;
         }
-        renderCalendar();
+        // Cargar config activa ANTES de renderizar
+        cargarConfigActiva(function() {
+            renderCalendar();
+        });
     })
     .catch(function () {
         renderCalendar();

@@ -51,37 +51,98 @@ class ConsultasAgenda {
     // ── Obtener configuración de cupo ──────────────────────────────────
     public static function obtenerConfiguracionCupo($fecha, $id_tipo_turno) {
         $pdo = conexionCircuitoQuirurgico();
-        $id_estado_ina = id_estado('DATO', 'ELIM');
-        if (!$id_estado_ina) $id_estado_ina = 0;
 
         $diaSemanaNum = date('N', strtotime($fecha));
         $mapaDias = [1 => 'lunes', 2 => 'martes', 3 => 'miercoles', 4 => 'jueves', 5 => 'viernes'];
         $columnaDia = $mapaDias[$diaSemanaNum] ?? null;
 
+        // Toma la config más reciente cuya vigencia incluye la fecha pedida
+        // NO filtramos por id_estado porque el estado activo (41) varía según la instancia
         $sql = "SELECT cupos_total, lunes, martes, miercoles, jueves, viernes
                 FROM agenda_cupos
                 WHERE id_tipo_turno = :id_tipo_turno
-                  AND id_estado != :id_estado_ina
                   AND fecha_desde <= :fecha
-                  AND (fecha_hasta IS NULL OR fecha_hasta >= :fecha)
+                  AND (fecha_hasta IS NULL OR fecha_hasta >= :fecha2)
                 ORDER BY creado_en DESC LIMIT 1";
         
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
-        $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
-        $stmt->bindParam(':fecha', $fecha);
+        $stmt->bindParam(':fecha',  $fecha);
+        $stmt->bindParam(':fecha2', $fecha);
         $stmt->execute();
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$config) return ['activo' => false, 'cupos_total' => 0];
+        // Sin config: indicar explícitamente para que el calendario no oculte días
+        if (!$config) return ['activo' => true, 'cupos_total' => 0, 'sin_config' => true];
 
-        $activo = false;
-        if ($columnaDia && isset($config[$columnaDia])) {
-            $val = $config[$columnaDia];
-            $activo = ($val === true || $val === 't' || $val === '1' || $val === 1);
+        // Fin de semana (sáb/dom): nunca activo en config semanal L-V
+        if (!$columnaDia) {
+            return ['activo' => false, 'cupos_total' => 0, 'sin_config' => false];
         }
 
-        return ['activo' => $activo, 'cupos_total' => (int)$config['cupos_total']];
+        $val    = $config[$columnaDia] ?? null;
+        $activo = ($val === true || $val === 't' || $val === '1' || $val === 1);
+
+        return ['activo' => $activo, 'cupos_total' => (int)$config['cupos_total'], 'sin_config' => false];
+    }
+
+    // ── Obtener config activa: días habilitados y cupo del período ─────
+    // $fecha_ref: último día del período (domingo de la semana o último del mes)
+    // $fecha_inicio: primer día del período (lunes de la semana o 1º del mes)
+    public static function obtenerConfigActiva($id_tipo_turno, $fecha_ref = null, $fecha_inicio = null) {
+        $pdo = conexionCircuitoQuirurgico();
+        if (!$fecha_ref)    $fecha_ref    = date('Y-m-d');
+        if (!$fecha_inicio) $fecha_inicio = $fecha_ref;
+
+        // Busca la config más reciente cuya vigencia se superpone con el período visible
+        // NO filtramos por id_estado ya que su valor varía según la instancia
+        $sql = "SELECT cupos_total, hora_inicio, lunes, martes, miercoles, jueves, viernes
+                FROM agenda_cupos
+                WHERE id_tipo_turno = :id_tipo_turno
+                  AND fecha_desde <= :fecha_ref
+                  AND (fecha_hasta IS NULL OR fecha_hasta >= :fecha_inicio)
+                ORDER BY creado_en DESC LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmt->bindParam(':fecha_ref',     $fecha_ref);
+        $stmt->bindParam(':fecha_inicio',  $fecha_inicio);
+        $stmt->execute();
+        $config = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$config) {
+            return ['ok' => true, 'sin_config' => true, 'dias_activos' => [], 'cupos_total' => 0, 'hora_inicio' => null];
+        }
+
+        $boolVal = function($v) { return ($v === true || $v === 't' || $v === '1' || $v === 1); };
+        $diasActivos = [];
+        foreach (['lunes','martes','miercoles','jueves','viernes'] as $dia) {
+            if ($boolVal($config[$dia])) $diasActivos[] = $dia;
+        }
+
+        return [
+            'ok'           => true,
+            'sin_config'   => false,
+            'dias_activos' => $diasActivos,
+            'cupos_total'  => (int)$config['cupos_total'],
+            'hora_inicio'  => $config['hora_inicio'],
+        ];
+    }
+
+    // ── Verificar si quedan cupos disponibles en una fecha ─────────────
+    public static function verificarCupoDisponible($fecha, $id_tipo_turno) {
+        $config = self::obtenerConfiguracionCupo($fecha, $id_tipo_turno);
+        if ($config['sin_config']) return ['disponible' => true, 'ocupados' => 0, 'cupos_total' => 0];
+        if (!$config['activo'])    return ['disponible' => false, 'motivo' => 'dia_no_habilitado'];
+
+        $turnos  = self::obtenerTurnosPorFecha($fecha, $id_tipo_turno);
+        $ocupados = count($turnos);
+        $maximo   = $config['cupos_total'];
+
+        if ($maximo > 0 && $ocupados >= $maximo) {
+            return ['disponible' => false, 'motivo' => 'cupo_lleno', 'ocupados' => $ocupados, 'cupos_total' => $maximo];
+        }
+        return ['disponible' => true, 'ocupados' => $ocupados, 'cupos_total' => $maximo];
     }
 
    public static function buscarTurnos($filtro, $query, $limite = 10, $orden = 'desc', $pagina = 1) {
@@ -291,14 +352,29 @@ class ConsultasAgenda {
         if (!empty($errores))
             return ['ok' => false, 'errores' => $errores];
 
-        // Re-validar circuito en backend 
+        // Re-validar circuito en backend
         $validacion = self::buscarPacienteConValidacion(
-            // buscar DNI desde id_persona_asiste
             self::_getDniPorPersonaAsiste((int)$datos['id_persona_asiste'], $pdo),
             (int)$datos['id_tipo_turno']
         );
         if (!$validacion['encontrado']) {
             return ['ok' => false, 'errores' => [$validacion['mensaje']]];
+        }
+
+        // Validar cupo disponible en la fecha solicitada
+        $fechaSolo = substr($datos['fecha_hora'], 0, 10);
+        $cupoCheck = self::verificarCupoDisponible($fechaSolo, (int)$datos['id_tipo_turno']);
+        if (!$cupoCheck['disponible']) {
+            if ($cupoCheck['motivo'] === 'cupo_lleno') {
+                return ['ok' => false, 'errores' => [
+                    'El cupo para ese día está completo (' . $cupoCheck['ocupados'] . '/' . $cupoCheck['cupos_total'] . ' turnos). No se pueden agregar más turnos.'
+                ]];
+            }
+            if ($cupoCheck['motivo'] === 'dia_no_habilitado') {
+                return ['ok' => false, 'errores' => [
+                    'El día seleccionado no está habilitado en la configuración de cupos activa.'
+                ]];
+            }
         }
 
         // Obtener estado PROG para turno

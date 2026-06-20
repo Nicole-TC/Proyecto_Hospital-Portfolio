@@ -4,10 +4,22 @@ $tiposTurno = ConsultasCupos::obtenerTiposTurno();
 
 // Mapeo opcional de iconos y subtextos para mantener el diseño UI impecable
 $ui_tipos = [
-    1 => ['icon' => 'bi-heart-pulse', 'small' => 'Programacion'],
+    1 => ['icon' => 'bi-heart-pulse',      'small' => 'Programacion'],
     2 => ['icon' => 'bi-clipboard2-pulse', 'small' => 'Pre-quirúrgico (Estudios)'],
-    3 => ['icon' => 'bi-journal-medical', 'small' => 'Con el Cirujano']
+    3 => ['icon' => 'bi-journal-medical',  'small' => 'Con el Cirujano']
 ];
+
+// Si viene el parámetro tipo=pre desde la agenda, preseleccionar el tipo PRE
+$tipoPreseleccionado = null;
+$tipoCodigo = strtolower(trim($_GET['tipo'] ?? ''));
+if ($tipoCodigo) {
+    foreach ($tiposTurno as $t) {
+        if (strtolower($t['codigo']) === $tipoCodigo) {
+            $tipoPreseleccionado = (int)$t['id_tipo_turno'];
+            break;
+        }
+    }
+}
 ?>
 <div class="container-fluid mt-4 mb-5">
     
@@ -67,11 +79,12 @@ $ui_tipos = [
                                         $id = $tipo['id_tipo_turno'];
                                         $icon = $ui_tipos[$id]['icon'] ?? 'bi-calendar-event';
                                         $small = $ui_tipos[$id]['small'] ?? '';
+                                        $esPre = ($tipoPreseleccionado && $id === $tipoPreseleccionado);
                                     ?>
-                                    <div class="flex-fill position-relative border rounded p-3 bg-light card-tipo-hover" id="card-tipo-<?= $id ?>" style="cursor: pointer; border-radius: 0.5rem; transition: all 0.2s;" onclick="selectCard(this)">
-                                        <input class="form-check-input position-absolute top-50 start-0 ms-3 mt-0" type="radio" name="id_tipo_turno" value="<?= $id ?>" required>
+                                    <div class="flex-fill position-relative border rounded p-3 bg-light card-tipo-hover<?= $esPre ? ' border-primary border-2' : '' ?>" id="card-tipo-<?= $id ?>" style="cursor: pointer; border-radius: 0.5rem; transition: all 0.2s;" onclick="selectCard(this)">
+                                        <input class="form-check-input position-absolute top-50 start-0 ms-3 mt-0" type="radio" name="id_tipo_turno" value="<?= $id ?>" <?= $esPre ? 'checked' : '' ?> required>
                                         <div class="ms-4 ps-2">
-                                            <i class="bi <?= $icon ?> text-secondary fs-4 me-2 float-start icon-tipo"></i>
+                                            <i class="bi <?= $icon ?> <?= $esPre ? 'text-primary' : 'text-secondary' ?> fs-4 me-2 float-start icon-tipo"></i>
                                             <span class="fw-semibold text-dark d-block"><?= htmlspecialchars($tipo['descripcion']) ?></span>
                                             <?php if ($small): ?>
                                             <small class="text-secondary"><?= htmlspecialchars($small) ?></small>

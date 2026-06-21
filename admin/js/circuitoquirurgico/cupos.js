@@ -2,6 +2,7 @@
 //  Estado global del formulario
 // ────────────────────────────────────────────────────────────────
 let modoEdicion = false;
+let cuposExistentes = [];
 
 // ────────────────────────────────────────────────────────────────
 //  Selección de cards de tipo de turno
@@ -27,6 +28,7 @@ function selectCard(card) {
         icon.classList.add('text-primary');
     }
     
+    validateDates(); // Validar fechas en vivo al cambiar el tipo de turno
     checkFormValidity();
 }
 
@@ -68,6 +70,42 @@ function validateDates() {
         fd.value = '';
         showFieldError('fecha_desde', 'No se permiten fechas anteriores a hoy.');
         valid = false;
+    } else if (fd.value) {
+        // Validar solapamiento con ciclos existentes
+        const selectedRadio = document.querySelector('input[name="id_tipo_turno"]:checked');
+        const idTipoTurno = selectedRadio ? parseInt(selectedRadio.value) : null;
+        
+        if (idTipoTurno) {
+            const currentEditId = document.getElementById('id_cupo_edit').value;
+            const overlapCupo = cuposExistentes.find(cupo => {
+                // Excluir el cupo que se está editando
+                if (modoEdicion && currentEditId && String(cupo.id_cupo) === String(currentEditId)) {
+                    return false;
+                }
+                // Filtrar por el mismo tipo de turno
+                if (parseInt(cupo.id_tipo_turno) !== idTipoTurno) {
+                    return false;
+                }
+                
+                const entered = fd.value;
+                if (cupo.fecha_hasta) {
+                    // Rango cerrado: la fecha ingresada cae dentro de [fecha_desde, fecha_hasta]
+                    return (entered >= cupo.fecha_desde && entered <= cupo.fecha_hasta);
+                } else {
+                    // Rango abierto: la fecha ingresada es menor o igual a la fecha_desde del ciclo abierto
+                    return (entered <= cupo.fecha_desde);
+                }
+            });
+
+            if (overlapCupo) {
+                fd.value = '';
+                const rangeStr = overlapCupo.fecha_hasta 
+                    ? `del ${formatFecha(overlapCupo.fecha_desde)} al ${formatFecha(overlapCupo.fecha_hasta)}`
+                    : `desde el ${formatFecha(overlapCupo.fecha_desde)} (sin fecha de fin)`;
+                showFieldError('fecha_desde', `La fecha se solapa con un ciclo existente ${rangeStr}.`);
+                valid = false;
+            }
+        }
     }
 
     if (fh.value && fh.value < today) {
@@ -326,6 +364,7 @@ function editarCupo(cupo) {
 
     updateGlobalInfo();
     checkFormValidity();
+    validateDates(); // Validar al cargar datos para edición
 
     // Cambiar a la pestaña del formulario
     const formTab = document.querySelector('#form-tab');
@@ -353,6 +392,8 @@ function cancelarEdicion() {
     
     document.getElementById('btn-submit-label').innerHTML = 'Aplicar Configuración <i class="bi bi-arrow-right ms-1"></i>';
 
+    clearFieldError('fecha_desde');
+    clearFieldError('fecha_hasta');
     resetUI();
 }
 
@@ -459,6 +500,7 @@ async function cargarTabla() {
         }
 
         const datos = result.data || [];
+        cuposExistentes = datos; // Guardar para validación real-time
 
         if (datos.length === 0) {
             empty.classList.remove('d-none');
@@ -498,7 +540,7 @@ async function cargarTabla() {
                         <i class="bi bi-pencil-square"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger" 
-                            onclick="eliminarCupo(${cupo.id_cupo}, '${escapeHtml(cupo.tipo_turno_nombre || '')} - ${escapeHtml(cupo.fecha_desde || '')}')" 
+                            onclick="eliminarCupo(${cupo.id_cupo}, '${escapeHtml(cupo.tipo_turno_nombre || '')} - ${escapeHtml(formatFecha(cupo.fecha_desde))}')" 
                             title="Eliminar">
                         <i class="bi bi-trash3"></i>
                     </button>

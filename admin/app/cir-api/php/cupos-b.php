@@ -69,14 +69,56 @@ class ConsultasCupos {
             return ['ok' => false, 'error' => "No se encontró el estado ACTIVO para AGENDA_CUPOS en la tabla estado."];
         }
 
-        $sql = "INSERT INTO agenda_cupos
-                    (id_tipo_turno, fecha_desde, fecha_hasta, hora_inicio, cupos_total,
-                     lunes, martes, miercoles, jueves, viernes, creado_en, id_estado)
-                VALUES
-                    (:id_tipo_turno, :fecha_desde, :fecha_hasta, :hora_inicio, :cupos_total,
-                     :lunes, :martes, :miercoles, :jueves, :viernes, CURRENT_TIMESTAMP, :id_estado)";
-
         try {
+            $pdo->beginTransaction();
+
+            // Validar que la nueva fecha_desde no caiga dentro de un ciclo CERRADO existente
+            $sqlOverlap = "SELECT id_cupo FROM agenda_cupos 
+                           WHERE id_tipo_turno = :id_tipo_turno
+                             AND id_estado = :id_estado_act
+                             AND fecha_desde <= :fecha_desde
+                             AND fecha_hasta >= :fecha_desde_2
+                           LIMIT 1";
+            $stmtOverlap = $pdo->prepare($sqlOverlap);
+            $stmtOverlap->bindParam(':id_tipo_turno', $v['id_tipo_turno'], PDO::PARAM_INT);
+            $stmtOverlap->bindParam(':id_estado_act', $id_estado_act, PDO::PARAM_INT);
+            $stmtOverlap->bindParam(':fecha_desde', $v['fecha_desde']);
+            $stmtOverlap->bindParam(':fecha_desde_2', $v['fecha_desde']);
+            $stmtOverlap->execute();
+            if ($stmtOverlap->fetch()) {
+                $pdo->rollBack();
+                return ['ok' => false, 'error' => 'La fecha de inicio ingresada recae dentro de un ciclo de cupos ya existente.'];
+            }
+
+            // Buscar si hay un ciclo anterior activo y sin fecha_hasta para este tipo de turno
+            $sqlAnterior = "SELECT id_cupo FROM agenda_cupos 
+                            WHERE id_tipo_turno = :id_tipo_turno 
+                              AND fecha_hasta IS NULL 
+                              AND id_estado = :id_estado_act 
+                            ORDER BY creado_en DESC LIMIT 1";
+            $stmtAnterior = $pdo->prepare($sqlAnterior);
+            $stmtAnterior->bindParam(':id_tipo_turno', $v['id_tipo_turno'], PDO::PARAM_INT);
+            $stmtAnterior->bindParam(':id_estado_act', $id_estado_act, PDO::PARAM_INT);
+            $stmtAnterior->execute();
+            $anterior = $stmtAnterior->fetch(PDO::FETCH_ASSOC);
+
+            if ($anterior) {
+                // Actualizar la fecha_hasta del ciclo anterior al día anterior del inicio del nuevo
+                $nuevaFechaHasta = date('Y-m-d', strtotime($v['fecha_desde'] . ' -1 day'));
+                $sqlUpdate = "UPDATE agenda_cupos SET fecha_hasta = :nueva_fecha_hasta WHERE id_cupo = :id_cupo";
+                $stmtUpdate = $pdo->prepare($sqlUpdate);
+                $stmtUpdate->bindParam(':nueva_fecha_hasta', $nuevaFechaHasta);
+                $stmtUpdate->bindParam(':id_cupo', $anterior['id_cupo'], PDO::PARAM_INT);
+                $stmtUpdate->execute();
+            }
+
+            $sql = "INSERT INTO agenda_cupos
+                        (id_tipo_turno, fecha_desde, fecha_hasta, hora_inicio, cupos_total,
+                         lunes, martes, miercoles, jueves, viernes, creado_en, id_estado)
+                    VALUES
+                        (:id_tipo_turno, :fecha_desde, :fecha_hasta, :hora_inicio, :cupos_total,
+                         :lunes, :martes, :miercoles, :jueves, :viernes, CURRENT_TIMESTAMP, :id_estado)";
+
             $stmt = $pdo->prepare($sql);
             $stmt->bindParam(':id_tipo_turno', $v['id_tipo_turno'], PDO::PARAM_INT);
             $stmt->bindParam(':fecha_desde',   $v['fecha_desde']);
@@ -91,8 +133,13 @@ class ConsultasCupos {
             $stmt->bindParam(':id_estado',     $id_estado_act, PDO::PARAM_INT);
             
             $stmt->execute();
+            
+            $pdo->commit();
             return ['ok' => true, 'message' => 'Configuración guardada correctamente.'];
         } catch (PDOException $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
             error_log("Error guardando cupo: " . $e->getMessage());
             return ['ok' => false, 'error' => "Error al guardar en la base de datos."];
         }
@@ -197,7 +244,7 @@ class ConsultasCupos {
         $pdo = conexionCircuitoQuirurgico();
         
         // Uso de la función para no hardcodear el 42 (borrado lógico)
-        $id_estado_ina = id_estado('AGENDA_CUPOS', 'INA');
+        $id_estado_ina = id_estado('DATO', 'ELIM');
         
         $sql = "UPDATE agenda_cupos SET id_estado = :id_estado_ina WHERE id_cupo = :id_cupo AND id_estado != :id_estado_ina";
 

@@ -123,43 +123,48 @@ function _renderSemanaConFeriados(feriados) {
         ' – ' + weekEnd.getDate() + ' ' + MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
     grid.innerHTML = '<div class="text-center text-secondary py-4 small"><div class="spinner-border spinner-border-sm text-primary me-1"></div> Cargando...</div>';
 
-    // Sólo incluir fechas de días habilitados por la config
     var todasFechas = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(weekStart);
         d.setDate(weekStart.getDate() + i);
-        todasFechas.push(d);
+        if (d.getDay() !== 0 && d.getDay() !== 6) {
+            todasFechas.push(d);
+        }
     }
-    var fechasHabilitadas = todasFechas.filter(function(d){ return diaHabilitado(d); });
-    var fechas = fechasHabilitadas.map(function(d){ return d.toISOString().split('T')[0]; });
+    var fechasStr = todasFechas.map(function(d){ return d.toISOString().split('T')[0]; });
 
-    if (fechas.length === 0) {
-        grid.innerHTML = '<div class="alert alert-warning m-3"><i class="bi bi-exclamation-triangle me-2"></i>No hay días habilitados en la configuración de cupos activa. <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos" class="alert-link">Configurar cupos</a></div>';
-        return;
-    }
+    var pendientes = fechasStr.length;
 
-    var pendientes = fechas.length;
-
-    fechas.forEach(function (fecha) {
+    fechasStr.forEach(function (fecha) {
         var url = ENDPOINT_AGENDA + '?action=turnos_del_dia&fecha=' + fecha;
         if (idTipoTurnoPreq) url += '&id_tipo_turno=' + idTipoTurnoPreq;
 
-        fetch(url)
+        fetch(url, { cache: 'no-store' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
                     ocupados:    data.ok ? data.turnos.length : 0,
-                    cupos_total: data.ok ? (data.cupos_total || configActiva.cupos_total) : configActiva.cupos_total,
-                    activo:      data.ok ? data.cupo_activo : true,
+                    cupos_total: data.ok ? data.cupos_total : 0,
+                    activo:      data.ok ? data.cupo_activo : false,
                     sin_config:  data.ok ? (data.sin_config || false) : false
                 };
             })
             .catch(function () {
-                cuposCache[fecha] = { ocupados: 0, cupos_total: configActiva.cupos_total, activo: true, sin_config: configActiva.sin_config };
+                cuposCache[fecha] = { ocupados: 0, cupos_total: 0, activo: false, sin_config: false };
             })
             .finally(function () {
                 pendientes--;
-                if (pendientes === 0) _pintarSemana(fechasHabilitadas, today, feriados);
+                if (pendientes === 0) {
+                    var fechasHabilitadas = todasFechas.filter(function(d){
+                        var fStr = d.toISOString().split('T')[0];
+                        return cuposCache[fStr] && cuposCache[fStr].activo;
+                    });
+                    if (fechasHabilitadas.length === 0) {
+                        grid.innerHTML = '<div class="alert alert-warning m-3"><i class="bi bi-exclamation-triangle me-2"></i>No hay días habilitados en la configuración de cupos. <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos" class="alert-link">Configurar cupos</a></div>';
+                        return;
+                    }
+                    _pintarSemana(fechasHabilitadas, today, feriados);
+                }
             });
     });
 }
@@ -264,7 +269,7 @@ function _renderMesConFeriados(ref, feriados) {
         var url = ENDPOINT_AGENDA + '?action=turnos_del_dia&fecha=' + fecha;
         if (idTipoTurnoPreq) url += '&id_tipo_turno=' + idTipoTurnoPreq;
 
-        fetch(url)
+        fetch(url, { cache: 'no-store' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
@@ -289,11 +294,11 @@ function _pintarMes(ref, primerDia, ultimoDia, feriados) {
 
     grid.innerHTML = '';
     grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+    grid.style.gridTemplateColumns = 'repeat(5, 1fr)';
     grid.style.gap = '4px';
 
     // Encabezados
-    const DAYS_ORDER = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const DAYS_ORDER = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie'];
     DAYS_ORDER.forEach(function (d) {
         const hdr = document.createElement('div');
         hdr.className = 'text-center text-secondary pb-1';
@@ -302,19 +307,29 @@ function _pintarMes(ref, primerDia, ultimoDia, feriados) {
         grid.appendChild(hdr);
     });
 
-    var startDow = (primerDia.getDay() + 6) % 7;
+    var primerDiaHabil = new Date(primerDia);
+    while (primerDiaHabil.getDay() === 0 || primerDiaHabil.getDay() === 6) {
+        primerDiaHabil.setDate(primerDiaHabil.getDate() + 1);
+    }
+    var startDow = 0;
+    if (primerDiaHabil.getMonth() === primerDia.getMonth()) {
+        startDow = primerDiaHabil.getDay() - 1;
+    }
+
     for (let i = 0; i < startDow; i++) {
         grid.appendChild(document.createElement('div'));
     }
 
     for (let d = 1; d <= ultimoDia.getDate(); d++) {
         const fecha = new Date(ref.getFullYear(), ref.getMonth(), d);
+        if (fecha.getDay() === 0 || fecha.getDay() === 6) continue;
+
         const dateStr = fecha.toISOString().split('T')[0];
         const isToday = fecha.getTime() === today.getTime();
         const isPast = fecha < today;
         const esFeriado = feriados[dateStr];
-        const activo = diaHabilitado(fecha);
-        const dataCupo = cuposCache[dateStr] || { ocupados: 0, cupos_total: configActiva.cupos_total };
+        const dataCupo = cuposCache[dateStr] || { ocupados: 0, cupos_total: 0, activo: false };
+        const activo = dataCupo.activo;
         const ocupados = dataCupo.ocupados;
         const cupos_total = dataCupo.cupos_total;
         const esSeleccionado = dateStr === diaSeleccionado;
@@ -410,10 +425,10 @@ function abrirPanelDia(fecha) {
         btnNuevo.parentNode.insertBefore(indicadorCupos, msgLleno);
     }
 
-    var dataCupo    = cuposCache[fecha] || { ocupados: 0, cupos_total: configActiva.cupos_total };
+    var dataCupo    = cuposCache[fecha] || { ocupados: 0, cupos_total: 0, activo: false };
     var ocupados    = dataCupo.ocupados;
     var cupos_total = dataCupo.cupos_total;
-    var diaActivo   = diaHabilitado(d);
+    var diaActivo   = dataCupo.activo;
     var cupoLleno   = cupos_total > 0 && ocupados >= cupos_total;
 
     // Mostrar indicador X/Y si hay config de cupo
@@ -430,7 +445,14 @@ function abrirPanelDia(fecha) {
         indicadorCupos.className = 'd-none';
     }
 
-    if (!diaActivo) {
+    const todayObj = new Date(); todayObj.setHours(0,0,0,0);
+    const isPastObj = d < todayObj;
+
+    if (isPastObj) {
+        btnNuevo.disabled = true;
+        msgLleno.textContent = 'No se pueden asignar turnos en días pasados';
+        msgLleno.classList.remove('d-none');
+    } else if (!diaActivo) {
         btnNuevo.disabled = true;
         msgLleno.textContent = 'Día no habilitado en la configuración de cupos';
         msgLleno.classList.remove('d-none');
@@ -463,7 +485,7 @@ function cargarTurnosDia(fecha) {
     var url = ENDPOINT_AGENDA + '?action=turnos_del_dia&fecha=' + fecha;
     if (idTipoTurnoPreq) url += '&id_tipo_turno=' + idTipoTurnoPreq;
 
-    fetch(url)
+    fetch(url, { cache: 'no-store' })
         .then(function (r) { return r.json(); })
         .then(function (data) {
             lista.innerHTML = '';

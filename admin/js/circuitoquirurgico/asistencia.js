@@ -15,11 +15,12 @@ function ejecutarBusqueda() {
     var filtro = document.getElementById('filtroTipo').value;
     var valor  = document.getElementById('valorBuscador').value.trim();
     var limite = document.getElementById('filtroLimite').value;
+    var orden  = document.getElementById('filtroOrden').value;
 
-    buscarTurnos(filtro, valor, limite, paginaActual);
+    buscarTurnos(filtro, valor, limite, orden, paginaActual);
 }
 
-function buscarTurnos(filtro, valor, limite, pagina) {
+function buscarTurnos(filtro, valor, limite, orden, pagina) {
     var tbody = document.getElementById('tbodyAsistencia');
     var empty = document.getElementById('emptyAsistencia');
 
@@ -31,7 +32,8 @@ function buscarTurnos(filtro, valor, limite, pagina) {
         '?filtro=' + encodeURIComponent(filtro) +
         '&valor=' + encodeURIComponent(valor) +
         '&limite=' + encodeURIComponent(limite) +
-        '&pagina=' + encodeURIComponent(pagina);
+        '&pagina=' + encodeURIComponent(pagina) +
+        '&orden=' + encodeURIComponent(orden);
 
     fetch(url)
         .then(function (r) { return r.json(); })
@@ -59,7 +61,7 @@ function buscarTurnos(filtro, valor, limite, pagina) {
                                 : t.estado_codigo === 'FIN' ? 'bg-secondary text-white'
                                     : 'bg-secondary-subtle text-secondary';
 
-                var acciones = generarAcciones(t.id_turno, t.estado_codigo);
+                var acciones = generarAcciones(t.id_turno, t.estado_codigo, t.fecha_hora);
 
                 var tr = document.createElement('tr');
                 tr.id = 'turno-' + t.id_turno;
@@ -80,7 +82,7 @@ function buscarTurnos(filtro, valor, limite, pagina) {
                 'Mostrando ' + desde + ' a ' + hasta + ' de ' + data.total + ' registros';
 
             var totalPaginas = Math.ceil(data.total / data.limite);
-            renderPaginacion(data.pagina, totalPaginas, filtro, valor, data.limite);
+            renderPaginacion(data.pagina, totalPaginas, filtro, valor, data.limite, orden);
         })
         .catch(function () {
             tbody.innerHTML = '';
@@ -88,28 +90,33 @@ function buscarTurnos(filtro, valor, limite, pagina) {
         });
 }
 
-function generarAcciones(id_turno, estado_codigo) {
+function generarAcciones(id_turno, estado_codigo, fecha_hora) {
     var detalleBtn = '<button class="btn btn-sm btn-outline-secondary ms-1" onclick="verDetalles(' + id_turno + ')" title="Ver detalles">' +
         '<i class="bi bi-eye"></i></button>';
 
-    if (estado_codigo === 'PROG') {
+    var turnoPasado = false;
+    if (fecha_hora) {
+        var hoy = new Date();
+        var fechaTurno = new Date(fecha_hora);
+        hoy.setHours(0,0,0,0);
+        fechaTurno.setHours(0,0,0,0);
+        turnoPasado = fechaTurno < hoy;
+    }
+
+    if ((estado_codigo === 'PROG' || estado_codigo === 'AUS') && !turnoPasado) {
         return '<div style="white-space:nowrap;">' +
             '<button class="btn btn-sm btn-success me-1" onclick="marcarAsistencia(' + id_turno + ')" title="Asistió">' +
             '<i class="bi bi-check-lg"></i> Asistió</button>' +
-            '<button class="btn btn-sm btn-warning me-1" onclick="marcarAusente(' + id_turno + ')" title="Ausente">' +
-            '<i class="bi bi-person-x"></i> Ausente</button>' +
             '<button class="btn btn-sm btn-danger me-1" onclick="cancelarTurno(' + id_turno + ')" title="Cancelar">' +
             '<i class="bi bi-x-lg"></i> Cancelar</button>' +
             detalleBtn +
             '</div>';
     } else if (estado_codigo === 'CONF') {
         return '<span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Asistió</span>' + detalleBtn;
-    } else if (estado_codigo === 'AUS') {
-        return '<span class="text-warning small fw-semibold"><i class="bi bi-exclamation-circle-fill me-1"></i>Ausente</span>' + detalleBtn;
     } else if (estado_codigo === 'CANC') {
         return '<span class="text-danger small fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Cancelado</span>' + detalleBtn;
     }
-    return '—';
+    return '<span class="text-warning small fw-semibold"><i class="bi bi-exclamation-circle-fill me-1"></i>Ausente</span>' + detalleBtn;
 }
 
 function verDetalles(id_turno) {
@@ -208,21 +215,6 @@ function marcarAsistencia(id_turno) {
     });
 }
 
-function marcarAusente(id_turno) {
-    Swal.fire({
-        title: 'Marcar como ausente',
-        text: '¿El paciente no se presentó?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, ausente',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#ffc107',
-    }).then(function (result) {
-        if (result.isConfirmed) {
-            enviarAccion(id_turno, 'marcar_ausente', 'Paciente marcado como ausente.');
-        }
-    });
-}
 
 function cancelarTurno(id_turno) {
     Swal.fire({
@@ -289,7 +281,7 @@ function enviarAccion(id_turno, accion, mensaje_exito, motivo) {
     });
 }
 
-function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite) {
+function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite, orden) {
     var ul = document.getElementById('paginacionAsistencia');
     ul.innerHTML = '';
     if (totalPaginas <= 1) return;
@@ -301,7 +293,7 @@ function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite
         e.preventDefault();
         if (paginaActualLocal > 1) {
             paginaActual = paginaActualLocal - 1;
-            buscarTurnos(filtro, valor, limite, paginaActual);
+            buscarTurnos(filtro, valor, limite, orden, paginaActual);
         }
     });
     ul.appendChild(liPrev);
@@ -314,7 +306,7 @@ function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite
             li.addEventListener('click', function (e) {
                 e.preventDefault();
                 paginaActual = num;
-                buscarTurnos(filtro, valor, limite, paginaActual);
+                buscarTurnos(filtro, valor, limite, orden, paginaActual);
             });
             ul.appendChild(li);
         })(i);
@@ -327,7 +319,7 @@ function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite
         e.preventDefault();
         if (paginaActualLocal < totalPaginas) {
             paginaActual = paginaActualLocal + 1;
-            buscarTurnos(filtro, valor, limite, paginaActual);
+            buscarTurnos(filtro, valor, limite, orden, paginaActual);
         }
     });
     ul.appendChild(liNext);

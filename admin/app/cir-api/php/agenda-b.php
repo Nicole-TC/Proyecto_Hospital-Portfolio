@@ -10,6 +10,7 @@ if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
 }
 
 require_once __DIR__ . '/../../../model/cir_conexion.php';
+require_once __DIR__ . '/funciones.php';
 
 class ConsultasAgenda {
 
@@ -56,24 +57,28 @@ class ConsultasAgenda {
         $mapaDias = [1 => 'lunes', 2 => 'martes', 3 => 'miercoles', 4 => 'jueves', 5 => 'viernes'];
         $columnaDia = $mapaDias[$diaSemanaNum] ?? null;
 
+        $id_estado_ina = id_estado('DATO', 'ELIM');
+        if (!$id_estado_ina) $id_estado_ina = 0;
+
         // Toma la config más reciente cuya vigencia incluye la fecha pedida
-        // NO filtramos por id_estado porque el estado activo (41) varía según la instancia
         $sql = "SELECT cupos_total, lunes, martes, miercoles, jueves, viernes
                 FROM agenda_cupos
                 WHERE id_tipo_turno = :id_tipo_turno
+                  AND id_estado != :id_estado_ina
                   AND fecha_desde <= :fecha
                   AND (fecha_hasta IS NULL OR fecha_hasta >= :fecha2)
                 ORDER BY creado_en DESC LIMIT 1";
         
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
         $stmt->bindParam(':fecha',  $fecha);
         $stmt->bindParam(':fecha2', $fecha);
         $stmt->execute();
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Sin config: indicar explícitamente para que el calendario no oculte días
-        if (!$config) return ['activo' => true, 'cupos_total' => 0, 'sin_config' => true];
+        // Sin config: si no hay cupo configurado, el día es inactivo
+        if (!$config) return ['activo' => false, 'cupos_total' => 0, 'sin_config' => true];
 
         // Fin de semana (sáb/dom): nunca activo en config semanal L-V
         if (!$columnaDia) {
@@ -94,17 +99,21 @@ class ConsultasAgenda {
         if (!$fecha_ref)    $fecha_ref    = date('Y-m-d');
         if (!$fecha_inicio) $fecha_inicio = $fecha_ref;
 
+        $id_estado_ina = id_estado('DATO', 'ELIM');
+        if (!$id_estado_ina) $id_estado_ina = 0;
+
         // Busca la config más reciente cuya vigencia se superpone con el período visible
-        // NO filtramos por id_estado ya que su valor varía según la instancia
         $sql = "SELECT cupos_total, hora_inicio, lunes, martes, miercoles, jueves, viernes
                 FROM agenda_cupos
                 WHERE id_tipo_turno = :id_tipo_turno
+                  AND id_estado != :id_estado_ina
                   AND fecha_desde <= :fecha_ref
                   AND (fecha_hasta IS NULL OR fecha_hasta >= :fecha_inicio)
                 ORDER BY creado_en DESC LIMIT 1";
 
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
         $stmt->bindParam(':fecha_ref',     $fecha_ref);
         $stmt->bindParam(':fecha_inicio',  $fecha_inicio);
         $stmt->execute();
@@ -140,9 +149,9 @@ class ConsultasAgenda {
         $maximo   = $config['cupos_total'];
 
         if ($maximo > 0 && $ocupados >= $maximo) {
-            return ['disponible' => false, 'motivo' => 'cupo_lleno', 'ocupados' => $ocupados, 'cupos_total' => $maximo];
+            return ['disponible' => false, 'motivo' => 'cupo_lleno', 'ocupados' => $ocupados, 'cupos_total' => $maximo, 'hora_inicio' => $config['hora_inicio']];
         }
-        return ['disponible' => true, 'ocupados' => $ocupados, 'cupos_total' => $maximo];
+        return ['disponible' => true, 'ocupados' => $ocupados, 'cupos_total' => $maximo, 'hora_inicio' => $config['hora_inicio']];
     }
 
    public static function buscarTurnos($filtro, $query, $limite = 10, $orden = 'desc', $pagina = 1) {
@@ -375,6 +384,11 @@ class ConsultasAgenda {
                     'El día seleccionado no está habilitado en la configuración de cupos activa.'
                 ]];
             }
+        }
+
+        // Si tenemos la hora_inicio de la configuración, actualizar fecha_hora
+        if (isset($cupoCheck['hora_inicio']) && !empty($cupoCheck['hora_inicio'])) {
+            $datos['fecha_hora'] = $fechaSolo . ' ' . $cupoCheck['hora_inicio'];
         }
 
         // Obtener estado PROG para turno

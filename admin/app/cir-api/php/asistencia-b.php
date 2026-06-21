@@ -14,7 +14,7 @@ require_once __DIR__ . '/funciones.php';
 
 class ConsultasAsistencia {
 
-    public static function listarTurnos($filtro = null, $valor = null, $pagina = 1, $limite = 10) {
+    public static function listarTurnos($filtro = null, $valor = null, $pagina = 1, $limite = 10, $orden = 'DESC') {
         $pdo    = conexionCircuitoQuirurgico();
         $offset = ($pagina - 1) * $limite;
 
@@ -66,7 +66,7 @@ class ConsultasAsistencia {
                 t.motivo_cancelacion
             $from
             $where
-            ORDER BY t.fecha_hora DESC
+            ORDER BY t.fecha_hora $orden
             LIMIT :limite OFFSET :offset
         ";
 
@@ -140,12 +140,14 @@ class ConsultasAsistencia {
             $params = [':id_estado' => $id_nuevo_estado, ':id_turno' => $id_turno];
 
             if ($nuevo_codigo_estado === 'CANC') {
-                $sql .= ", cancelado = :cancelado, fecha_cancelacion = NOW(), motivo_cancelacion = :motivo";
+                $sql .= ", cancelado = :cancelado, fecha_cancelacion = NOW(), motivo_cancelacion = :motivo, ausente = false";
                 $params[':cancelado'] = true;
                 $params[':motivo'] = $motivo;
             } elseif ($nuevo_codigo_estado === 'AUS') {
                 $sql .= ", ausente = :ausente, fecha_ausencia = NOW()";
                 $params[':ausente'] = true;
+            } elseif ($nuevo_codigo_estado === 'CONF') {
+                $sql .= ", ausente = false";
             }
 
             $sql .= " WHERE id_turno = :id_turno";

@@ -266,7 +266,7 @@ class ConsultasAgenda {
             JOIN estado et ON et.id_estado = t.id_estado
             WHERE t.id_persona_asiste = :id_persona_asiste
               AND t.id_tipo_turno     = :id_tipo_turno
-              AND et.codigo IN ('PROG', 'CONF', 'AUS')
+              AND et.codigo IN ('CONF', 'AUS')
             LIMIT 1
         ";
         $stmtT = $pdo->prepare($sqlTurno);
@@ -391,17 +391,38 @@ class ConsultasAgenda {
             $datos['fecha_hora'] = $fechaSolo . ' ' . $cupoCheck['hora_inicio'];
         }
 
-        // Obtener estado PROG para turno
-        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'PROG' AND entidad = 'TURNO' LIMIT 1";
+        // Validar cupo disponible en la fecha solicitada
+        $fechaSolo = substr($datos['fecha_hora'], 0, 10);
+        $cupoCheck = self::verificarCupoDisponible($fechaSolo, (int)$datos['id_tipo_turno']);
+        if (!$cupoCheck['disponible']) {
+            if ($cupoCheck['motivo'] === 'cupo_lleno') {
+                return ['ok' => false, 'errores' => [
+                    'El cupo para ese día está completo (' . $cupoCheck['ocupados'] . '/' . $cupoCheck['cupos_total'] . ' turnos). No se pueden agregar más turnos.'
+                ]];
+            }
+            if ($cupoCheck['motivo'] === 'dia_no_habilitado') {
+                return ['ok' => false, 'errores' => [
+                    'El día seleccionado no está habilitado en la configuración de cupos activa.'
+                ]];
+            }
+        }
+
+        // Si tenemos la hora_inicio de la configuración, actualizar fecha_hora
+        if (isset($cupoCheck['hora_inicio']) && !empty($cupoCheck['hora_inicio'])) {
+            $datos['fecha_hora'] = $fechaSolo . ' ' . $cupoCheck['hora_inicio'];
+        }
+
+        // Obtener estado AUS para turno (por defecto ausente hasta que asista)
+        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'AUS' AND entidad = 'TURNO' LIMIT 1";
         $id_estado = $pdo->query($sqlEstado)->fetchColumn();
         if (!$id_estado) {
-            return ['ok' => false, 'errores' => ['No se encontró el estado PROG para turno.']];
+            return ['ok' => false, 'errores' => ['No se encontró el estado AUS para turno.']];
         }
 
         // Insertar turno
         $sqlTurno = "
-            INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora)
-            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora)
+            INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora, ausente)
+            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, true)
             RETURNING id_turno
         ";
         $stmt = $pdo->prepare($sqlTurno);

@@ -29,8 +29,9 @@ try {
         $valor  = $_GET['valor']  ?? null;
         $pagina = (int)($_GET['pagina'] ?? 1);
         $limite = (int)($_GET['limite'] ?? 10);
+        $orden  = strtoupper($_GET['orden'] ?? 'DESC') === 'ASC' ? 'ASC' : 'DESC';
 
-        $resultado = ConsultasAsistencia::listarTurnos($filtro, $valor, $pagina, $limite);
+        $resultado = ConsultasAsistencia::listarTurnos($filtro, $valor, $pagina, $limite, $orden);
 
         echo json_encode([
             'status'  => 'success',

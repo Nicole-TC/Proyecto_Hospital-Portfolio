@@ -37,10 +37,11 @@
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-0"><i class="fa-solid fa-calendar-days text-muted"></i></span>
                                     <input type="date" class="form-control bg-light border-0" id="filtro_fecha_desde" name="fecha_desde" title="Fecha Desde">
-                                    <span class="input-group-text bg-light border-0 px-2">a</span>
+                                    <span class="input-group-text bg-light border-0 px-2">y</span>
                                     <input type="date" class="form-control bg-light border-0" id="filtro_fecha_hasta" name="fecha_hasta" title="Fecha Hasta">
                                 </div>
                             </div>
+
                         </div>
 
                         <div class="row mt-4">
@@ -253,6 +254,19 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
         return escapeHtml(s);
     };
+    const fmtDisplayDate = s => {
+        if (!s) return '-';
+        const [fecha, hora] = s.split(' ');
+        const partes = fecha.split('-');
+        if (partes.length !== 3) return s;
+        const [anio, mes, dia] = partes;
+        let r = `${dia}/${mes}/${anio}`;
+        if (hora) {
+            const [hh, mm] = hora.split(':');
+            r += ` ${hh}:${mm}`;
+        }
+        return r;
+    };
     const mostrarAlerta = (tipo, msg) => {
         const el = document.getElementById("auditoria-alerta");
         el.className = `alert alert-${tipo} rounded-4 shadow-sm`;
@@ -273,6 +287,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 obj.servicio = row.servicio;
                 obj.personal = row.personal_documento;
                 obj.tipo_documento = row.tipo_documento;
+                obj.dni = row.dni;
             }
         });
 
@@ -366,7 +381,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             { data: 'tabla_afectada' },
             { data: 'tipo_documento', render: (d, t, row) => row.tabla_afectada === 'documentos' ? d : '' },
             { data: 'ip_origen' },
-            { data: 'fecha_accion' },
+            { data: 'fecha_accion', render: (data, type) => type === 'display' ? fmtDisplayDate(data) : data },
             {
                 data: null,
                 className: 'btn-detalle',
@@ -392,7 +407,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             <div class="col-md-2 col-6 ctx-item"><small>Acción</small><div class="ctx-value"><span class="badge ${meta.badge}">${escapeHtml(accion)}</span></div></div>
             <div class="col-md-3 col-6 ctx-item"><small>Tabla</small><div class="ctx-value">${escapeHtml(row.tabla_afectada)}</div></div>
             <div class="col-md-2 col-6 ctx-item"><small>IP</small><div class="ctx-value"><code>${escapeHtml(row.ip_origen)}</code></div></div>
-            <div class="col-md-2 col-12 ctx-item"><small>Fecha</small><div class="ctx-value">${escapeHtml(row.fecha_accion)}</div></div>
+            <div class="col-md-2 col-12 ctx-item"><small>Fecha</small><div class="ctx-value">${escapeHtml(fmtDisplayDate(row.fecha_accion))}</div></div>
         `);
         $('#modal-detalle-body').html(buildDiffView(accion, row.valor_anterior, row.valor_nuevo, row));
 

@@ -166,11 +166,12 @@ try {
                 NULLIF(CONCAT(ad.apellido, ', ', ad.nombre), ', '),
                 '-'
             ) AS usuario,
-            al.valor_anterior,
-            al.valor_nuevo,
+            (al.valor_anterior::jsonb - 'fecha_vencimiento')::json AS valor_anterior,
+            (al.valor_nuevo::jsonb - 'fecha_vencimiento')::json AS valor_nuevo,
             COALESCE(al.ip_origen, '-') AS ip_origen,
             CASE WHEN al.tabla_afectada = 'documentos' THEN COALESCE(s.nombre, '-') ELSE '-' END AS servicio,
             CASE WHEN al.tabla_afectada = 'documentos' THEN COALESCE(pd.apellidoynombre, '-') ELSE '-' END AS personal_documento,
+            COALESCE(pd.dni::text, '-') AS dni,
             al.fecha_accion
     ";
 

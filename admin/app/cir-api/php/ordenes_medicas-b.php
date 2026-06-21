@@ -609,6 +609,82 @@ class ConsultasOrdenesMedicas
     return $orden ?: null;
   }
 
+  private static function asegurarTablaModificacionesOrden(PDO $pdo): void
+  {
+    static $verificado = false;
+    if ($verificado) {
+      return;
+    }
+
+    $pdo->exec("
+      CREATE TABLE IF NOT EXISTS orden_medica_modificacion (
+        id_modificacion SERIAL PRIMARY KEY,
+        id_orden INTEGER NOT NULL,
+        campo VARCHAR(50) NOT NULL,
+        valor_anterior TEXT,
+        valor_nuevo TEXT,
+        id_usuario INTEGER,
+        nombre_usuario VARCHAR(200),
+        fecha_modificacion TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    ");
+    $pdo->exec("
+      CREATE INDEX IF NOT EXISTS idx_orden_medica_modificacion_orden
+      ON orden_medica_modificacion (id_orden, fecha_modificacion DESC)
+    ");
+    $verificado = true;
+  }
+
+  public static function obtenerModificacionesOrden($id_orden)
+  {
+    $pdo = conexionCircuitoQuirurgico();
+    self::asegurarTablaModificacionesOrden($pdo);
+
+    $stmt = $pdo->prepare("
+      SELECT id_modificacion, campo, valor_anterior, valor_nuevo,
+             nombre_usuario, fecha_modificacion
+      FROM orden_medica_modificacion
+      WHERE id_orden = :id_orden
+      ORDER BY fecha_modificacion DESC, id_modificacion DESC
+    ");
+    $stmt->execute([':id_orden' => (int)$id_orden]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  private static function registrarModificacionOrden(
+    PDO $pdo,
+    $id_orden,
+    $campo,
+    $valorAnterior,
+    $valorNuevo,
+    $id_usuario,
+    $nombre_usuario
+  ) {
+    $stmt = $pdo->prepare("
+      INSERT INTO orden_medica_modificacion
+        (id_orden, campo, valor_anterior, valor_nuevo, id_usuario, nombre_usuario)
+      VALUES
+        (:id_orden, :campo, :valor_anterior, :valor_nuevo, :id_usuario, :nombre_usuario)
+    ");
+    $stmt->execute([
+      ':id_orden'        => (int)$id_orden,
+      ':campo'           => $campo,
+      ':valor_anterior'  => $valorAnterior !== '' ? $valorAnterior : null,
+      ':valor_nuevo'     => $valorNuevo !== '' ? $valorNuevo : null,
+      ':id_usuario'      => $id_usuario ? (int)$id_usuario : null,
+      ':nombre_usuario'  => $nombre_usuario ?: null,
+    ]);
+  }
+
+  private static function normalizarTextoOrden($valor)
+  {
+    $texto = trim((string)$valor);
+    if ($texto === '' || $texto === '—') {
+      return '';
+    }
+    return $texto;
+  }
+
   public static function obtenerCatalogosEdicion()
   {
     return [
@@ -617,8 +693,14 @@ class ConsultasOrdenesMedicas
     ];
   }
 
-  public static function actualizarDetalleOrden($id_orden, $nombreCirugia, $id_profesional, $observaciones)
-  {
+  public static function actualizarDetalleOrden(
+    $id_orden,
+    $nombreCirugia,
+    $id_profesional,
+    $observaciones,
+    $id_usuario = null,
+    $nombre_usuario = null
+  ) {
     $orden = self::obtenerOrden($id_orden);
     if (!$orden) {
       throw new Exception('La orden médica no existe o no está disponible.');
@@ -644,6 +726,7 @@ class ConsultasOrdenesMedicas
     }
 
     $pdo = conexionCircuitoQuirurgico();
+    self::asegurarTablaModificacionesOrden($pdo);
 
     $stmtCirugia = $pdo->prepare(
       'SELECT id_cirugia_catalogo FROM catalogo_cirugia WHERE nombre = :nombre LIMIT 1'
@@ -655,28 +738,63 @@ class ConsultasOrdenesMedicas
     }
 
     $stmtProf = $pdo->prepare(
-      'SELECT id_profesional FROM profesional WHERE id_profesional = :id_profesional LIMIT 1'
+      'SELECT pr.id_profesional,
+              TRIM(COALESCE(p.apellido, \'\') || \', \' || COALESCE(p.nombre, \'\')) AS cirujano
+       FROM profesional pr
+       INNER JOIN persona p ON p.id_persona = pr.id_persona
+       WHERE pr.id_profesional = :id_profesional
+       LIMIT 1'
     );
     $stmtProf->execute([':id_profesional' => $id_profesional]);
-    if (!$stmtProf->fetch(PDO::FETCH_COLUMN)) {
+    $prof = $stmtProf->fetch(PDO::FETCH_ASSOC);
+    if (!$prof) {
       throw new Exception('El cirujano seleccionado no es válido.');
     }
 
-    $stmt = $pdo->prepare(
-      'UPDATE orden_medica
-       SET id_cirugia_catalogo = :id_cirugia,
-           id_profesional = :id_profesional,
-           observaciones = :observaciones
-       WHERE id_orden = :id_orden'
-    );
-    $stmt->execute([
-      ':id_cirugia'      => $id_cirugia,
-      ':id_profesional'  => $id_profesional,
-      ':observaciones'   => $observaciones !== '' ? $observaciones : null,
-      ':id_orden'        => $id_orden,
-    ]);
+    $cirugiaAnterior = self::normalizarTextoOrden($orden['cirugia'] ?? '');
+    $cirujanoAnterior = self::normalizarTextoOrden($orden['cirujano'] ?? '');
+    $obsAnterior = self::normalizarTextoOrden($orden['observaciones'] ?? '');
+    $cirujanoNuevo = self::normalizarTextoOrden($prof['cirujano'] ?? '');
+    $obsNuevo = self::normalizarTextoOrden($observaciones);
 
-    return true;
+    $pdo->beginTransaction();
+    try {
+      $stmt = $pdo->prepare(
+        'UPDATE orden_medica
+         SET id_cirugia_catalogo = :id_cirugia,
+             id_profesional = :id_profesional,
+             observaciones = :observaciones
+         WHERE id_orden = :id_orden'
+      );
+      $stmt->execute([
+        ':id_cirugia'      => $id_cirugia,
+        ':id_profesional'  => $id_profesional,
+        ':observaciones'   => $obsNuevo !== '' ? $obsNuevo : null,
+        ':id_orden'        => $id_orden,
+      ]);
+
+      if ($cirugiaAnterior !== self::normalizarTextoOrden($nombreCirugia)) {
+        self::registrarModificacionOrden(
+          $pdo, $id_orden, 'cirugia', $cirugiaAnterior, $nombreCirugia, $id_usuario, $nombre_usuario
+        );
+      }
+      if ($cirujanoAnterior !== $cirujanoNuevo) {
+        self::registrarModificacionOrden(
+          $pdo, $id_orden, 'cirujano', $cirujanoAnterior, $cirujanoNuevo, $id_usuario, $nombre_usuario
+        );
+      }
+      if ($obsAnterior !== $obsNuevo) {
+        self::registrarModificacionOrden(
+          $pdo, $id_orden, 'observaciones', $obsAnterior, $obsNuevo, $id_usuario, $nombre_usuario
+        );
+      }
+
+      $pdo->commit();
+      return true;
+    } catch (Exception $e) {
+      $pdo->rollBack();
+      throw $e;
+    }
   }
 
   public static function cancelarOrden($id_orden)

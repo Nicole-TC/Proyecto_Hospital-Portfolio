@@ -13,9 +13,13 @@ if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
 
 require_once __DIR__ . '/../../../model/cir_conexion.php';
 require_once __DIR__ . '/funciones.php';
+require_once __DIR__ . '/admision-b.php';
 
 class ConsultasOrdenesMedicas
 {
+  private static $reglasAccionesCache = null;
+  private static $idsEstadosOcultosCache = null;
+
   private static function idOrden($codigo)
   {
     return id_estado('ORDEN', $codigo);
@@ -24,6 +28,35 @@ class ConsultasOrdenesMedicas
   private static function idEstadoEliminado()
   {
     return id_estado('DATO', 'ELIM');
+  }
+
+  /** IDs de estado que no deben listarse ni consultarse (ELIM + RECH legacy). */
+  private static function idsEstadosOcultosListado()
+  {
+    if (self::$idsEstadosOcultosCache !== null) {
+      return self::$idsEstadosOcultosCache;
+    }
+
+    $ids = [];
+    $idElim = self::idEstadoEliminado();
+    if ($idElim) {
+      $ids[] = $idElim;
+    }
+    $idRech = self::idOrden('RECH');
+    if ($idRech) {
+      $ids[] = $idRech;
+    }
+    self::$idsEstadosOcultosCache = $ids;
+    return self::$idsEstadosOcultosCache;
+  }
+
+  private static function appendExcluirEstadosOcultos(&$where, &$params)
+  {
+    foreach (self::idsEstadosOcultosListado() as $i => $id) {
+      $key = ':id_oculto_' . $i;
+      $where .= " AND om.id_estado != $key";
+      $params[$key] = $id;
+    }
   }
 
   /** Códigos de ORDEN que permiten cancelar (se resuelven a id_estado desde la BD). */
@@ -40,18 +73,37 @@ class ConsultasOrdenesMedicas
 
   private static function idsEstadoOrdenPorCodigos(array $codigos)
   {
-    $ids = [];
-    foreach ($codigos as $codigo) {
-      $id = self::idOrden($codigo);
-      if ($id) {
-        $ids[] = $id;
-      }
+    $codigos = array_values(array_unique(array_filter(array_map(function ($c) {
+      return strtoupper(trim((string)$c));
+    }, $codigos))));
+
+    if ($codigos === []) {
+      return [];
     }
-    return $ids;
+
+    $pdo = conexionCircuitoQuirurgico();
+    $params = [':entidad' => 'ORDEN'];
+    $placeholders = [];
+    foreach ($codigos as $i => $codigo) {
+      $key = ':codigo_' . $i;
+      $placeholders[] = $key;
+      $params[$key] = $codigo;
+    }
+
+    $sql = 'SELECT id_estado FROM estado WHERE entidad = :entidad AND codigo IN (' .
+      implode(', ', $placeholders) . ')';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+
+    return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
   }
 
   public static function obtenerReglasAccionesOrden()
   {
+    if (self::$reglasAccionesCache !== null) {
+      return self::$reglasAccionesCache;
+    }
+
     $estados = self::obtenerEstadosOrden();
     $idCanc = self::idOrden('CANC');
     $idElim = self::idEstadoEliminado();
@@ -64,7 +116,7 @@ class ConsultasOrdenesMedicas
       }
     }
 
-    return [
+    self::$reglasAccionesCache = [
       'estados'  => $estados,
       'cancelar' => [
         'id_estado_destino'     => $idCanc,
@@ -76,6 +128,8 @@ class ConsultasOrdenesMedicas
         'ids_origen_permitidos' => self::idsEstadoOrdenPorCodigos(self::codigosEliminables()),
       ],
     ];
+
+    return self::$reglasAccionesCache;
   }
 
   private static function puedeCancelarPorId($idEstado)
@@ -90,6 +144,12 @@ class ConsultasOrdenesMedicas
     return in_array((int)$idEstado, $reglas['eliminar']['ids_origen_permitidos'], true);
   }
 
+  /** Mismos estados que permiten cancelar: edición de cirugía, cirujano y observaciones. */
+  private static function puedeEditarDetallePorId($idEstado)
+  {
+    return self::puedeCancelarPorId($idEstado);
+  }
+
   public static function obtenerEstadosOrden()
   {
     $pdo = conexionCircuitoQuirurgico();
@@ -97,9 +157,79 @@ class ConsultasOrdenesMedicas
       "SELECT id_estado, codigo, descripcion
        FROM estado
        WHERE entidad = 'ORDEN'
+         AND codigo != 'RECH'
        ORDER BY descripcion"
     );
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $estados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $estados[] = [
+      'id_estado'   => 'aprobados',
+      'codigo'      => 'APROB',
+      'descripcion' => 'Aprobados',
+    ];
+    usort($estados, function ($a, $b) {
+      return strcasecmp($a['descripcion'] ?? '', $b['descripcion'] ?? '');
+    });
+    return $estados;
+  }
+
+  /** Condición SQL: postas completas y verificación prequirúrgica OK (apto quirúrgico). */
+  private static function sqlCondicionOrdenAprobada(): string
+  {
+    return "
+      EXISTS (
+        SELECT 1
+        FROM (
+          SELECT oe.id_orden,
+                 COUNT(*)::int AS total_estudios,
+                 COUNT(*) FILTER (WHERE ee.codigo = 'REAL')::int AS estudios_realizados
+          FROM orden_estudio oe
+          INNER JOIN estado ee ON ee.id_estado = oe.id_estado
+          WHERE oe.id_orden = om.id_orden
+          GROUP BY oe.id_orden
+        ) est
+        WHERE est.total_estudios > 0
+          AND est.estudios_realizados = est.total_estudios
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM (
+          SELECT ev.codigo
+          FROM verificacion_pre_cirugia v
+          INNER JOIN estado ev ON ev.id_estado = v.id_estado
+          WHERE v.id_orden = om.id_orden
+          ORDER BY v.fecha DESC NULLS LAST, v.id_verificacion DESC
+          LIMIT 1
+        ) ult
+        WHERE ult.codigo = 'OK'
+      )
+    ";
+  }
+
+  private static function appendFiltroOrdenesAprobadas(&$where)
+  {
+    $where .= ' AND ' . self::sqlCondicionOrdenAprobada();
+  }
+
+  public static function verificarConfiguracion()
+  {
+    $pdo = conexionCircuitoQuirurgico();
+    $idElim = self::idEstadoEliminado();
+    $idCanc = self::idOrden('CANC');
+
+    $stmtRech = $pdo->prepare(
+      "SELECT COUNT(*) FROM orden_medica om
+       INNER JOIN estado e ON e.id_estado = om.id_estado
+       WHERE e.entidad = 'ORDEN' AND e.codigo = 'RECH'"
+    );
+    $stmtRech->execute();
+    $ordenesRechLegacy = (int)$stmtRech->fetchColumn();
+
+    return [
+      'elim_configurado'    => (bool)$idElim,
+      'cancel_configurado'  => (bool)$idCanc,
+      'ordenes_rech_legacy' => $ordenesRechLegacy,
+      'listo'               => (bool)$idElim && (bool)$idCanc,
+    ];
   }
 
   public static function listarOrdenes($filtro = null, $valor = null, $pagina = 1, $limite = 10, $listarTodos = false)
@@ -110,15 +240,12 @@ class ConsultasOrdenesMedicas
 
     $pdo = conexionCircuitoQuirurgico();
     $offset = ($pagina - 1) * $limite;
-    $idElim = self::idEstadoEliminado();
+    $idsOcultos = self::idsEstadosOcultosListado();
 
     $where = 'WHERE 1=1';
     $params = [];
 
-    if ($idElim) {
-      $where .= ' AND om.id_estado != :id_elim';
-      $params[':id_elim'] = $idElim;
-    }
+    self::appendExcluirEstadosOcultos($where, $params);
 
     if (!$listarTodos && !empty($filtro) && $valor !== null && trim((string)$valor) !== '') {
       $v = '%' . trim($valor) . '%';
@@ -128,16 +255,43 @@ class ConsultasOrdenesMedicas
       } elseif ($filtro === 'apellido') {
         $where .= ' AND p.apellido ILIKE :valor';
         $params[':valor'] = $v;
-      } elseif ($filtro === 'estado') {
-        $idEstadoFiltro = filter_var($valor, FILTER_VALIDATE_INT);
-        if (!$idEstadoFiltro) {
-          throw new Exception('El estado seleccionado no es válido.');
+      } elseif ($filtro === 'nombre') {
+        $where .= ' AND p.nombre ILIKE :valor';
+        $params[':valor'] = $v;
+      } elseif ($filtro === 'todo') {
+        $term = trim((string)$valor);
+        $condiciones = ['p.apellido ILIKE :valor_todo', 'p.nombre ILIKE :valor_todo'];
+        $params[':valor_todo'] = $v;
+        $termDni = preg_replace('/\D/', '', $term);
+        if ($termDni !== '') {
+          $condiciones[] = 'p.dni LIKE :valor_dni';
+          $params[':valor_dni'] = '%' . $termDni . '%';
         }
-        $where .= ' AND om.id_estado = :id_estado_filtro';
-        $params[':id_estado_filtro'] = $idEstadoFiltro;
+        if (ctype_digit($term)) {
+          $condiciones[] = 'om.id_orden = :id_orden_todo';
+          $params[':id_orden_todo'] = (int)$term;
+        }
+        $where .= ' AND (' . implode(' OR ', $condiciones) . ')';
+      } elseif ($filtro === 'estado') {
+        if (strtolower(trim((string)$valor)) === 'aprobados') {
+          self::appendFiltroOrdenesAprobadas($where);
+        } else {
+          $idEstadoFiltro = filter_var($valor, FILTER_VALIDATE_INT);
+          if (!$idEstadoFiltro) {
+            throw new Exception('El estado seleccionado no es válido.');
+          }
+          $where .= ' AND om.id_estado = :id_estado_filtro';
+          $params[':id_estado_filtro'] = $idEstadoFiltro;
+        }
       } elseif ($filtro === 'id_orden') {
         $where .= ' AND om.id_orden = :id_orden';
         $params[':id_orden'] = (int)$valor;
+      } elseif ($filtro === 'cirugia') {
+        $where .= ' AND cc.nombre ILIKE :valor';
+        $params[':valor'] = $v;
+      } elseif ($filtro === 'cirujano') {
+        $where .= " AND TRIM(COALESCE(pc.apellido, '') || ', ' || COALESCE(pc.nombre, '')) ILIKE :valor";
+        $params[':valor'] = $v;
       } else {
         throw new Exception('El tipo de filtro no es válido.');
       }
@@ -167,7 +321,8 @@ class ConsultasOrdenesMedicas
                    p.dni, p.nombre AS paciente_nombre, p.apellido AS paciente_apellido,
                    cc.nombre AS cirugia, cc.id_cirugia_catalogo,
                    pr.id_profesional,
-                   TRIM(COALESCE(pc.apellido, '') || ', ' || COALESCE(pc.nombre, '')) AS cirujano
+                   TRIM(COALESCE(pc.apellido, '') || ', ' || COALESCE(pc.nombre, '')) AS cirujano,
+                   (" . self::sqlCondicionOrdenAprobada() . ") AS puede_programar
             $from
             $where
             ORDER BY om.id_orden DESC
@@ -183,12 +338,16 @@ class ConsultasOrdenesMedicas
     $stmt->execute();
 
     $ordenes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $idElim = self::idEstadoEliminado();
+    $reglas = self::obtenerReglasAccionesOrden();
+    $idsCancelables = $reglas['cancelar']['ids_origen_permitidos'];
+    $idsEliminables = $reglas['eliminar']['ids_origen_permitidos'];
+
     foreach ($ordenes as &$orden) {
       $idEstado = (int)$orden['id_estado'];
-      $orden['puede_ver'] = !$idElim || $idEstado !== $idElim;
-      $orden['puede_cancelar'] = self::puedeCancelarPorId($idEstado);
-      $orden['puede_eliminar'] = self::puedeEliminarPorId($idEstado);
+      $orden['puede_ver'] = !in_array($idEstado, $idsOcultos, true);
+      $orden['puede_cancelar'] = in_array($idEstado, $idsCancelables, true);
+      $orden['puede_eliminar'] = in_array($idEstado, $idsEliminables, true);
+      $orden['puede_programar'] = filter_var($orden['puede_programar'] ?? false, FILTER_VALIDATE_BOOLEAN);
     }
     unset($orden);
 
@@ -198,10 +357,224 @@ class ConsultasOrdenesMedicas
     ];
   }
 
+  /**
+   * Sugerencias del buscador (pacientes, cirugía o cirujano según filtro).
+   */
+  public static function obtenerSugerencias($filtro, $term, $limite = 8)
+  {
+    if (in_array($filtro, ['cirugia', 'cirujano'], true)) {
+      return self::obtenerSugerenciasCatalogo($filtro, $term, $limite);
+    }
+    return self::obtenerSugerenciasPacientes($filtro, $term, $limite);
+  }
+
+  /** Sugerencias de cirugías o cirujanos del catálogo (coincidencia parcial, desde 1 carácter). */
+  public static function obtenerSugerenciasCatalogo($tipo, $term, $limite = 10)
+  {
+    $term = trim((string)$term);
+    if (mb_strlen($term) < cq_minimo_caracteres_sugerencia($tipo, $term)) {
+      return [];
+    }
+
+    $limite = max(1, min(20, (int)$limite));
+    $pdo = conexionCircuitoQuirurgico();
+    $like = '%' . $term . '%';
+    $sugerencias = [];
+
+    if ($tipo === 'cirugia') {
+      $stmt = $pdo->prepare(
+        'SELECT nombre FROM catalogo_cirugia
+         WHERE nombre ILIKE :term
+         ORDER BY nombre
+         LIMIT :limite'
+      );
+      $stmt->bindValue(':term', $like, PDO::PARAM_STR);
+      $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+      $stmt->execute();
+      foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $nombre) {
+        $nombre = trim((string)$nombre);
+        if ($nombre === '') {
+          continue;
+        }
+        $sugerencias[] = [
+          'valor'  => $nombre,
+          'nombre' => $nombre,
+          'meta'   => 'Cirugía',
+        ];
+      }
+      return $sugerencias;
+    }
+
+    if ($tipo === 'cirujano') {
+      $stmtRol = $pdo->query("SELECT id_rol FROM rol WHERE LOWER(nombre) = 'cirujano' LIMIT 1");
+      $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+      if (!$idRol) {
+        return [];
+      }
+
+      $idEstado = id_estado('USUARIO', 'ACT');
+      $sql = "SELECT prof.id_profesional, p.nombre, p.apellido
+              FROM persona p
+              INNER JOIN profesional prof ON p.id_persona = prof.id_persona
+              WHERE p.id_rol = :id_rol
+                AND (
+                  p.apellido ILIKE :term
+                  OR p.nombre ILIKE :term
+                  OR TRIM(COALESCE(p.apellido, '') || ', ' || COALESCE(p.nombre, '')) ILIKE :term
+                )";
+      $params = [':id_rol' => $idRol, ':term' => $like];
+      if ($idEstado) {
+        $sql .= ' AND prof.id_estado = :id_estado';
+        $params[':id_estado'] = $idEstado;
+      }
+      $sql .= ' ORDER BY p.apellido, p.nombre LIMIT :limite';
+
+      $stmt = $pdo->prepare($sql);
+      foreach ($params as $k => $val) {
+        $stmt->bindValue($k, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
+      }
+      $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+      $stmt->execute();
+
+      foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $fila) {
+        $etiqueta = trim(($fila['apellido'] ?? '') . ', ' . ($fila['nombre'] ?? ''));
+        $etiqueta = trim($etiqueta, ', ');
+        if ($etiqueta === '') {
+          continue;
+        }
+        $sugerencias[] = [
+          'valor'            => $etiqueta,
+          'nombre'           => $etiqueta,
+          'meta'             => 'Cirujano',
+          'id_profesional'   => (int)$fila['id_profesional'],
+        ];
+      }
+    }
+
+    return $sugerencias;
+  }
+
+  /** Sugerencias de pacientes con órdenes visibles (autocompletado del buscador). */
+  public static function obtenerSugerenciasPacientes($filtro, $term, $limite = 8)
+  {
+    $filtrosPermitidos = ['dni', 'apellido', 'nombre', 'todo'];
+    if (!in_array($filtro, $filtrosPermitidos, true)) {
+      return [];
+    }
+
+    $term = trim((string)$term);
+    if (mb_strlen($term) < cq_minimo_caracteres_sugerencia($filtro, $term)) {
+      return [];
+    }
+
+    $limite = max(1, min(15, (int)$limite));
+    $pdo = conexionCircuitoQuirurgico();
+
+    $where = 'WHERE 1=1';
+    $params = [];
+    self::appendExcluirEstadosOcultos($where, $params);
+
+    if ($filtro === 'dni') {
+      $termLimpio = preg_replace('/\D/', '', $term);
+      if (strlen($termLimpio) < 1) {
+        return [];
+      }
+      $where .= ' AND p.dni LIKE :valor';
+      $params[':valor'] = $termLimpio . '%';
+    } elseif ($filtro === 'apellido') {
+      $where .= ' AND p.apellido ILIKE :valor';
+      $params[':valor'] = $term . '%';
+    } elseif ($filtro === 'nombre') {
+      $where .= ' AND p.nombre ILIKE :valor';
+      $params[':valor'] = $term . '%';
+    } else {
+      $termDni = preg_replace('/\D/', '', $term);
+      $condiciones = ['p.apellido ILIKE :valor_todo', 'p.nombre ILIKE :valor_todo'];
+      $params[':valor_todo'] = $term . '%';
+      if ($termDni !== '') {
+        $condiciones[] = 'p.dni LIKE :valor_dni';
+        $params[':valor_dni'] = $termDni . '%';
+      }
+      $where .= ' AND (' . implode(' OR ', $condiciones) . ')';
+    }
+
+    $from = "
+            FROM orden_medica om
+            INNER JOIN estado e ON e.id_estado = om.id_estado
+            INNER JOIN persona_asiste pa ON pa.id_persona_asiste = om.id_persona_asiste
+            INNER JOIN persona p ON p.id_persona = pa.id_persona
+        ";
+
+    $sql = "
+            SELECT DISTINCT ON (p.id_persona) p.dni, p.nombre, p.apellido
+            $from
+            $where
+            ORDER BY p.id_persona, p.apellido, p.nombre
+            LIMIT :limite
+        ";
+
+    $stmt = $pdo->prepare($sql);
+    foreach ($params as $k => $val) {
+      $stmt->bindValue($k, $val, PDO::PARAM_STR);
+    }
+    $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
+    $stmt->execute();
+    $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    usort($filas, function ($a, $b) {
+      $cmp = strcasecmp($a['apellido'] ?? '', $b['apellido'] ?? '');
+      if ($cmp !== 0) {
+        return $cmp;
+      }
+      return strcasecmp($a['nombre'] ?? '', $b['nombre'] ?? '');
+    });
+
+    $sugerencias = [];
+    foreach ($filas as $fila) {
+      $dni = trim((string)($fila['dni'] ?? ''));
+      $nombre = trim((string)($fila['nombre'] ?? ''));
+      $apellido = trim((string)($fila['apellido'] ?? ''));
+      $etiqueta = trim($apellido . ', ' . $nombre);
+      if ($dni !== '') {
+        $etiqueta .= ' — DNI ' . $dni;
+      }
+
+      if ($filtro === 'dni') {
+        $valor = $dni;
+      } elseif ($filtro === 'apellido') {
+        $valor = $apellido;
+      } elseif ($filtro === 'nombre') {
+        $valor = $nombre;
+      } else {
+        $termDni = preg_replace('/\D/', '', $term);
+        if ($termDni !== '' && $dni !== '' && strpos($dni, $termDni) !== false) {
+          $valor = $dni;
+        } elseif ($apellido !== '' && mb_stripos($apellido, $term) !== false) {
+          $valor = $apellido;
+        } else {
+          $valor = $nombre !== '' ? $nombre : $dni;
+        }
+      }
+
+      if ($valor === '') {
+        continue;
+      }
+
+      $sugerencias[] = [
+        'valor'   => $valor,
+        'etiqueta' => $etiqueta,
+        'dni'     => $dni,
+        'nombre'  => $nombre,
+        'apellido' => $apellido,
+      ];
+    }
+
+    return $sugerencias;
+  }
+
   public static function obtenerOrden($id_orden)
   {
     $pdo = conexionCircuitoQuirurgico();
-    $idElim = self::idEstadoEliminado();
 
     $sql = "
             SELECT om.id_orden, om.id_persona_asiste, om.id_profesional, om.id_cirugia_catalogo,
@@ -219,18 +592,91 @@ class ConsultasOrdenesMedicas
             LEFT JOIN persona pc ON pc.id_persona = pr.id_persona
             WHERE om.id_orden = :id_orden
         ";
-    if ($idElim) {
-      $sql .= ' AND om.id_estado != :id_elim';
-    }
-    $sql .= ' LIMIT 1';
+    $paramsOrden = [':id_orden' => $id_orden];
+    $whereExtra = '';
+    self::appendExcluirEstadosOcultos($whereExtra, $paramsOrden);
+    $sql .= $whereExtra . ' LIMIT 1';
 
     $stmt = $pdo->prepare($sql);
-    $stmt->bindValue(':id_orden', $id_orden, PDO::PARAM_INT);
-    if ($idElim) {
-      $stmt->bindValue(':id_elim', $idElim, PDO::PARAM_INT);
+    foreach ($paramsOrden as $k => $val) {
+      $stmt->bindValue($k, $val, is_int($val) ? PDO::PARAM_INT : PDO::PARAM_STR);
     }
     $stmt->execute();
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    $orden = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($orden) {
+      $orden['puede_editar'] = self::puedeEditarDetallePorId((int)$orden['id_estado']);
+    }
+    return $orden ?: null;
+  }
+
+  public static function obtenerCatalogosEdicion()
+  {
+    return [
+      'cirugias'  => ConsultasAdmision::obtenerCatalogoCirugias(),
+      'cirujanos' => ConsultasAdmision::obtenerCirujanos(),
+    ];
+  }
+
+  public static function actualizarDetalleOrden($id_orden, $nombreCirugia, $id_profesional, $observaciones)
+  {
+    $orden = self::obtenerOrden($id_orden);
+    if (!$orden) {
+      throw new Exception('La orden médica no existe o no está disponible.');
+    }
+
+    if (!self::puedeEditarDetallePorId((int)$orden['id_estado'])) {
+      throw new Exception('No se puede modificar una orden en el estado actual.');
+    }
+
+    $nombreCirugia = trim((string)$nombreCirugia);
+    if ($nombreCirugia === '') {
+      throw new Exception('Debe seleccionar un tipo de cirugía.');
+    }
+
+    $id_profesional = filter_var($id_profesional, FILTER_VALIDATE_INT);
+    if (!$id_profesional || $id_profesional <= 0) {
+      throw new Exception('Debe seleccionar un cirujano válido.');
+    }
+
+    $observaciones = trim((string)$observaciones);
+    if (mb_strlen($observaciones) > 2000) {
+      throw new Exception('Las observaciones no pueden superar los 2000 caracteres.');
+    }
+
+    $pdo = conexionCircuitoQuirurgico();
+
+    $stmtCirugia = $pdo->prepare(
+      'SELECT id_cirugia_catalogo FROM catalogo_cirugia WHERE nombre = :nombre LIMIT 1'
+    );
+    $stmtCirugia->execute([':nombre' => $nombreCirugia]);
+    $id_cirugia = $stmtCirugia->fetch(PDO::FETCH_COLUMN);
+    if (!$id_cirugia) {
+      throw new Exception('No se encontró la cirugía seleccionada en el catálogo.');
+    }
+
+    $stmtProf = $pdo->prepare(
+      'SELECT id_profesional FROM profesional WHERE id_profesional = :id_profesional LIMIT 1'
+    );
+    $stmtProf->execute([':id_profesional' => $id_profesional]);
+    if (!$stmtProf->fetch(PDO::FETCH_COLUMN)) {
+      throw new Exception('El cirujano seleccionado no es válido.');
+    }
+
+    $stmt = $pdo->prepare(
+      'UPDATE orden_medica
+       SET id_cirugia_catalogo = :id_cirugia,
+           id_profesional = :id_profesional,
+           observaciones = :observaciones
+       WHERE id_orden = :id_orden'
+    );
+    $stmt->execute([
+      ':id_cirugia'      => $id_cirugia,
+      ':id_profesional'  => $id_profesional,
+      ':observaciones'   => $observaciones !== '' ? $observaciones : null,
+      ':id_orden'        => $id_orden,
+    ]);
+
+    return true;
   }
 
   public static function cancelarOrden($id_orden)

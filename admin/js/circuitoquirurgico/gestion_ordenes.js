@@ -332,32 +332,26 @@ function obtenerValorFiltro() {
 }
 
 function botonAccionOrden(tipo, icono, etiqueta, onclick, deshabilitado, titulo) {
-    var clases = {
-        ver: 'btn-outline-primary',
-        cancelar: 'btn-outline-warning',
-        eliminar: 'btn-outline-danger'
-    };
-    var cls = clases[tipo] || 'btn-outline-secondary';
     var disabled = deshabilitado ? ' disabled' : '';
     var title = titulo || etiqueta;
-    return '<button type="button" class="btn btn-sm btn-accion-orden ' + cls + disabled + '"' +
-        ' title="' + title + '" onclick="' + onclick + '">' +
-        '<i class="bi ' + icono + ' me-1"></i><span>' + etiqueta + '</span></button>';
+    return '<button type="button" class="btn-accion-orden btn-accion-orden--' + tipo + disabled + '"' +
+        ' title="' + title + '" aria-label="' + title + '" onclick="' + onclick + '">' +
+        '<i class="bi ' + icono + '"></i><span>' + etiqueta + '</span></button>';
 }
 
 function badgeEstado(codigo, descripcion) {
     var c = String(codigo || '').trim().toUpperCase();
     var map = {
-        'PEND': 'bg-warning text-dark',
-        'PROC': 'bg-primary',
-        'FIN':  'bg-success',
-        'CANC': 'bg-secondary',
-        'RECH': 'bg-danger',
-        'ELIM': 'bg-danger'
+        'PEND': 'pend',
+        'PROC': 'proc',
+        'FIN':  'fin',
+        'CANC': 'canc',
+        'RECH': 'rech',
+        'ELIM': 'elim'
     };
-    var cls = map[c] || 'bg-secondary';
+    var cls = map[c] || 'default';
     var texto = descripcion || c || '—';
-    return '<span class="badge ' + cls + ' px-3 py-2 rounded-pill">' + texto + '</span>';
+    return '<span class="badge-estado-orden badge-estado-orden--' + cls + '">' + texto + '</span>';
 }
 
 function ejecutarBusqueda() {
@@ -418,32 +412,33 @@ function cargarOrdenesAPI(filtro, valor) {
                     var tr = document.createElement('tr');
                     tr.setAttribute('data-id', o.id_orden);
                     var paciente = ((o.paciente_nombre || '') + ' ' + (o.paciente_apellido || '')).trim();
-                    var acciones = '<div class="acciones-orden d-flex justify-content-center flex-wrap gap-1">';
+                    var acciones = '<div class="acciones-orden">';
                     if (o.puede_ver) {
                         acciones += botonAccionOrden(
-                            'ver', 'bi-eye-fill', 'Ver',
+                            'ver', 'bi-eye', 'Ver',
                             'verOrden(' + o.id_orden + ')', false, 'Ver detalle de la orden'
                         );
                     }
                     if (o.puede_programar) {
-                        acciones += '<button type="button" class="btn btn-sm btn-primary btn-agendar-turno"' +
+                        acciones += '<button type="button" class="btn-accion-orden btn-accion-orden--agendar btn-agendar-turno"' +
                             ' data-dni="' + escaparHtml(o.dni || '') + '"' +
                             ' data-nombre="' + escaparHtml(o.paciente_nombre || '') + '"' +
                             ' data-apellido="' + escaparHtml(o.paciente_apellido || '') + '"' +
                             ' data-cirugia="' + escaparHtml(o.cirugia || '') + '"' +
                             ' data-cirujano="' + escaparHtml(o.cirujano || '') + '"' +
-                            ' title="Agendar turno prequirúrgico">' +
-                            '<i class="bi bi-calendar-plus me-1"></i>Agendar</button>';
+                            ' title="Agendar turno prequirúrgico" aria-label="Agendar turno prequirúrgico">' +
+                            '<i class="bi bi-calendar-plus"></i><span>Agendar</span></button>';
                     }
-                    acciones += botonAccionOrden(
-                        'cancelar', 'bi-slash-circle-fill', 'Cancelar',
-                        'cancelarOrden(' + o.id_orden + ',' + (o.puede_cancelar ? 'true' : 'false') + ')',
-                        !o.puede_cancelar,
-                        o.puede_cancelar ? 'Cancelar orden' : 'No se puede cancelar en este estado'
-                    );
+                    if (o.puede_cancelar) {
+                        acciones += botonAccionOrden(
+                            'cancelar', 'bi-x-lg', 'Cancelar',
+                            'cancelarOrden(' + o.id_orden + ',true)',
+                            false, 'Cancelar orden'
+                        );
+                    }
                     if (o.puede_eliminar) {
                         acciones += botonAccionOrden(
-                            'eliminar', 'bi-trash3-fill', 'Eliminar',
+                            'eliminar', 'bi-trash', 'Eliminar',
                             'eliminarOrden(' + o.id_orden + ')', false, 'Eliminar orden'
                         );
                     }

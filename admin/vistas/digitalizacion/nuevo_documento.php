@@ -141,6 +141,13 @@
                         <div class="row">
                             <div class="form-group col-md-12 mb-3">
                                 <label for="archivo">Seleccionar Archivo <span class="text-danger">*</span></label>
+                                
+                                <!-- Zona Drag & Drop -->
+                                <div id="drop-zone" class="border border-primary border-2 rounded text-center p-5 mb-2" style="border-style: dashed !important; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Arrastrá y soltá tu archivo acá">
+                                    <i class="fa-solid fa-cloud-arrow-up fa-3x text-primary mb-2"></i>
+                                    <h6 class="text-primary mb-1" id="drop-title">Arrastrá y soltá tu archivo acá</h6>
+                                    <small class="text-muted">o usá el botón de abajo para buscar en tu PC</small>
+                                </div>
                                 <input type="file" class="form-control" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
                                 <div class="invalid-feedback">Debe adjuntar un archivo válido (PDF, JPG, PNG).</div>
                                 <small class="text-muted d-block mt-1" id="file_size_helper">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 5MB</small>
@@ -218,7 +225,32 @@ document.addEventListener("DOMContentLoaded", async function() {
         placeholderValue: 'Seleccione etiquetas',
         searchPlaceholderValue: 'Buscar...',
         noResultsText: 'No se encontraron etiquetas',
-        itemSelectText: 'Click para seleccionar'
+        itemSelectText: 'Click para seleccionar',
+        callbackOnCreateTemplates: function(template) {
+            return {
+                item: ({ classNames }, data) => {
+                    const color = data.customProperties?.color || '#6c757d';
+                    return template(`
+                        <div class="${classNames.item} ${data.highlighted ? classNames.highlightedState : classNames.itemSelectable}" 
+                             data-item data-id="${data.id}" data-value="${data.value}" data-deletable
+                             style="background-color: ${color} !important; color: #fff !important; border-color: ${color} !important;">
+                            ${data.label}
+                            <button type="button" class="choices__button" data-button aria-label="Eliminar">×</button>
+                        </div>
+                    `);
+                },
+                choice: ({ classNames }, data) => {
+                    const color = data.customProperties?.color || '#6c757d';
+                    return template(`
+                        <div class="${classNames.item} ${classNames.itemChoice} ${data.highlighted ? classNames.highlightedState : ''}"
+                             data-choice data-id="${data.id}" data-value="${data.value}" data-choice-selectable
+                             style="border-left: 4px solid ${color}; padding-left: 8px;">
+                            ${data.label}
+                        </div>
+                    `);
+                }
+            };
+        }
     });
 
     try {
@@ -250,7 +282,11 @@ document.addEventListener("DOMContentLoaded", async function() {
                 selectServicio.appendChild(option);
             });
             
-            const etiquetasArr = json.data.etiquetas.map(e => ({ value: e.id, label: e.name }));
+            const etiquetasArr = json.data.etiquetas.map(e => ({
+                value: e.id,
+                label: e.name,
+                customProperties: { color: e.color_hex || '#6c757d' }
+            }));
             tagChoices.setChoices(etiquetasArr, 'value', 'label', true);
             
             if (json.data.configuraciones && json.data.configuraciones.max_peso_archivo_mb) {
@@ -261,6 +297,36 @@ document.addEventListener("DOMContentLoaded", async function() {
     } catch(error) {
         console.error("Error al cargar las opciones del formulario:", error);
     }
+    // Logica Drag y Drop
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('archivo');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(evt => {
+        dropZone.addEventListener(evt, () => {
+            dropZone.style.backgroundColor = '#0d6efd';
+            dropZone.style.borderColor = '#0d6efd';
+            document.getElementById('drop-title').style.color = '#fff';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, () => {
+            dropZone.style.backgroundColor = '';
+            dropZone.style.borderColor = '';
+            document.getElementById('drop-title').style.color = '';
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    }
+});
 });
 
 // Validación de Número de Identificación (Opcional según tipo, por ahora dejamos libre para pasaportes, etc.)
@@ -515,13 +581,15 @@ const _idP     = document.getElementById("id_persona").value;
 const _msg     = document.getElementById("mensaje_persona").innerHTML;
 const _sector  = document.getElementById("id_servicio").value;
 
-// Reset completo igual que antes
-form.reset();
+// Reset completo - limpiar estado ANTES del reset del form
 tagChoices.removeActiveItems();
 document.getElementById('preview-container').classList.add('d-none');
 document.getElementById("id_persona").value = "";
 document.getElementById("mensaje_persona").innerHTML = "";
 document.getElementById("respuesta").innerHTML = "";
+
+form.reset();
+form.classList.remove('was-validated');
 
 Swal.fire({
     icon: 'success',
@@ -547,6 +615,17 @@ Swal.fire({
             document.getElementById("apellido").readOnly = true;
         }
         document.getElementById("titulo").focus();
+    } else {
+        // "Nuevo documento" - reset completo de TODO estado colgante
+        document.getElementById("nombre").readOnly         = false;
+        document.getElementById("apellido").readOnly       = false;
+        document.getElementById("div_email").classList.add("d-none");
+        document.getElementById("div_telefono").classList.add("d-none");
+        document.getElementById("div_genero").classList.add("d-none");
+        document.getElementById("genero").value            = "";
+        document.getElementById("id_tipo_identificacion").selectedIndex = 0;
+        document.getElementById("numero_identificacion").value  = "";
+        document.getElementById("id_servicio").value       = "";
     }
 });
         } else if (data.status === 'duplicate') {
@@ -654,5 +733,34 @@ body.modo-oscuro .choices__item--choice.is-highlighted {
 body.modo-oscuro .bg-light {
     background-color: #2a2a2a !important;
     color: #f1f1f1 !important;
+}
+
+/* === Etiquetas coloreadas en Choices.js === */
+.choices__item[style*="background-color"] .choices__button {
+    color: #fff !important;
+    opacity: 0.8;
+}
+.choices__item[style*="background-color"] .choices__button:hover {
+    opacity: 1;
+}
+.choices__list--dropdown .choices__item[style*="border-left"] {
+    font-size: 0.9rem;
+}
+
+/* === Drag & Drop Zone === */
+#drop-zone {
+    border-style: dashed !important;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    transition: all 0.2s;
+}
+body.modo-oscuro #drop-zone {
+    background-color: #1e2a3a !important;
+    border-color: #4d90fe !important;
 }
 </style>

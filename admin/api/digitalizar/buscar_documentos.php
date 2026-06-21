@@ -123,13 +123,23 @@ try {
                 LIMIT 1
             ) AS dni,
             p.apellidoynombre AS paciente,
+            p.nombre AS paciente_nombre,
+            p.apellido AS paciente_apellido,
             td.nombre AS tipo_documento,
             s.nombre AS servicio,
+            (
+                SELECT STRING_AGG(de.id_etiqueta::text, ', ')
+                FROM documento_etiquetas de
+                JOIN etiquetas e ON de.id_etiqueta = e.id
+                WHERE de.id_documento = d.id
+                AND e.estado = true
+            ) AS etiqueta_ids,
             (
                 SELECT STRING_AGG(e.nombre_etiqueta, ', ')
                 FROM documento_etiquetas de
                 JOIN etiquetas e ON de.id_etiqueta = e.id
                 WHERE de.id_documento = d.id
+                AND e.estado = true
             ) AS etiquetas
         FROM documentos d
         JOIN personal p ON d.id_persona = p.id

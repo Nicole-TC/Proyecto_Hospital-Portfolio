@@ -36,7 +36,7 @@ try {
     $etiquetas = [];
 
     $stmtEtiquetas = $bd_dig->prepare("
-        SELECT id, nombre_etiqueta AS name
+        SELECT id, nombre_etiqueta AS name, color_hex
         FROM etiquetas
         WHERE estado = true
         ORDER BY nombre_etiqueta ASC

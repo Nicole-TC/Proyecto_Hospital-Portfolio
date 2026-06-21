@@ -14,6 +14,19 @@ if (!isset($_SESSION['id'])) {
 }
 
 require_once __DIR__ . '/../../model/conexion_dig.php';
+require_once __DIR__ . '/helpers_dig.php';
+
+function slugify($texto) {
+    $texto = mb_strtolower(trim($texto), 'UTF-8');
+    $texto = str_replace(
+        ['á','é','í','ó','ú','ü','ñ',' '],
+        ['a','e','i','o','u','u','n','_'],
+        $texto
+    );
+    $texto = preg_replace('/[^a-z0-9_]/', '', $texto);
+    $texto = preg_replace('/_+/', '_', $texto);
+    return trim($texto, '_');
+}
 
 // Validar que la solicitud sea POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -33,13 +46,13 @@ try {
     $bd_dig->beginTransaction();
 
     // 1. Obtener y validar datos del formulario
-    $titulo = trim($_POST['titulo'] ?? '');
+    $titulo = capitalizar($_POST['titulo'] ?? '');
     
     // Campo de identificación único
     $dni = trim($_POST['dni'] ?? $_POST['numero_identificacion'] ?? '');
     
-    $nombre = trim($_POST['nombre'] ?? '');
-    $apellido = trim($_POST['apellido'] ?? '');
+    $nombre = capitalizar($_POST['nombre'] ?? '');
+    $apellido = capitalizar($_POST['apellido'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
     $id_tipo_documento = filter_var($_POST['id_tipo_documento'] ?? '', FILTER_VALIDATE_INT);
@@ -207,8 +220,16 @@ try {
         throw new Exception("El archivo excede el límite permitido de " . $maxPesoMb . "MB.");
     }
 
-    // Carpeta destino
-    $carpetaDestino = __DIR__ . '/../../uploads/';
+    // Carpeta destino según servicio
+    $stmtServ = $bd_dig->prepare("SELECT nombre FROM servicios WHERE id = ?");
+    $stmtServ->execute([$id_servicio]);
+    $servicioNombre = $stmtServ->fetchColumn();
+    if (!$servicioNombre) {
+        throw new Exception("El servicio seleccionado no existe.");
+    }
+
+    $slug = slugify($servicioNombre);
+    $carpetaDestino = __DIR__ . '/../../uploads/' . $slug . '/';
     if (!is_dir($carpetaDestino)) {
         if (!mkdir($carpetaDestino, 0755, true)) {
             throw new Exception("No se pudo crear el directorio de subida.");
@@ -217,7 +238,7 @@ try {
 
     $nombreArchivoNuevo = uniqid("doc_") . '.' . $extension;
     $rutaFisica = $carpetaDestino . $nombreArchivoNuevo;
-    $rutaRelativa = "uploads/" . $nombreArchivoNuevo;
+    $rutaRelativa = "uploads/" . $slug . "/" . $nombreArchivoNuevo;
 
     if (!move_uploaded_file($temporal, $rutaFisica)) {
         throw new Exception("Error al mover el archivo al volumen de destino.");

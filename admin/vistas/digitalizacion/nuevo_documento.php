@@ -141,6 +141,13 @@
                         <div class="row">
                             <div class="form-group col-md-12 mb-3">
                                 <label for="archivo">Seleccionar Archivo <span class="text-danger">*</span></label>
+                                
+                                <!-- Zona Drag & Drop -->
+                                <div id="drop-zone" class="border border-primary border-2 rounded text-center p-5 mb-2" style="border-style: dashed !important; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Arrastrá y soltá tu archivo acá">
+                                    <i class="fa-solid fa-cloud-arrow-up fa-3x text-primary mb-2"></i>
+                                    <h6 class="text-primary mb-1" id="drop-title">Arrastrá y soltá tu archivo acá</h6>
+                                    <small class="text-muted">o usá el botón de abajo para buscar en tu PC</small>
+                                </div>
                                 <input type="file" class="form-control" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
                                 <div class="invalid-feedback">Debe adjuntar un archivo válido (PDF, JPG, PNG).</div>
                                 <small class="text-muted d-block mt-1" id="file_size_helper">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 5MB</small>
@@ -290,6 +297,36 @@ document.addEventListener("DOMContentLoaded", async function() {
     } catch(error) {
         console.error("Error al cargar las opciones del formulario:", error);
     }
+    // Logica Drag y Drop
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('archivo');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(evt => {
+        dropZone.addEventListener(evt, () => {
+            dropZone.style.backgroundColor = '#0d6efd';
+            dropZone.style.borderColor = '#0d6efd';
+            document.getElementById('drop-title').style.color = '#fff';
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+        dropZone.addEventListener(evt, () => {
+            dropZone.style.backgroundColor = '';
+            dropZone.style.borderColor = '';
+            document.getElementById('drop-title').style.color = '';
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    }
+});
 });
 
 // Validación de Número de Identificación (Opcional según tipo, por ahora dejamos libre para pasaportes, etc.)
@@ -708,5 +745,22 @@ body.modo-oscuro .bg-light {
 }
 .choices__list--dropdown .choices__item[style*="border-left"] {
     font-size: 0.9rem;
+}
+
+/* === Drag & Drop Zone === */
+#drop-zone {
+    border-style: dashed !important;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    transition: all 0.2s;
+}
+body.modo-oscuro #drop-zone {
+    background-color: #1e2a3a !important;
+    border-color: #4d90fe !important;
 }
 </style>

@@ -18,9 +18,14 @@ if ($method === 'GET' && $action === 'turnos_del_dia') {
     try {
         $turnos = ConsultasAgenda::obtenerTurnosPorFecha($fecha, $id_tipo_turno);
         
-        $cupoConfig = ['activo' => true, 'cupos_total' => 0, 'sin_config' => true];
+        $cupoConfig = ['activo' => false, 'cupos_total' => 0, 'sin_config' => true];
         if ($id_tipo_turno) {
-            $cupoConfig = ConsultasAgenda::obtenerConfiguracionCupo($fecha, $id_tipo_turno);
+            $config = ConsultasAgenda::obtenerConfiguracionCupo($fecha, $id_tipo_turno);
+            if (!$config['sin_config']) {
+                $cupoConfig['activo'] = $config['activo'];
+                $cupoConfig['cupos_total'] = $config['cupos_total'];
+                $cupoConfig['sin_config'] = false;
+            }
         }
 
         echo json_encode([

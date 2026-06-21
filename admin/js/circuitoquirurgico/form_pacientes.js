@@ -365,6 +365,10 @@ function validarDireccion() {
         setFieldError('direccion', 'direccion-feedback', 'Mínimo 5 caracteres.');
         return false;
     }
+    if (/[^A-Z0-9\s.,\-/]/.test(val)) {
+        setFieldError('direccion', 'direccion-feedback', 'Solo letras, números, espacios, puntos, comas, guiones y barras.');
+        return false;
+    }
     setFieldOk('direccion', 'direccion-feedback');
     return true;
 }
@@ -375,7 +379,7 @@ function bindDireccion() {
     el.style.textTransform = 'uppercase';
     el.addEventListener('input', function () {
         var pos = this.selectionStart;
-        var newVal = this.value.toUpperCase();
+        var newVal = this.value.toUpperCase().replace(/[^A-Z0-9\s.,\-/]/g, '');
         if (newVal !== this.value) {
             this.value = newVal;
             this.setSelectionRange(Math.min(pos, newVal.length), Math.min(pos, newVal.length));
@@ -390,7 +394,7 @@ function bindDireccion() {
     el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
-        this.value = texto.toUpperCase();
+        this.value = texto.toUpperCase().replace(/[^A-Z0-9\s.,\-/]/g, '');
         this.dispatchEvent(new Event('input'));
     });
 }

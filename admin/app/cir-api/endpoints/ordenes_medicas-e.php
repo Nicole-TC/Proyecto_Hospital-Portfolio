@@ -64,7 +64,11 @@ try {
                 echo json_encode(['status' => 'error', 'message' => 'Orden no encontrada.']);
                 exit;
             }
-            echo json_encode(['status' => 'success', 'orden' => $orden]);
+            echo json_encode([
+                'status'         => 'success',
+                'orden'          => $orden,
+                'modificaciones' => ConsultasOrdenesMedicas::obtenerModificacionesOrden($id),
+            ]);
             exit;
         }
 
@@ -120,11 +124,19 @@ try {
         }
 
         if ($accion === 'actualizar') {
+            $nombreUsuario = trim(
+                trim($_SESSION['apellido'] ?? '') . ', ' . trim($_SESSION['nombre'] ?? '')
+            );
+            if ($nombreUsuario === ',') {
+                $nombreUsuario = trim($_SESSION['user'] ?? '');
+            }
             ConsultasOrdenesMedicas::actualizarDetalleOrden(
                 $id_orden,
                 $data['tipoCirugia'] ?? '',
                 $data['id_profesional'] ?? null,
-                $data['observaciones'] ?? ''
+                $data['observaciones'] ?? '',
+                $_SESSION['id'] ?? null,
+                $nombreUsuario
             );
             echo json_encode(['status' => 'success', 'message' => 'Orden actualizada correctamente.']);
             exit;

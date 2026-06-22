@@ -18,8 +18,8 @@ class ConsultasAdmision {
         $errores = [];
 
         $dni = $input['dni'] ?? '';
-        if (!preg_match('/^\d{7,8}$/', $dni)) {
-            $errores[] = 'El DNI debe contener entre 7 y 8 dígitos numéricos.';
+        if (!preg_match('/^\d{5,8}$/', $dni)) {
+            $errores[] = 'El DNI debe contener entre 5 y 8 dígitos numéricos.';
         }
         $tipoCirugia = $input['tipoCirugia'] ?? '';
         if (!preg_match('/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]{3,100}$/', $tipoCirugia)) {
@@ -51,6 +51,8 @@ class ConsultasAdmision {
                 $parts = explode('-', $fechaNacimiento);
                 if (!checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0])) {
                     $errores[] = 'La fecha de nacimiento no es una fecha real.';
+                } elseif ((int)$parts[0] < 1900) {
+                    $errores[] = 'El año debe ser 1900 o posterior.';
                 } elseif ($fechaNacimiento > date('Y-m-d')) {
                     $errores[] = 'La fecha de nacimiento no puede ser posterior al día de hoy.';
                 }

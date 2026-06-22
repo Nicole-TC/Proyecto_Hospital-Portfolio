@@ -147,6 +147,7 @@ $urlVolver  = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_pacientes
                         <label for="direccion" class="form-label text-secondary mb-1" style="font-size: 0.9rem;">Dirección</label>
                         <input type="text" class="form-control text-secondary" id="direccion" name="direccion"
                                placeholder="Ej: AV. CORRIENTES 1234" maxlength="150" autocomplete="off">
+                        <div id="direccion-feedback" class="mt-1" style="font-size: 0.82rem;"></div>
                     </div>
 
                     <div class="row mb-3">

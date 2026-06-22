@@ -224,6 +224,10 @@ function validarFecha() {
         setFieldError('fecha_nacimiento', 'fecha-feedback', 'La fecha no puede ser en el futuro.');
         return false;
     }
+    if (val.split('-')[0] < 1900) {
+        setFieldError('fecha_nacimiento', 'fecha-feedback', 'El año debe ser 1900 o posterior.');
+        return false;
+    }
     setFieldOk('fecha_nacimiento', 'fecha-feedback');
     return true;
 }
@@ -349,22 +353,48 @@ function bindCodigoPostal() {
     });
 }
 
+function validarDireccion() {
+    var el = document.getElementById('direccion');
+    if (!el) return true;
+    var val = el.value.trim();
+    if (val.length === 0) {
+        clearField('direccion', 'direccion-feedback');
+        return true;
+    }
+    if (val.length < 5) {
+        setFieldError('direccion', 'direccion-feedback', 'Mínimo 5 caracteres.');
+        return false;
+    }
+    if (/[^A-Z0-9\s.,\-/]/.test(val)) {
+        setFieldError('direccion', 'direccion-feedback', 'Solo letras, números, espacios, puntos, comas, guiones y barras.');
+        return false;
+    }
+    setFieldOk('direccion', 'direccion-feedback');
+    return true;
+}
+
 function bindDireccion() {
     var el = document.getElementById('direccion');
     if (!el) return;
     el.style.textTransform = 'uppercase';
     el.addEventListener('input', function () {
         var pos = this.selectionStart;
-        var newVal = this.value.toUpperCase();
+        var newVal = this.value.toUpperCase().replace(/[^A-Z0-9\s.,\-/]/g, '');
         if (newVal !== this.value) {
             this.value = newVal;
             this.setSelectionRange(Math.min(pos, newVal.length), Math.min(pos, newVal.length));
         }
+        if (this.value.trim().length > 0) validarDireccion();
+        else clearField('direccion', 'direccion-feedback');
+    });
+    el.addEventListener('blur', function () {
+        if (this.value.trim().length > 0) validarDireccion();
+        else clearField('direccion', 'direccion-feedback');
     });
     el.addEventListener('paste', function (e) {
         e.preventDefault();
         var texto = (e.clipboardData || window.clipboardData).getData('text');
-        this.value = texto.toUpperCase();
+        this.value = texto.toUpperCase().replace(/[^A-Z0-9\s.,\-/]/g, '');
         this.dispatchEvent(new Event('input'));
     });
 }
@@ -464,6 +494,7 @@ async function preLlenarFormulario(idPersona) {
         validarFecha();
         validarEmail();
         validarTelefono();
+        if (p.direccion) validarDireccion();
         if (p.codigo_postal) validarCodigoPostal();
 
     } catch (err) {
@@ -497,6 +528,7 @@ function bindSubmit(modoEditar) {
         if (!validarEmail()) ok = false;
         if (!validarTelefono()) ok = false;
         if (!validarCodigoPostal()) ok = false;
+        if (!validarDireccion()) ok = false;
 
         if (!ok) {
             var primerError = form.querySelector('.is-invalid');

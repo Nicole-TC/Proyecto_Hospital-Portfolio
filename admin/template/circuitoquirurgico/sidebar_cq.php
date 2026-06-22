@@ -49,6 +49,11 @@
     </a>
 </li>
 <li>
+    <a class="dropdown-item" href="index.php?modulo=menu_circuitoquirurgico&accion=asistencia">
+        <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Asistencia
+    </a>
+</li>
+<li>
     <a class="dropdown-item" href="index.php?modulo=menu_circuitoquirurgico&accion=especialidades">
         <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Especialidades
     </a>

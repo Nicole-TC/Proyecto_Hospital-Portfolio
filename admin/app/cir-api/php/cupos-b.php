@@ -242,13 +242,46 @@ class ConsultasCupos {
         if (!$id_cupo) return ['ok' => false, 'error' => 'ID de cupo inválido.'];
 
         $pdo = conexionCircuitoQuirurgico();
-        
-        // Uso de la función para no hardcodear el 42 (borrado lógico)
-        $id_estado_ina = id_estado('DATO', 'ELIM');
-        
-        $sql = "UPDATE agenda_cupos SET id_estado = :id_estado_ina WHERE id_cupo = :id_cupo AND id_estado != :id_estado_ina";
 
         try {
+            // Verificar si hay turnos asignados
+            $sqlInfo = "SELECT id_tipo_turno, fecha_desde, fecha_hasta FROM agenda_cupos WHERE id_cupo = :id_cupo";
+            $stmtInfo = $pdo->prepare($sqlInfo);
+            $stmtInfo->bindParam(':id_cupo', $id_cupo, PDO::PARAM_INT);
+            $stmtInfo->execute();
+            $cupoInfo = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cupoInfo) return ['ok' => false, 'error' => 'No se encontró el cupo.'];
+
+            $hasFechaHasta = !empty($cupoInfo['fecha_hasta']);
+            $sqlTurnos = "SELECT COUNT(*) FROM turno t 
+                          WHERE t.id_tipo_turno = :id_tipo_turno 
+                            AND DATE(t.fecha_hora) >= :fecha_desde";
+            
+            if ($hasFechaHasta) {
+                $sqlTurnos .= " AND DATE(t.fecha_hora) <= :fecha_hasta";
+            }
+            $sqlTurnos .= " AND (t.cancelado IS NULL OR t.cancelado = false)";
+            
+            $stmtTurnos = $pdo->prepare($sqlTurnos);
+            $stmtTurnos->bindParam(':id_tipo_turno', $cupoInfo['id_tipo_turno'], PDO::PARAM_INT);
+            $stmtTurnos->bindParam(':fecha_desde', $cupoInfo['fecha_desde']);
+            if ($hasFechaHasta) {
+                $stmtTurnos->bindParam(':fecha_hasta', $cupoInfo['fecha_hasta']);
+            }
+            $stmtTurnos->execute();
+            
+            $countTurnos = (int)$stmtTurnos->fetchColumn();
+            if ($countTurnos > 0) {
+                return ['ok' => false, 'error' => "No se puede eliminar la configuración porque existen {$countTurnos} turno(s) asignado(s) en este período."];
+            }
+
+            // Proceder con el borrado lógico
+            $id_estado_ina = id_estado('DATO', 'ELIM');
+            if (!$id_estado_ina) $id_estado_ina = 0;
+            
+            $sql = "UPDATE agenda_cupos SET id_estado = :id_estado_ina WHERE id_cupo = :id_cupo AND id_estado != :id_estado_ina";
+
             $stmt = $pdo->prepare($sql);
             $stmt->bindParam(':id_cupo', $id_cupo, PDO::PARAM_INT);
             $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);

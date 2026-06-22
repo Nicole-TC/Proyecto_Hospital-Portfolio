@@ -291,7 +291,7 @@ async function saveConfig() {
                 icon: 'success',
                 confirmButtonColor: '#0d6efd'
             });
-            cancelarEdicion();
+            resetFormulario();
             cargarTabla();
             
             // Volver a la pestaña de gestión
@@ -380,6 +380,23 @@ function editarCupo(cupo) {
 //  Cancelar edición / Limpiar formulario
 // ────────────────────────────────────────────────────────────────
 function cancelarEdicion() {
+    Swal.fire({
+        title: modoEdicion ? '¿Cancelar edición?' : '¿Limpiar formulario?',
+        text: 'Se borrará todo el progreso y tendrás que empezar de cero.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, limpiar',
+        cancelButtonText: 'Volver'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            resetFormulario();
+        }
+    });
+}
+
+function resetFormulario() {
     modoEdicion = false;
 
     document.getElementById('form-cupos').reset();

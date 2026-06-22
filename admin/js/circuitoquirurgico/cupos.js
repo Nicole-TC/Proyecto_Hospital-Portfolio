@@ -505,7 +505,7 @@ async function cargarTabla() {
     tbody.innerHTML = '';
 
     try {
-        const response = await fetch('app/cir-api/endpoints/cupos-e.php?action=listar_cupos');
+        const response = await fetch('app/cir-api/endpoints/cupos-e.php?action=listar_cupos', { cache: 'no-store' });
         const result   = await response.json();
 
         loading.classList.add('d-none');

@@ -61,7 +61,7 @@ class ConsultasAgenda {
         if (!$id_estado_ina) $id_estado_ina = 0;
 
         // Toma la config más reciente cuya vigencia incluye la fecha pedida
-        $sql = "SELECT cupos_total, lunes, martes, miercoles, jueves, viernes
+        $sql = "SELECT cupos_total, hora_inicio, lunes, martes, miercoles, jueves, viernes
                 FROM agenda_cupos
                 WHERE id_tipo_turno = :id_tipo_turno
                   AND id_estado != :id_estado_ina
@@ -78,17 +78,17 @@ class ConsultasAgenda {
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
         // Sin config: si no hay cupo configurado, el día es inactivo
-        if (!$config) return ['activo' => false, 'cupos_total' => 0, 'sin_config' => true];
+        if (!$config) return ['activo' => false, 'cupos_total' => 0, 'sin_config' => true, 'hora_inicio' => null];
 
         // Fin de semana (sáb/dom): nunca activo en config semanal L-V
         if (!$columnaDia) {
-            return ['activo' => false, 'cupos_total' => 0, 'sin_config' => false];
+            return ['activo' => false, 'cupos_total' => 0, 'sin_config' => false, 'hora_inicio' => $config['hora_inicio']];
         }
 
         $val    = $config[$columnaDia] ?? null;
         $activo = ($val === true || $val === 't' || $val === '1' || $val === 1);
 
-        return ['activo' => $activo, 'cupos_total' => (int)$config['cupos_total'], 'sin_config' => false];
+        return ['activo' => $activo, 'cupos_total' => (int)$config['cupos_total'], 'sin_config' => false, 'hora_inicio' => $config['hora_inicio']];
     }
 
     // ── Obtener config activa: días habilitados y cupo del período ─────
@@ -391,26 +391,6 @@ class ConsultasAgenda {
             $datos['fecha_hora'] = $fechaSolo . ' ' . $cupoCheck['hora_inicio'];
         }
 
-        // Validar cupo disponible en la fecha solicitada
-        $fechaSolo = substr($datos['fecha_hora'], 0, 10);
-        $cupoCheck = self::verificarCupoDisponible($fechaSolo, (int)$datos['id_tipo_turno']);
-        if (!$cupoCheck['disponible']) {
-            if ($cupoCheck['motivo'] === 'cupo_lleno') {
-                return ['ok' => false, 'errores' => [
-                    'El cupo para ese día está completo (' . $cupoCheck['ocupados'] . '/' . $cupoCheck['cupos_total'] . ' turnos). No se pueden agregar más turnos.'
-                ]];
-            }
-            if ($cupoCheck['motivo'] === 'dia_no_habilitado') {
-                return ['ok' => false, 'errores' => [
-                    'El día seleccionado no está habilitado en la configuración de cupos activa.'
-                ]];
-            }
-        }
-
-        // Si tenemos la hora_inicio de la configuración, actualizar fecha_hora
-        if (isset($cupoCheck['hora_inicio']) && !empty($cupoCheck['hora_inicio'])) {
-            $datos['fecha_hora'] = $fechaSolo . ' ' . $cupoCheck['hora_inicio'];
-        }
 
         // Obtener estado AUS para turno (por defecto ausente hasta que asista)
         $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'AUS' AND entidad = 'TURNO' LIMIT 1";

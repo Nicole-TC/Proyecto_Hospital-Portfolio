@@ -15,18 +15,25 @@
                 <div class="col-md-3">
                     <label class="form-label text-secondary small fw-bold">BUSCAR POR</label>
                     <select class="form-select border-0 bg-light" id="filtroTipo" style="border-radius: 0.5rem; height: 45px;">
-                        <option value="dni">DNI paciente</option>
-                        <option value="apellido">Apellido paciente</option>
+                        <option value="todo" selected>Todo (DNI, Nombre, Apellido)</option>
+                        <option value="dni">DNI del paciente</option>
+                        <option value="apellido">Apellido del paciente</option>
+                        <option value="nombre">Nombre del paciente</option>
+                        <option value="cirugia">Cirugía</option>
+                        <option value="cirujano">Cirujano</option>
                         <option value="id_orden">Nº orden</option>
                         <option value="estado">Estado</option>
                     </select>
                 </div>
                 <div class="col-md-5">
                     <label class="form-label text-secondary small fw-bold" id="filtroValorLabel">VALOR A BUSCAR</label>
-                    <input type="text" class="form-control border-0 bg-light" id="filtroValor"
-                           placeholder="Ingrese el dato..."
-                           style="border-radius: 0.5rem; height: 45px;"
-                           onkeyup="if(event.key === 'Enter') ejecutarBusqueda()">
+                    <div class="busqueda-autocomplete" id="filtroValorWrapper">
+                        <input type="search" class="form-control border-0 bg-light" id="filtroValor"
+                               placeholder="Ingrese el dato..."
+                               style="border-radius: 0.5rem; height: 45px;"
+                               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+                        <div id="sugerenciasBusqueda" class="sugerencias-busqueda d-none" role="listbox" aria-label="Sugerencias de búsqueda"></div>
+                    </div>
                     <select class="form-select border-0 bg-light d-none" id="filtroEstado"
                             style="border-radius: 0.5rem; height: 45px;">
                         <option value="">Seleccione un estado...</option>
@@ -40,7 +47,8 @@
             </div>
             <div class="row g-2 mt-2">
                 <div class="col-md-4">
-                    <button type="button" class="btn btn-outline-secondary w-100" onclick="listarTodasOrdenes()" style="border-radius: 0.5rem; height: 42px;">
+                    <button type="button" class="btn btn-outline-secondary w-100 fw-bold" onclick="listarTodasOrdenes()"
+                            style="border-radius: 0.5rem; height: 42px;">
                         <i class="bi bi-list-ul me-2"></i> Ver listado completo
                     </button>
                 </div>
@@ -61,13 +69,13 @@
                             <th class="py-3 border-0 text-secondary text-center">Cirugía</th>
                             <th class="py-3 border-0 text-secondary text-center">Cirujano</th>
                             <th class="py-3 border-0 text-secondary text-center">Estado</th>
-                            <th class="py-3 pe-4 text-center border-0 text-secondary">Acciones</th>
+                            <th class="py-3 pe-4 text-center border-0 text-secondary" style="min-width: 280px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tablaOrdenesBody">
                         <tr>
                             <td colspan="8" class="text-center py-5 text-secondary">
-                                <i class="bi bi-search me-2"></i> Ingrese un criterio de b&uacute;squeda o use &laquo;Ver listado completo&raquo;.
+                                <i class="bi bi-search me-2"></i> Use <strong>BUSCAR</strong> o <strong>Ver listado completo</strong> para cargar las &oacute;rdenes.
                             </td>
                         </tr>
                     </tbody>
@@ -83,4 +91,4 @@
     </div>
 </div>
 
-<script src="js/circuitoquirurgico/gestion_ordenes.js"></script>
+<script src="js/circuitoquirurgico/gestion_ordenes.js?v=<?= @filemtime(__DIR__ . '/../../js/circuitoquirurgico/gestion_ordenes.js') ?: time() ?>"></script>

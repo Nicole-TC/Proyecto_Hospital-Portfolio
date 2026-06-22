@@ -62,7 +62,6 @@ class ConsultasCupos {
         $pdo = conexionCircuitoQuirurgico();
         
         // Obtener el ID de estado Activo usando la función
-        // IMPORTANTE: Asegúrate de que 'AGENDA_CUPOS' y 'ACT' sean correctos para tu tabla estado
         $id_estado_act = id_estado('USUARIO', 'ACT');
         if (!$id_estado_act) {
             // Si no existe, podemos usar un default o fallar. Aquí lanzamos un error claro.
@@ -71,6 +70,26 @@ class ConsultasCupos {
 
         try {
             $pdo->beginTransaction();
+
+            // Auto-asignar fecha_hasta si hay un ciclo futuro activo y no se envió fecha de fin
+            if (empty($v['fecha_hasta'])) {
+                $sqlNext = "SELECT fecha_desde FROM agenda_cupos
+                            WHERE id_tipo_turno = :id_tipo_turno
+                              AND id_estado = :id_estado_act
+                              AND fecha_desde > :fecha_desde
+                            ORDER BY fecha_desde ASC LIMIT 1";
+                $stmtNext = $pdo->prepare($sqlNext);
+                $stmtNext->bindParam(':id_tipo_turno', $v['id_tipo_turno'], PDO::PARAM_INT);
+                $stmtNext->bindParam(':id_estado_act', $id_estado_act, PDO::PARAM_INT);
+                $stmtNext->bindParam(':fecha_desde', $v['fecha_desde']);
+                $stmtNext->execute();
+                $nextCycle = $stmtNext->fetch(PDO::FETCH_ASSOC);
+
+                if ($nextCycle) {
+                    // El ciclo abierto choca con uno futuro, lo cerramos el día anterior
+                    $v['fecha_hasta'] = date('Y-m-d', strtotime($nextCycle['fecha_desde'] . ' -1 day'));
+                }
+            }
 
             // Validar que la nueva fecha_desde no caiga dentro de un ciclo CERRADO existente
             $sqlOverlap = "SELECT id_cupo FROM agenda_cupos 
@@ -140,8 +159,11 @@ class ConsultasCupos {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
+            if ($e->getCode() == '23505') {
+                return ['ok' => false, 'error' => 'Ya existe un ciclo (incluso si está eliminado) que inicia exactamente en esa fecha. Por favor, elige un día de inicio distinto o solicita al administrador que limpie la base de datos.'];
+            }
             error_log("Error guardando cupo: " . $e->getMessage());
-            return ['ok' => false, 'error' => "Error al guardar en la base de datos."];
+            return ['ok' => false, 'error' => "Error DB: " . $e->getMessage()];
         }
     }
 

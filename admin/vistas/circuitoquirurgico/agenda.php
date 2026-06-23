@@ -36,9 +36,14 @@ $baseUrl = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
           </li>
         </ul>
         
-        <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos&tipo=pre" class="btn btn-outline-primary fw-semibold" style="border-radius:0.65rem;">
-          <i class="bi bi-gear me-1"></i> Configurar Cupos
-        </a>
+        <div class="d-flex gap-2">
+          <a href="index.php?modulo=menu_circuitoquirurgico&accion=config_cupos&tipo=pre" class="btn btn-outline-primary fw-semibold" style="border-radius:0.65rem;">
+            <i class="bi bi-gear me-1"></i> Configurar Cupos
+          </a>
+          <a href="index.php?modulo=menu_circuitoquirurgico&accion=asistencia" class="btn btn-outline-success fw-semibold" style="border-radius:0.65rem;">
+            <i class="bi bi-clipboard-check me-1"></i> Asistencia
+          </a>
+        </div>
       </div>
 
       <!-- ── Contenido de la vista activa ── -->

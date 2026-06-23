@@ -51,6 +51,14 @@ $usuarios_activos = boton_switch($_POST["usuarios_activos"] ?? 0);
 $notas = boton_switch($_POST["notas"] ?? 0);
 $paginas_ayuda = boton_switch($_POST["paginas_ayuda"] ?? 0);
 
+$menu_digitalizar = boton_switch($_POST["menu_digitalizar"] ?? 0);
+$dig_nuevo_documento = boton_switch($_POST["dig_nuevo_documento"] ?? 0);
+$dig_buscar_documentos = boton_switch($_POST["dig_buscar_documentos"] ?? 0);
+$dig_admin_etiquetas = boton_switch($_POST["dig_admin_etiquetas"] ?? 0);
+$dig_tipos_documentos = boton_switch($_POST["dig_tipos_documentos"] ?? 0);
+$dig_auditoria = boton_switch($_POST["dig_auditoria"] ?? 0);
+$dig_servicios = boton_switch($_POST["dig_servicios"] ?? 0);
+
 $activo = boton_switch($_POST["activo"] ?? 0);
 $en_construccion = boton_switch($_POST["en_construccion"] ?? 0);
 
@@ -77,10 +85,18 @@ $sentencia = $bd->prepare("
         paginas_ayuda,
         activo,
         date_time,
-        en_construccion
+        en_construccion,
+        menu_digitalizar,
+        dig_nuevo_documento,
+        dig_buscar_documentos,
+        dig_admin_etiquetas,
+        dig_tipos_documentos,
+        dig_auditoria,
+        dig_servicios
     ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?
     )
 ");
 
@@ -103,7 +119,14 @@ $resultado = $sentencia->execute([
     $paginas_ayuda,
     $activo,
     $date_time,
-    $en_construccion
+    $en_construccion,
+    $menu_digitalizar,
+    $dig_nuevo_documento,
+    $dig_buscar_documentos,
+    $dig_admin_etiquetas,
+    $dig_tipos_documentos,
+    $dig_auditoria,
+    $dig_servicios
 ]);
 
 if ($resultado) {

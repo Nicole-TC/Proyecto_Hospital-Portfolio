@@ -166,6 +166,58 @@
                     </div>
                 </div>
 
+                <!-- DIGITALIZACION -->
+                <div class="form-group col-lg-12">
+                    <div class="accordion" id="accordionPanelsStayOpenExample">
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="panelsStayOpen-headingDigitalizacion">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#Digitalizacion" aria-expanded="false" aria-controls="panelsStayOpen-collapseDigitalizacion">
+                                    <i class="fa-solid fa-file-image info mr-1"></i> Digitalización
+                                </button>
+                            </h2>
+                            <div id="Digitalizacion" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingDigitalizacion">
+                                <div class="accordion-body">
+                                    <div class="form-group col-lg-12">
+
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="menu_digitalizar" id="menu_digitalizar">
+                                            <label class="form-check-label" for="menu_digitalizar">Menú Digitalización</label>
+                                            <p class="fw-lighter">Acceso al módulo de digitalización</p>
+                                        </div>
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="dig_nuevo_documento" id="dig_nuevo_documento">
+                                            <label class="form-check-label" for="dig_nuevo_documento">Cargar Nuevo Documento</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="dig_buscar_documentos" id="dig_buscar_documentos">
+                                            <label class="form-check-label" for="dig_buscar_documentos">Buscar Documentos</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="dig_admin_etiquetas" id="dig_admin_etiquetas">
+                                            <label class="form-check-label" for="dig_admin_etiquetas">Administrar Etiquetas</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="dig_tipos_documentos" id="dig_tipos_documentos">
+                                            <label class="form-check-label" for="dig_tipos_documentos">Tipos de Documentos</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="dig_auditoria" id="dig_auditoria">
+                                            <label class="form-check-label" for="dig_auditoria">Auditoría</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-1">
+                                            <input type="checkbox" class="form-check-input" name="dig_servicios" id="dig_servicios">
+                                            <label class="form-check-label" for="dig_servicios">Servicios</label>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+
                 <!-- EN CONSTRUCCION -->
                 <div class="form-group col-lg-12">
                     <div class="accordion" id="accordionPanelsStayOpenExample">

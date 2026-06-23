@@ -114,7 +114,9 @@ function generarAcciones(id_turno, estado_codigo, fecha_hora) {
     } else if (estado_codigo === 'CONF') {
         return '<span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Asistió</span>' + detalleBtn;
     } else if (estado_codigo === 'CANC') {
-        return '<span class="text-danger small fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Cancelado</span>' + detalleBtn;
+        var reprogramarBtn = '<a href="index.php?modulo=menu_circuitoquirurgico&accion=agenda" class="btn btn-sm btn-outline-info ms-1" title="Reprogramar turno">' +
+            '<i class="bi bi-calendar-plus"></i> Reprogramar</a>';
+        return '<span class="text-danger small fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Cancelado</span>' + reprogramarBtn + detalleBtn;
     }
     return '<span class="text-warning small fw-semibold"><i class="bi bi-exclamation-circle-fill me-1"></i>Ausente</span>' + detalleBtn;
 }
@@ -236,12 +238,12 @@ function cancelarTurno(id_turno) {
         }
     }).then(function (result) {
         if (result.isConfirmed && result.value) {
-            enviarAccion(id_turno, 'cancelar_turno', 'Turno cancelado correctamente.', result.value.trim());
+            enviarAccion(id_turno, 'cancelar_turno', 'Turno cancelado correctamente.', result.value.trim(), true);
         }
     });
 }
 
-function enviarAccion(id_turno, accion, mensaje_exito, motivo) {
+function enviarAccion(id_turno, accion, mensaje_exito, motivo, showReprogramar) {
     var body = { id_turno: id_turno, accion: accion };
     if (motivo) { body.motivo = motivo; }
     fetch(ENDPOINT_ASISTENCIA, {
@@ -252,16 +254,35 @@ function enviarAccion(id_turno, accion, mensaje_exito, motivo) {
     .then(function (r) { return r.json(); })
     .then(function (data) {
         if (data.status === 'success') {
-            Swal.fire({
-                icon: 'success',
-                title: 'Operación exitosa',
-                text: mensaje_exito,
-                confirmButtonColor: '#3085d6',
-                timer: 2000,
-                showConfirmButton: true,
-            }).then(function () {
-                ejecutarBusqueda();
-            });
+            if (showReprogramar) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Turno cancelado',
+                    text: mensaje_exito,
+                    confirmButtonColor: '#3085d6',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="bi bi-calendar-plus me-1"></i> Reprogramar Turno',
+                    cancelButtonText: 'Cerrar',
+                    confirmButtonColor: '#0dcaf0',
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
+                    } else {
+                        ejecutarBusqueda();
+                    }
+                });
+            } else {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Operación exitosa',
+                    text: mensaje_exito,
+                    confirmButtonColor: '#3085d6',
+                    timer: 2000,
+                    showConfirmButton: true,
+                }).then(function () {
+                    ejecutarBusqueda();
+                });
+            }
         } else {
             Swal.fire({
                 icon: 'error',

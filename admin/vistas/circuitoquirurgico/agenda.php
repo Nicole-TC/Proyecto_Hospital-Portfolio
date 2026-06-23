@@ -69,4 +69,58 @@ $baseUrl = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
     updateClock();
     setInterval(updateClock, 1000);
 })();
+
+// ─── Popup paciente admitido desde admisión ──
+(function() {
+    var raw = sessionStorage.getItem('pacienteAgenda');
+    if (!raw) return;
+    sessionStorage.removeItem('pacienteAgenda');
+    try {
+        var p = JSON.parse(raw);
+        Swal.fire({
+            icon: 'success',
+            title: 'Paciente admitido correctamente',
+            html:
+                '<div style="text-align:center;">' +
+                    '<p style="margin:10px 0 5px;color:#666;">Paciente:</p>' +
+                    '<p style="font-size:1.3rem;font-weight:bold;margin:0 0 15px;">' +
+                        p.apellido + ', ' + p.nombre +
+                    '</p>' +
+                    '<hr style="margin:15px 0;">' +
+                    '<p style="margin:5px 0 0;color:#666;">DNI:</p>' +
+                    '<p style="font-size:2rem;font-weight:bold;color:#0d6efd;letter-spacing:3px;margin:5px 0 0;">' +
+                        p.dni +
+                    '</p>' +
+                '</div>',
+            showCancelButton: true,
+            cancelButtonText: 'Cerrar',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Copiar DNI',
+            confirmButtonColor: '#0d6efd',
+        }).then(function (r) {
+            if (r.isConfirmed) copiarAlPortapapeles(p.dni);
+        });
+    } catch (e) {}
+
+    function copiarAlPortapapeles(texto) {
+        var hacer = function () {
+            Swal.fire({ icon: 'success', title: 'DNI copiado', text: 'El DNI fue copiado al portapapeles.', confirmButtonText: 'Aceptar', confirmButtonColor: '#3085d6' });
+        };
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(texto).then(hacer).catch(function () { fallback(texto, hacer); });
+        } else {
+            fallback(texto, hacer);
+        }
+    }
+    function fallback(texto, cb) {
+        var ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.style.cssText = 'position:fixed;opacity:0;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        cb();
+    }
+})();
 </script>

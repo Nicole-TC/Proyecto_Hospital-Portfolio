@@ -4,6 +4,7 @@
 
 <div class="container-fluid px-4 px-xl-5 mt-4 mb-5">
     <div class="row justify-content-center">
+        <?php if (@$_SESSION["dig_nuevo_documento"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Cargar Nuevo Documento -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
@@ -19,7 +20,9 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if (@$_SESSION["dig_admin_etiquetas"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Administrar Etiquetas -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
@@ -35,7 +38,9 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if (@$_SESSION["dig_tipos_documentos"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Administrar Tipos de Documentos -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
@@ -51,8 +56,10 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
-                <!-- Tarjeta Buscar Documento -->
+        <?php if (@$_SESSION["dig_buscar_documentos"] == 1 || @$_SESSION["admin"] == 1): ?>
+        <!-- Tarjeta Buscar Documento -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
@@ -67,8 +74,9 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
-        <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+        <?php if (@$_SESSION["dig_auditoria"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Auditoría -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
@@ -84,7 +92,9 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
+        <?php if (@$_SESSION["dig_servicios"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Administrar Servicios -->
         <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">

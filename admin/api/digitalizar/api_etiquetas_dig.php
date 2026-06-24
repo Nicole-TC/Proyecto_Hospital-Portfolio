@@ -127,6 +127,16 @@ switch ($method) {
             break;
         }
 
+        if ($estado == 0) {
+            $enUso = $bd_dig->prepare("SELECT 1 FROM documento_etiquetas WHERE id_etiqueta = ? LIMIT 1");
+            $enUso->execute([$id]);
+            if ($enUso->fetch()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'errores' => ['No se puede desactivar: la etiqueta está asignada a uno o más documentos. Primero debe quitarla de los documentos asociados.']]);
+                break;
+            }
+        }
+
         $stmt = $bd_dig->prepare(
             "UPDATE etiquetas SET nombre_etiqueta = ?, color_hex = ?, estado = ?, id_usuario = ? WHERE id = ?"
         );
@@ -186,6 +196,13 @@ switch ($method) {
 
         if ($row['estado'] === 'f' || $row['estado'] === false) {
             echo json_encode(['success' => false, 'error' => 'La etiqueta ya está desactivada']);
+            break;
+        }
+
+        $enUso = $bd_dig->prepare("SELECT 1 FROM documento_etiquetas WHERE id_etiqueta = ? LIMIT 1");
+        $enUso->execute([$id]);
+        if ($enUso->fetch()) {
+            echo json_encode(['success' => false, 'error' => 'No se puede desactivar: la etiqueta está asignada a uno o más documentos. Primero debe quitarla de los documentos asociados.']);
             break;
         }
 

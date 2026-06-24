@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 // BD Digitalización - PostgreSQL
 $host_dig = getenv('DB_DIG_HOST');

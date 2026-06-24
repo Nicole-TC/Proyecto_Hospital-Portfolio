@@ -1,8 +1,17 @@
 <?php
-
+session_start();
 require_once '../../model/conexion_dig.php';
 
 header('Content-Type: application/json');
+
+if (!isset($_SESSION['id'])) {
+    http_response_code(401);
+    echo json_encode([
+        "status" => "error",
+        "message" => "No autorizado. Por favor inicie sesión."
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 try {
 
@@ -27,7 +36,7 @@ try {
     $etiquetas = [];
 
     $stmtEtiquetas = $bd_dig->prepare("
-        SELECT id, nombre_etiqueta AS name
+        SELECT id, nombre_etiqueta AS name, color_hex
         FROM etiquetas
         WHERE estado = true
         ORDER BY nombre_etiqueta ASC
@@ -43,14 +52,45 @@ try {
     // Obtener servicios (sectores)
     $servicios = [];
     $stmtServicios = $bd_dig->prepare("
-        SELECT id, detalle AS nombre
+        SELECT id, nombre
         FROM servicios
-        ORDER BY detalle ASC
+        WHERE estado = true
+        ORDER BY nombre ASC
     ");
     
     if ($stmtServicios) {
         $stmtServicios->execute();
         $servicios = $stmtServicios->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    $responsables = [];
+    
+    try {
+        // Admins
+        $stmtAdmin = $bd_dig->prepare("SELECT id, nombre || ' ' || apellido AS nombre, 'admin' AS tipo FROM admin WHERE activo = true ORDER BY nombre ASC");
+        if ($stmtAdmin) {
+            $stmtAdmin->execute();
+            $admins = $stmtAdmin->fetchAll(PDO::FETCH_ASSOC);
+            foreach($admins as $a) {
+                $responsables[] = $a;
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error al obtener admins para responsables: " . $e->getMessage());
+    }
+
+    try {
+        // Personal (excluyendo Pacientes)
+        $stmtPersonal = $bd_dig->prepare("SELECT id, apellidoynombre AS nombre, 'personal' AS tipo FROM personal WHERE activo = true AND LOWER(encasillamiento) != 'paciente' AND LOWER(cargo) != 'paciente' ORDER BY apellidoynombre ASC");
+        if ($stmtPersonal) {
+            $stmtPersonal->execute();
+            $personalList = $stmtPersonal->fetchAll(PDO::FETCH_ASSOC);
+            foreach($personalList as $p) {
+                $responsables[] = $p;
+            }
+        }
+    } catch (Exception $e) {
+        error_log("Error al obtener personal para responsables: " . $e->getMessage());
     }
 
     // Obtener tipos de identificacion (personas)
@@ -102,6 +142,7 @@ try {
             "tipos_documentos" => $tipos_documentos,
             "etiquetas" => $etiquetas,
             "servicios" => $servicios,
+            "responsables" => $responsables,
             "tipos_identificacion" => $tipos_identificacion,
             "configuraciones" => $configuraciones
         ]

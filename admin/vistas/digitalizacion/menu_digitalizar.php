@@ -2,10 +2,10 @@
 // Obtener tags de la base de datos
 ?>
 
-<div class="container mt-4 mb-5">
+<div class="container-fluid px-4 px-xl-5 mt-4 mb-5">
     <div class="row justify-content-center">
         <!-- Tarjeta Cargar Nuevo Documento -->
-        <div class="col-md-6 col-lg-3 mb-4">
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -21,7 +21,7 @@
         </div>
 
         <!-- Tarjeta Administrar Etiquetas -->
-        <div class="col-md-6 col-lg-3 mb-4">
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -37,7 +37,7 @@
         </div>
 
         <!-- Tarjeta Administrar Tipos de Documentos -->
-        <div class="col-md-6 col-lg-3 mb-4">
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -53,7 +53,7 @@
         </div>
 
                 <!-- Tarjeta Buscar Documento -->
-        <div class="col-md-6 col-lg-3 mb-4">
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -67,21 +67,65 @@
                 </div>
             </div>
         </div>
+
+        <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+        <!-- Tarjeta Auditoría -->
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-clipboard-list text-danger" style="font-size: 4.5rem;"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Auditoría</h3>
+                    <p class="card-text text-muted mb-4">Consultá el historial de acciones (subidos, modificados, eliminados) realizadas en el sistema de digitalización.</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=auditoria" class="btn btn-danger btn-lg rounded-pill mt-auto align-self-center shadow text-white btn-menu">
+                        <i class="fa-solid fa-magnifying-glass-chart me-2"></i> Ver Auditoría
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta Administrar Servicios -->
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-hospital text-secondary" style="font-size: 4.5rem;"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Servicios</h3>
+                    <p class="card-text text-muted mb-4">Administra los servicios (áreas) del hospital, asocia responsables y gestiona su estado para la carga de documentos.</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=servicios_digitalizar" class="btn btn-secondary btn-lg rounded-pill mt-auto align-self-center shadow text-white btn-menu">
+                        <i class="fa-solid fa-layer-group me-2"></i> Administrar Servicios
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
 <style>
+@media (min-width: 1200px) {
+    .col-xl-custom-5 {
+        flex: 0 0 20%;
+        max-width: 20%;
+    }
+}
 .rounded-4 { border-radius: 1rem !important; }
 .bg-light { background-color: #f8f9fa !important; }
 .menu-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
 .menu-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.15)!important; }
 .btn-menu {
-    min-width: 260px;
+    width: 100%;
+    min-height: 64px;
     padding-top: 12px !important;
     padding-bottom: 12px !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    white-space: normal;
+    text-align: center;
+    font-size: 1rem;
 }
 </style>
 

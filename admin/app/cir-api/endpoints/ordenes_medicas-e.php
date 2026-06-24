@@ -13,15 +13,46 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 try {
     if ($method === 'GET') {
+        if (isset($_GET['sugerencias']) && $_GET['sugerencias'] === '1') {
+            $filtro = isset($_GET['filtro']) ? (string)$_GET['filtro'] : '';
+            $term = isset($_GET['term']) ? (string)$_GET['term'] : '';
+            $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 8;
+            echo json_encode([
+                'status'      => 'success',
+                'sugerencias' => ConsultasOrdenesMedicas::obtenerSugerencias($filtro, $term, $limite),
+            ]);
+            exit;
+        }
+
+        if (isset($_GET['catalogos']) && $_GET['catalogos'] === '1') {
+            echo json_encode([
+                'status'   => 'success',
+                'catalogos' => ConsultasOrdenesMedicas::obtenerCatalogosEdicion(),
+            ]);
+            exit;
+        }
+
+        if (isset($_GET['sugerencias_catalogo']) && $_GET['sugerencias_catalogo'] === '1') {
+            $tipo = isset($_GET['tipo']) ? (string)$_GET['tipo'] : '';
+            $term = isset($_GET['term']) ? (string)$_GET['term'] : '';
+            $limite = isset($_GET['limite']) ? (int)$_GET['limite'] : 10;
+            echo json_encode([
+                'status'      => 'success',
+                'sugerencias' => ConsultasOrdenesMedicas::obtenerSugerenciasCatalogo($tipo, $term, $limite),
+            ]);
+            exit;
+        }
+
         if (isset($_GET['estados']) && $_GET['estados'] === '1') {
             $reglas = ConsultasOrdenesMedicas::obtenerReglasAccionesOrden();
             echo json_encode([
-                'status'  => 'success',
-                'estados' => $reglas['estados'],
-                'reglas'  => [
+                'status'        => 'success',
+                'estados'       => $reglas['estados'],
+                'reglas'        => [
                     'cancelar' => $reglas['cancelar'],
                     'eliminar' => $reglas['eliminar'],
                 ],
+                'configuracion' => ConsultasOrdenesMedicas::verificarConfiguracion(),
             ]);
             exit;
         }
@@ -33,7 +64,11 @@ try {
                 echo json_encode(['status' => 'error', 'message' => 'Orden no encontrada.']);
                 exit;
             }
-            echo json_encode(['status' => 'success', 'orden' => $orden]);
+            echo json_encode([
+                'status'         => 'success',
+                'orden'          => $orden,
+                'modificaciones' => ConsultasOrdenesMedicas::obtenerModificacionesOrden($id),
+            ]);
             exit;
         }
 
@@ -85,6 +120,25 @@ try {
         if ($accion === 'eliminar') {
             ConsultasOrdenesMedicas::eliminarOrden($id_orden);
             echo json_encode(['status' => 'success', 'message' => 'Orden eliminada correctamente.']);
+            exit;
+        }
+
+        if ($accion === 'actualizar') {
+            $nombreUsuario = trim(
+                trim($_SESSION['apellido'] ?? '') . ', ' . trim($_SESSION['nombre'] ?? '')
+            );
+            if ($nombreUsuario === ',') {
+                $nombreUsuario = trim($_SESSION['user'] ?? '');
+            }
+            ConsultasOrdenesMedicas::actualizarDetalleOrden(
+                $id_orden,
+                $data['tipoCirugia'] ?? '',
+                $data['id_profesional'] ?? null,
+                $data['observaciones'] ?? '',
+                $_SESSION['id'] ?? null,
+                $nombreUsuario
+            );
+            echo json_encode(['status' => 'success', 'message' => 'Orden actualizada correctamente.']);
             exit;
         }
 

@@ -392,17 +392,17 @@ class ConsultasAgenda {
         }
 
 
-        // Obtener estado AUS para turno (por defecto ausente hasta que asista)
-        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'AUS' AND entidad = 'TURNO' LIMIT 1";
+        // Obtener estado PROG para turno (programado por defecto)
+        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'PROG' AND entidad = 'TURNO' LIMIT 1";
         $id_estado = $pdo->query($sqlEstado)->fetchColumn();
         if (!$id_estado) {
-            return ['ok' => false, 'errores' => ['No se encontró el estado AUS para turno.']];
+            return ['ok' => false, 'errores' => ['No se encontró el estado PROG para turno.']];
         }
 
         // Insertar turno
         $sqlTurno = "
             INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora, ausente)
-            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, true)
+            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, false)
             RETURNING id_turno
         ";
         $stmt = $pdo->prepare($sqlTurno);

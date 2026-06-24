@@ -266,7 +266,7 @@ class ConsultasAgenda {
             JOIN estado et ON et.id_estado = t.id_estado
             WHERE t.id_persona_asiste = :id_persona_asiste
               AND t.id_tipo_turno     = :id_tipo_turno
-              AND et.codigo IN ('CONF', 'AUS')
+              AND et.codigo IN ('CONF', 'AUS', 'PROG')
             LIMIT 1
         ";
         $stmtT = $pdo->prepare($sqlTurno);

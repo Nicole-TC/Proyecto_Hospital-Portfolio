@@ -111,6 +111,24 @@
             </div>
         </div>
         <?php endif; ?>
+
+        <?php if (@$_SESSION["admin"] == 1): ?>
+        <!-- Tarjeta Papelera -->
+        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-trash-can text-danger" style="font-size: 4.5rem;"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Papelera</h3>
+                    <p class="card-text text-muted mb-4">Gestioná documentos desactivados. Podés restaurarlos o eliminarlos definitivamente.</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=papelera_digitalizar" class="btn btn-danger btn-lg rounded-pill mt-auto align-self-center shadow btn-menu">
+                        <i class="fa-solid fa-trash-can me-2"></i> Ir a Papelera
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 

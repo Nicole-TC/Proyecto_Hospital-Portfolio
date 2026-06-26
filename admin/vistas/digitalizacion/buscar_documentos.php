@@ -24,9 +24,21 @@
                                 <label for="buscar_tag" class="form-label fw-bold">Etiqueta (Tag)</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-0"><i class="fa-solid fa-tags text-muted"></i></span>
-                                    <select class="form-select bg-light border-0" id="buscar_tag" name="tag_id">
-                                        <option value="">-- Todas las etiquetas --</option>
-                                    </select>
+                                    <input type="hidden" id="buscar_tag" name="tag_id" value="">
+                                    <div class="dropdown flex-grow-1">
+                                        <button class="btn btn-light border-0 bg-light dropdown-toggle w-100 text-start" 
+                                                type="button" id="buscar_tag_dropdown" data-bs-toggle="dropdown" data-bs-auto-close="true">
+                                            <span id="buscar_tag_texto">-- Todas las etiquetas --</span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100" id="buscar_tag_menu">
+                                            <li>
+                                                <a class="dropdown-item active" href="#" data-value="">
+                                                    <span class="d-inline-block rounded-circle me-2" style="width:12px;height:12px;background-color:#6c757d;"></span>
+                                                    Todas las etiquetas
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
 
@@ -345,6 +357,21 @@ document.addEventListener("DOMContentLoaded", async function() {
         return html || '-';
     }
 
+    // Helper: pobla un <select> con opciones desde un array de objetos
+    function fillSelect(id, data, textKey = 'nombre') {
+        const el = document.getElementById(id);
+        if (!el || !data) return;
+        data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = item[textKey];
+            el.appendChild(opt);
+        });
+    }
+
+    // Mapa de colores para etiquetas (nombre -> color_hex)
+    const mapaColoresEtiquetas = new Map();
+
     // 1. Cargar dinámicamente los selectores de Etiquetas (Tag) y Servicio
     try {
         const response = await fetch("api/digitalizar/get_opciones.php");
@@ -352,65 +379,30 @@ document.addEventListener("DOMContentLoaded", async function() {
         
         if (json.status === 'success') {
             if (json.data.etiquetas) {
-                const selectTag = document.getElementById("buscar_tag");
-                if(selectTag) {
-                    json.data.etiquetas.forEach(etiqueta => {
-                        const option = document.createElement("option");
-                        option.value = etiqueta.id;
-                        option.textContent = etiqueta.name;
-                        selectTag.appendChild(option);
-                    });
-                }
+                json.data.etiquetas.forEach(etiqueta => {
+                    mapaColoresEtiquetas.set(etiqueta.name.toLowerCase(), etiqueta.color_hex || '#6c757d');
+                    
+                    const menuTag = document.getElementById("buscar_tag_menu");
+                    if(menuTag) {
+                        const li = document.createElement("li");
+                        const color = etiqueta.color_hex || '#6c757d';
+                        li.innerHTML = `<a class="dropdown-item" href="#" data-value="${etiqueta.id}">
+                            <span class="d-inline-block rounded-circle me-2" style="width:12px;height:12px;background-color:${color};"></span>
+                            ${escapeHtml(etiqueta.name)}
+                        </a>`;
+                        menuTag.appendChild(li);
+                    }
+                });
             }
 
             if (json.data.servicios) {
-                const selectServicio = document.getElementById("buscar_servicio");
-                if(selectServicio) {
-                    json.data.servicios.forEach(servicio => {
-                        const option = document.createElement("option");
-                        option.value = servicio.id;
-                        option.textContent = servicio.nombre;
-                        selectServicio.appendChild(option);
-                    });
-                }
+                fillSelect("buscar_servicio", json.data.servicios);
             }
 
             // Cargar opciones para el modal de edición
-            if (json.data.tipos_identificacion) {
-                const selectTipoIdent = document.getElementById("edit_id_tipo_identificacion");
-                if(selectTipoIdent) {
-                    json.data.tipos_identificacion.forEach(tipo => {
-                        const option = document.createElement("option");
-                        option.value = tipo.id;
-                        option.textContent = tipo.nombre;
-                        selectTipoIdent.appendChild(option);
-                    });
-                }
-            }
-
-            if (json.data.tipos_documentos) {
-                const selectTipoDoc = document.getElementById("edit_id_tipo_documento");
-                if(selectTipoDoc) {
-                    json.data.tipos_documentos.forEach(tipo => {
-                        const option = document.createElement("option");
-                        option.value = tipo.id;
-                        option.textContent = tipo.nombre;
-                        selectTipoDoc.appendChild(option);
-                    });
-                }
-            }
-
-            if (json.data.servicios) {
-                const selectServicioEdit = document.getElementById("edit_id_servicio");
-                if(selectServicioEdit) {
-                    json.data.servicios.forEach(servicio => {
-                        const option = document.createElement("option");
-                        option.value = servicio.id;
-                        option.textContent = servicio.nombre;
-                        selectServicioEdit.appendChild(option);
-                    });
-                }
-            }
+            fillSelect("edit_id_tipo_identificacion", json.data.tipos_identificacion);
+            fillSelect("edit_id_tipo_documento", json.data.tipos_documentos);
+            fillSelect("edit_id_servicio", json.data.servicios);
 
             if (json.data.etiquetas) {
                 const editTagsContainer = document.getElementById("edit_tags_container");
@@ -433,6 +425,35 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
     } catch(error) {
         console.error("Error al cargar opciones (etiquetas/servicios):", error);
+    }
+
+    // Variables compartidas del dropdown de etiquetas
+    const buscarTagMenu = document.getElementById("buscar_tag_menu");
+    const buscarTagInput = document.getElementById("buscar_tag");
+    const buscarTagTexto = document.getElementById("buscar_tag_texto");
+
+    // Resetear dropdown de etiquetas a estado inicial
+    function resetDropdownTag() {
+        if (buscarTagInput) buscarTagInput.value = '';
+        if (buscarTagTexto) buscarTagTexto.innerHTML = '-- Todas las etiquetas --';
+        if (buscarTagMenu) {
+            buscarTagMenu.querySelectorAll('.dropdown-item').forEach((item, i) => {
+                item.classList.toggle('active', i === 0);
+            });
+        }
+    }
+
+    // Lógica de selección del dropdown de etiquetas
+    if (buscarTagMenu) {
+        buscarTagMenu.addEventListener("click", function(e) {
+            const item = e.target.closest('.dropdown-item');
+            if (!item) return;
+            e.preventDefault();
+            buscarTagInput.value = item.dataset.value;
+            buscarTagTexto.innerHTML = item.innerHTML;
+            buscarTagMenu.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+        });
     }
 
 // 2. Inicializar DataTables sin ajax
@@ -501,14 +522,18 @@ document.addEventListener("DOMContentLoaded", async function() {
                 render: function(data, type, row) {
                     if (type !== 'display') return data || '';
                     if (!data) return '<span class="badge bg-secondary">Sin etiquetas</span>';
-                    return data.split(', ').map(tag => `<span class="badge bg-info text-white me-1">${escapeHtml(capitalizarTexto(tag))}</span>`).join('');
+                    return data.split(', ').map(tag => {
+                        const color = mapaColoresEtiquetas.get(tag.trim().toLowerCase()) || '#6c757d';
+                        return `<span class="badge text-white me-1" style="background-color: ${color} !important;">${escapeHtml(capitalizarTexto(tag))}</span>`;
+                    }).join('');
                 }
             },
             { 
                 data: null,
                 render: function(data, type, row) {
                     return `<a href="${row.ruta_archivo}" target="_blank" class="btn btn-sm btn-info text-white me-1"><i class="fa-solid fa-eye"></i> Ver</a>` +
-                           `<button type="button" class="btn btn-sm btn-warning text-white btn-editar" data-id="${row.id}"><i class="fa-solid fa-pen-to-square"></i> Editar</button>`;
+                           `<button type="button" class="btn btn-sm btn-warning text-white btn-editar me-1" data-id="${row.id}"><i class="fa-solid fa-pen-to-square"></i> Editar</button>` +
+                           `<button type="button" class="btn btn-sm btn-danger text-white btn-borrar" data-id="${row.id}"><i class="fa-solid fa-trash"></i> Borrar</button>`;
                 }
             }
         ]
@@ -547,6 +572,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     if(btnLimpiar) {
         btnLimpiar.addEventListener("click", function() {
             document.getElementById("form-buscar-documentos").reset();
+            resetDropdownTag();
             const cardRes = document.getElementById("card-resultados");
             if(cardRes) cardRes.style.display = "none";
             tablaBusqueda.clear().draw();
@@ -597,6 +623,61 @@ document.addEventListener("DOMContentLoaded", async function() {
         if (rowData) {
             abrirModalEditar(rowData);
         }
+    });
+
+    // Evento click para borrar documento (baja lógica)
+    $('#tabla-busqueda').on('click', '.btn-borrar', function() {
+        const id = $(this).data('id');
+        const rowData = tablaBusqueda.row($(this).parents('tr')).data();
+        const nombre = rowData ? (rowData.paciente || 'este documento') : 'este documento';
+
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: `Vas a desactivar el documento de ${capitalizarPorPalabra(nombre)}.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('api/digitalizar/buscar_documentos.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Borrado',
+                            text: 'El documento fue desactivado correctamente.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        ejecutarBusqueda();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: data.message || 'No se pudo desactivar el documento.',
+                            confirmButtonText: 'Cerrar'
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Error al borrar:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Conexión',
+                        text: 'Ocurrió un error al comunicarse con el servidor.',
+                        confirmButtonText: 'Cerrar'
+                    });
+                });
+            }
+        });
     });
 
     function abrirModalEditar(row) {

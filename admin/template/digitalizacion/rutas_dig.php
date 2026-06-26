@@ -56,6 +56,14 @@ switch (@$_GET["accion"]) {
         $menu = 'Administrar Servicios';
         require_once "vistas/digitalizacion/servicios_digitalizar.php";
         break;
+    case 'papelera_digitalizar':
+        if (@$_SESSION['admin'] != 1) {
+            header('Location: index.php?modulo=menu_digitalizar');
+            exit;
+        }
+        $menu = 'Papelera';
+        require_once "vistas/digitalizacion/papelera_digitalizar.php";
+        break;
 
     default:
         // Si no hay acción, o la acción no existe, mostramos el menú principal del grupo

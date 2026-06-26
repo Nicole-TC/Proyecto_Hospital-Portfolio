@@ -69,6 +69,49 @@ if (!isset($_SESSION['id'])) {
     jsonError(401, 'No autorizado. Por favor inicie sesión.', 'UNAUTHORIZED');
 }
 
+// === CASE POST: Baja lógica de documento ===
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    if (!isset($_SESSION['id'])) {
+        jsonError(401, 'No autorizado. Por favor inicie sesión.', 'UNAUTHORIZED');
+    }
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
+
+    if (!$id) {
+        jsonError(400, 'ID no proporcionado o inválido.', 'INVALID_ID');
+    }
+
+    try {
+        $check = $bd_dig->prepare("SELECT id, estado FROM documentos WHERE id = ?");
+        $check->execute([$id]);
+        $row = $check->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            jsonError(404, 'El documento no existe.', 'NOT_FOUND');
+        }
+
+        if ($row['estado'] === false || $row['estado'] === 'f') {
+            jsonError(400, 'El documento ya está desactivado.', 'ALREADY_INACTIVE');
+        }
+
+        $stmt = $bd_dig->prepare("UPDATE documentos SET estado = false WHERE id = ?");
+        $stmt->execute([$id]);
+
+        http_response_code(200);
+        echo json_encode([
+            "success" => true,
+            "message" => "Documento desactivado correctamente."
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+
+    } catch (PDOException $e) {
+        error_log("Error DB al desactivar documento: " . $e->getMessage());
+        jsonError(500, 'Error en la base de datos. Por favor, intente nuevamente.', 'DB_ERROR');
+    }
+}
+
 // Validar que la petición sea GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonError(405, 'Método no permitido. Utilice GET.', 'METHOD_NOT_ALLOWED');
@@ -306,46 +349,4 @@ if (!empty($dni_paciente)) {
 } catch (Exception $e) {
     $code = $e->getCode() >= 400 && $e->getCode() < 600 ? $e->getCode() : 500;
     jsonError($code, $e->getMessage(), 'SERVER_ERROR');
-}
-
-// === CASE POST: Baja lógica de documento ===
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    if (!isset($_SESSION['id'])) {
-        jsonError(401, 'No autorizado. Por favor inicie sesión.', 'UNAUTHORIZED');
-    }
-
-    $data = json_decode(file_get_contents('php://input'), true);
-    $id = filter_var($data['id'] ?? null, FILTER_VALIDATE_INT);
-
-    if (!$id) {
-        jsonError(400, 'ID no proporcionado o inválido.', 'INVALID_ID');
-    }
-
-    try {
-        $check = $bd_dig->prepare("SELECT id, estado FROM documentos WHERE id = ?");
-        $check->execute([$id]);
-        $row = $check->fetch(PDO::FETCH_ASSOC);
-
-        if (!$row) {
-            jsonError(404, 'El documento no existe.', 'NOT_FOUND');
-        }
-
-        if ($row['estado'] === false || $row['estado'] === 'f') {
-            jsonError(400, 'El documento ya está desactivado.', 'ALREADY_INACTIVE');
-        }
-
-        $stmt = $bd_dig->prepare("UPDATE documentos SET estado = false WHERE id = ?");
-        $stmt->execute([$id]);
-
-        http_response_code(200);
-        echo json_encode([
-            "success" => true,
-            "message" => "Documento desactivado correctamente."
-        ], JSON_UNESCAPED_UNICODE);
-
-    } catch (PDOException $e) {
-        error_log("Error DB al desactivar documento: " . $e->getMessage());
-        jsonError(500, 'Error en la base de datos. Por favor, intente nuevamente.', 'DB_ERROR');
-    }
 }

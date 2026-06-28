@@ -20,16 +20,6 @@ switch (@$_GET["accion"]) {
         $menu = 'Etiquetas Digitalizar';
         require_once "vistas/digitalizacion/etiquetas_digitalizar.php";
         break;
-    case 'nueva_etiqueta':
-        verificar_permiso_dig('dig_admin_etiquetas');
-        $menu = 'Nueva Etiqueta';
-        require_once "vistas/digitalizacion/nueva_etiqueta.php";
-        break;
-    case 'editar_etiqueta':
-        verificar_permiso_dig('dig_admin_etiquetas');
-        $menu = 'Editar Etiqueta';
-        require_once "vistas/digitalizacion/editar_etiqueta.php";
-        break;
     case 'nuevo_documento':
         verificar_permiso_dig('dig_nuevo_documento');
         $menu = 'Nuevo Documento';

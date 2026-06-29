@@ -206,6 +206,51 @@ class ConsultasCupos {
         }
     }
 
+    // ── Validar: turnos que quedarían fuera del nuevo rango de fechas ──
+    // Devuelve la cantidad de turnos NO cancelados que hoy caen dentro del
+    // cupo y que, con las nuevas fechas, quedarían fuera del período.
+    // Devuelve null si el cupo no existe.
+    private static function turnosFueraDeRango($id_cupo, $nueva_fecha_desde, $nueva_fecha_hasta) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        // Traer el tipo de turno y el rango ACTUAL del cupo
+        $sqlCupo = "SELECT id_tipo_turno, fecha_desde, fecha_hasta FROM agenda_cupos WHERE id_cupo = :id_cupo";
+        $stmtCupo = $pdo->prepare($sqlCupo);
+        $stmtCupo->bindParam(':id_cupo', $id_cupo, PDO::PARAM_INT);
+        $stmtCupo->execute();
+        $cupo = $stmtCupo->fetch(PDO::FETCH_ASSOC);
+
+        if (!$cupo) return null;
+
+        // Contar turnos no cancelados que caen dentro del rango actual del cupo
+        // y que quedarían fuera del nuevo rango (antes del nuevo desde o después del nuevo hasta)
+        $sql = "SELECT COUNT(*) FROM turno t
+                WHERE t.id_tipo_turno = :id_tipo_turno
+                  AND (t.cancelado IS NULL OR t.cancelado = false)
+                  AND DATE(t.fecha_hora) >= :rango_desde";
+        $params = [
+            ':id_tipo_turno' => $cupo['id_tipo_turno'],
+            ':rango_desde'   => $cupo['fecha_desde'],
+        ];
+
+        if (!empty($cupo['fecha_hasta'])) {
+            $sql .= " AND DATE(t.fecha_hora) <= :rango_hasta";
+            $params[':rango_hasta'] = $cupo['fecha_hasta'];
+        }
+
+        $sql .= " AND ( DATE(t.fecha_hora) < :nueva_desde";
+        $params[':nueva_desde'] = $nueva_fecha_desde;
+        if (!empty($nueva_fecha_hasta)) {
+            $sql .= " OR DATE(t.fecha_hora) > :nueva_hasta";
+            $params[':nueva_hasta'] = $nueva_fecha_hasta;
+        }
+        $sql .= " )";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
     // ── UPDATE: Actualizar un cupo existente ───────────────────────────
     public static function actualizarCupo($datos) {
         $id_cupo = filter_var($datos['id_cupo'] ?? null, FILTER_VALIDATE_INT);
@@ -213,6 +258,15 @@ class ConsultasCupos {
 
         $v = self::validarDatos($datos);
         if (!$v['ok']) return $v;
+
+        // Validar que el nuevo rango de fechas no deje turnos programados afuera
+        $turnosAfuera = self::turnosFueraDeRango($id_cupo, $v['fecha_desde'], $v['fecha_hasta']);
+        if ($turnosAfuera === null) {
+            return ['ok' => false, 'error' => 'No se encontró el cupo.'];
+        }
+        if ($turnosAfuera > 0) {
+            return ['ok' => false, 'error' => "No se puede modificar la fecha: hay {$turnosAfuera} turno(s) programado(s) que quedarían fuera del nuevo período. Reprogramá o cancelá esos turnos antes de editar."];
+        }
 
         $pdo = conexionCircuitoQuirurgico();
         $id_estado_ina = id_estado('DATO', 'ELIM');

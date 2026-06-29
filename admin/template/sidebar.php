@@ -88,6 +88,7 @@
 .icon-db        { color: #2980b9; }
 .icon-usuarios  { color: #e67e22; }
 .icon-cq        { color: #e74c3c; }
+.icon-bot       { color: #007bff; }
 
 /* Submenús (menús hijos): mayor margen a la izquierda */
 .collapse .list-unstyled li a {
@@ -164,6 +165,14 @@ hr.my-0 {
       <ul class="collapse list-unstyled" id="submenuCircuitoQuirurgico">
         <?php require_once "template/circuitoquirurgico/sidebar_cq.php"; ?>
       </ul>
+    </li>
+    <?php } ?>
+
+    <?php if (@$_SESSION["bot"] == TRUE || @$_SESSION["admin"] == 1) { ?>
+    <li>
+      <a href="index.php?modulo=bot">
+        <i class="fa-solid fa-robot menu-icon icon-bot"></i> Bot
+      </a>
     </li>
     <?php } ?>
     <!-- <hr class="my-0"> -->

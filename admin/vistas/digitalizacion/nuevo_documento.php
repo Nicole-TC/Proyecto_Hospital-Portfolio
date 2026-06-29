@@ -224,6 +224,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         placeholderValue: 'Seleccione etiquetas',
         searchPlaceholderValue: 'Buscar...',
         noResultsText: 'No se encontraron etiquetas',
+        noChoicesText: 'No hay etiquetas disponibles',
         itemSelectText: 'Click para seleccionar',
         callbackOnCreateTemplates: function(template) {
             return {

@@ -9,7 +9,9 @@
                 <table class="table align-center display" id="tabla-configuraciones" style="width: 100%;">
                     <thead>
                         <tr>
+                             <th scope="col" class="text-center">Nombre</th>
                             <th scope="col" class="text-center">Clave</th>
+                           
                             <th scope="col" class="text-center">Valor</th>
                             <th scope="col" class="text-center">Descripción</th>
                             <th scope="col" class="text-center">Acciones</th>
@@ -79,9 +81,21 @@ $(document).ready(function() {
         },
         columns: [
             {
+                data: null,
+                className: 'text-center',
+                render: function(data) {
+                    const aliases = {
+                        'formatos_permitidos': 'Formatos permitidos',
+                        'max_peso_archivo_mb': 'Límite de peso de archivos'
+                    };
+                    return aliases[data.clave] || data.clave;
+                }
+            },
+            {
                 data: 'clave',
                 className: 'text-center fw-bold'
             },
+            
             {
                 data: 'valor',
                 className: 'text-center'

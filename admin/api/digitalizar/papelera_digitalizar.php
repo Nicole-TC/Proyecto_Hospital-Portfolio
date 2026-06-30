@@ -18,14 +18,108 @@ $method = $_SERVER['REQUEST_METHOD'];
 // === LISTAR documentos desactivados (GET) ===
 if ($method === 'GET') {
     try {
-        $page = max(1, filter_var($_GET['pagina'] ?? 1, FILTER_VALIDATE_INT) ?: 1);
-        $limit = max(1, min(100, filter_var($_GET['limite'] ?? 50, FILTER_VALIDATE_INT) ?: 50));
-        $offset = ($page - 1) * $limit;
+        [
+            'dni_paciente'           => $dni_paciente,
+            'id_tipo_documento'      => $id_tipo_documento,
+            'id_servicio'            => $id_servicio,
+            'fecha_inicio'           => $fecha_inicio,
+            'fecha_fin'              => $fecha_fin,
+            'etiquetas'              => $etiquetas,
+            'pagina'                 => $pagina,
+            'limite'                 => $limite,
+        ] = sanitizar_params_busqueda($_GET);
 
-        // Count total
-        $countStmt = $bd_dig->prepare("SELECT COUNT(*) FROM documentos WHERE estado = false");
-        $countStmt->execute();
+        if ($fecha_inicio !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_inicio)) {
+            jsonError(400, 'El parámetro fecha_inicio no tiene formato válido (YYYY-MM-DD).', 'INVALID_DATE');
+        }
+        if ($fecha_fin !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha_fin)) {
+            jsonError(400, 'El parámetro fecha_fin no tiene formato válido (YYYY-MM-DD).', 'INVALID_DATE');
+        }
+        $hoy = date('Y-m-d');
+        if ($fecha_inicio !== '' && $fecha_inicio > $hoy) {
+            jsonError(400, 'La fecha "desde" no puede ser futura.', 'INVALID_DATE');
+        }
+        if ($fecha_fin !== '' && $fecha_fin > $hoy) {
+            jsonError(400, 'La fecha "hasta" no puede ser futura.', 'INVALID_DATE');
+        }
+        if ($fecha_inicio !== '' && $fecha_fin !== '' && $fecha_inicio > $fecha_fin) {
+            jsonError(400, 'La fecha "desde" no puede ser posterior a la fecha "hasta".', 'INVALID_DATE_RANGE');
+        }
+
+        $query_base = "
+            FROM documentos d
+            JOIN personal p ON d.id_persona = p.id
+            LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
+            LEFT JOIN servicios s ON d.id_servicio = s.id
+            WHERE d.estado = false
+        ";
+        $params = [];
+
+        if (!empty($dni_paciente)) {
+            $query_base .= " AND (
+                p.dni = :dni
+                OR EXISTS (
+                    SELECT 1 FROM personal_identificaciones pi
+                    WHERE pi.id_personal = p.id
+                    AND pi.numero_identificacion = :dni2
+                )
+            )";
+            $params[':dni']  = $dni_paciente;
+            $params[':dni2'] = $dni_paciente;
+        }
+
+        if ($id_tipo_documento) {
+            $query_base .= " AND d.id_tipo_documento = :id_tipo_documento";
+            $params[':id_tipo_documento'] = $id_tipo_documento;
+        }
+
+        if ($id_servicio) {
+            $query_base .= " AND d.id_servicio = :id_servicio";
+            $params[':id_servicio'] = $id_servicio;
+        }
+
+        if ($fecha_inicio !== '' && $fecha_fin !== '') {
+            $query_base .= " AND d.fecha_subido::DATE BETWEEN :fecha_inicio AND :fecha_fin";
+            $params[':fecha_inicio'] = $fecha_inicio;
+            $params[':fecha_fin'] = $fecha_fin;
+        } elseif ($fecha_inicio !== '') {
+            $query_base .= " AND d.fecha_subido::DATE >= :fecha_inicio";
+            $params[':fecha_inicio'] = $fecha_inicio;
+        } elseif ($fecha_fin !== '') {
+            $query_base .= " AND d.fecha_subido::DATE <= :fecha_fin";
+            $params[':fecha_fin'] = $fecha_fin;
+        }
+
+        if (!empty($etiquetas)) {
+            $tag_params = [];
+            foreach ($etiquetas as $i => $tag_id) {
+                $param_name = ":tag_$i";
+                $tag_params[] = $param_name;
+                $params[$param_name] = $tag_id;
+            }
+            $in_clause = implode(', ', $tag_params);
+            $query_base .= " AND EXISTS (
+                SELECT 1 FROM documento_etiquetas de
+                WHERE de.id_documento = d.id AND de.id_etiqueta IN ($in_clause)
+            )";
+        }
+
+        $tiene_dni          = !empty($dni_paciente);
+        $tiene_tipo_doc     = !empty($id_tipo_documento);
+        $tiene_servicio     = !empty($id_servicio);
+        $tiene_inicio       = !empty($fecha_inicio);
+        $tiene_fin          = !empty($fecha_fin);
+        $tiene_etiquetas    = !empty($etiquetas);
+
+        if (!$tiene_dni && !$tiene_tipo_doc && !$tiene_servicio && !$tiene_inicio && !$tiene_fin && !$tiene_etiquetas) {
+            jsonError(400, 'Debe ingresar al menos un criterio de búsqueda (DNI, servicio, fecha o etiqueta).', 'NO_FILTER');
+        }
+
+        $countStmt = $bd_dig->prepare("SELECT COUNT(*) " . $query_base);
+        $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
+
+        $offset = ($pagina - 1) * $limite;
 
         $query = "
             SELECT
@@ -48,16 +142,12 @@ if ($method === 'GET') {
                     WHERE de.id_documento = d.id
                     AND e.estado = true
                 ) AS etiquetas
-            FROM documentos d
-            JOIN personal p ON d.id_persona = p.id
-            LEFT JOIN tipos_documentos td ON d.id_tipo_documento = td.id
-            LEFT JOIN servicios s ON d.id_servicio = s.id
-            WHERE d.estado = false
+            " . $query_base . "
             ORDER BY d.fecha_subido DESC, d.id DESC
-            LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+            LIMIT " . (int)$limite . " OFFSET " . (int)$offset;
 
         $stmt = $bd_dig->prepare($query);
-        $stmt->execute();
+        $stmt->execute($params);
         $documentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         http_response_code(200);
@@ -66,9 +156,17 @@ if ($method === 'GET') {
             'data' => [
                 'documentos' => $documentos,
                 'total' => $total,
-                'pagina' => $page,
-                'limite' => $limit,
-                'total_paginas' => $total > 0 ? (int)ceil($total / $limit) : 0
+                'pagina' => $pagina,
+                'limite' => $limite,
+                'total_paginas' => $total > 0 ? (int)ceil($total / $limite) : 0,
+                'filtros_aplicados' => array_filter([
+                    'dni'              => $dni_paciente ?: null,
+                    'id_tipo_documento' => $id_tipo_documento ?: null,
+                    'id_servicio'      => $id_servicio ?: null,
+                    'fecha_inicio'     => $fecha_inicio ?: null,
+                    'fecha_fin'        => $fecha_fin ?: null,
+                    'etiquetas'        => !empty($etiquetas) ? $etiquetas : null,
+                ])
             ]
         ], JSON_UNESCAPED_UNICODE);
         exit;

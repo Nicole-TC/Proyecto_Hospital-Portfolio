@@ -128,11 +128,6 @@ try {
     } catch (PDOException $e) {
         error_log("Error al obtener configuraciones: " . $e->getMessage());
     }
-    
-    // Fallback por defecto si no existe
-    if (!isset($configuraciones['max_peso_archivo_mb'])) {
-        $configuraciones['max_peso_archivo_mb'] = '5';
-    }
 
     http_response_code(200);
 

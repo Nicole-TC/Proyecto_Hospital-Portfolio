@@ -6,7 +6,7 @@
     <div class="row justify-content-center">
         <?php if (@$_SESSION["dig_nuevo_documento"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Cargar Nuevo Documento -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -24,7 +24,7 @@
 
         <?php if (@$_SESSION["dig_admin_etiquetas"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Administrar Etiquetas -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -42,7 +42,7 @@
 
         <?php if (@$_SESSION["dig_tipos_documentos"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Administrar Tipos de Documentos -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -60,7 +60,7 @@
 
         <?php if (@$_SESSION["dig_buscar_documentos"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Buscar Documento -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -78,7 +78,7 @@
 
         <?php if (@$_SESSION["dig_auditoria"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Auditoría -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -96,7 +96,7 @@
 
         <?php if (@$_SESSION["dig_servicios"] == 1 || @$_SESSION["admin"] == 1): ?>
         <!-- Tarjeta Administrar Servicios -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -113,8 +113,23 @@
         <?php endif; ?>
 
         <?php if (@$_SESSION["admin"] == 1): ?>
+        <!-- Tarjeta Configuraciones -->
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
+                    <div class="mb-4">
+                        <i class="fa-solid fa-gear text-secondary" style="font-size: 4.5rem;"></i>
+                    </div>
+                    <h3 class="card-title fw-bold mb-3">Configuraciones</h3>
+                    <p class="card-text text-muted mb-4">Administrá las configuraciones del sistema de digitalización: límite de peso, formatos permitidos y más.</p>
+                    <a href="index.php?modulo=menu_digitalizar&accion=configuraciones_digitalizar" class="btn btn-secondary btn-lg rounded-pill mt-auto align-self-center shadow btn-menu">
+                        <i class="fa-solid fa-gear me-2"></i> Configuraciones
+                    </a>
+                </div>
+            </div>
+        </div>
         <!-- Tarjeta Papelera -->
-        <div class="col-md-6 col-lg-4 col-xl-custom-5 mb-4">
+        <div class="col-md-6 col-lg-3 col-xl-custom-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 menu-card">
                 <div class="card-body text-center d-flex flex-column justify-content-center p-4 p-xl-5">
                     <div class="mb-4">
@@ -134,9 +149,9 @@
 
 <style>
 @media (min-width: 1200px) {
-    .col-xl-custom-5 {
-        flex: 0 0 20%;
-        max-width: 20%;
+    .col-xl-custom-4 {
+        flex: 0 0 25%;
+        max-width: 25%;
     }
 }
 .rounded-4 { border-radius: 1rem !important; }

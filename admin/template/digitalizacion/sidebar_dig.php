@@ -38,3 +38,10 @@
     </a>
 </li>
 <?php } ?>
+<?php if (@$_SESSION["admin"] == 1) { ?>
+<li>
+    <a class="dropdown-item" href="index.php?modulo=menu_digitalizar&accion=configuraciones_digitalizar">
+        <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Configuraciones
+    </a>
+</li>
+<?php } ?>

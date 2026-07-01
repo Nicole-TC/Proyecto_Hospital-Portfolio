@@ -170,9 +170,12 @@ hr.my-0 {
 
     <?php if (@$_SESSION["menu_bot"] == TRUE || @$_SESSION["admin"] == 1) { ?>
     <li>
-      <a href="index.php?modulo=menu_bot">
+      <a data-bs-toggle="collapse" href="#submenuBot" role="button" aria-expanded="false" aria-controls="submenuBot">
         <i class="fa-solid fa-robot menu-icon icon-bot"></i> Bot
       </a>
+      <ul class="collapse list-unstyled" id="submenuBot">
+        <?php require_once "template/chatbot/sidebar_bot.php"; ?>
+      </ul>
     </li>
     <?php } ?>
     <!-- <hr class="my-0"> -->

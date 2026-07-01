@@ -280,22 +280,34 @@ form.addEventListener('submit', function (e) {
     .then(function (data) {
       if (data.ok) {
         var datos = serializarFormulario();
-        Swal.fire({
-          icon: 'success',
-          title: 'Operación exitosa',
-          html:
-            '<p style="margin:5px 0 0;color:#666;">DNI del paciente:</p>' +
-            '<p style="font-size:2rem;font-weight:bold;color:#0d6efd;letter-spacing:3px;margin:5px 0 0;">' +
-              datos.dni +
-            '</p>',
-          confirmButtonText: 'Ir a agenda',
-          confirmButtonColor: '#3085d6',
-        }).then(function (result) {
-          if (result.isConfirmed) {
+        if (data.ordenReusada) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Orden existente',
+            text: data.mensaje,
+            confirmButtonText: 'Volver',
+            confirmButtonColor: '#3085d6',
+          }).then(function () {
             reiniciarFormulario();
-            window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda&dni=' + datos.dni;
-          }
-        });
+          });
+        } else {
+          Swal.fire({
+            icon: 'success',
+            title: 'Operación exitosa',
+            html:
+              '<p style="margin:5px 0 0;color:#666;">DNI del paciente:</p>' +
+              '<p style="font-size:2rem;font-weight:bold;color:#0d6efd;letter-spacing:3px;margin:5px 0 0;">' +
+                datos.dni +
+              '</p>',
+            confirmButtonText: 'Ir a agenda',
+            confirmButtonColor: '#3085d6',
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              reiniciarFormulario();
+              window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda&dni=' + datos.dni;
+            }
+          });
+        }
       } else {
         var msg = data.errores ? data.errores.join('\n') : (data.error || 'Error desconocido');
         Swal.fire({

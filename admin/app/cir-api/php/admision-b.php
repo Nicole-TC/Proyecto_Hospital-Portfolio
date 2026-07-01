@@ -213,26 +213,49 @@ class ConsultasAdmision {
                 throw new Exception("El profesional seleccionado no es válido.");
             }
 
-            // 7. Insertar orden_medica
-            $sqlOrden = "INSERT INTO orden_medica (id_persona_asiste, id_profesional, id_cirugia_catalogo, id_estado, fecha_orden)
-                         VALUES (:id_persona_asiste, :id_profesional, :id_cirugia, :id_estado, CURRENT_DATE)
-                         RETURNING id_orden";
-            $stmtInsertOrden = $pdo->prepare($sqlOrden);
-            $stmtInsertOrden->execute([
+            // 7. Verificar si ya existe una orden activa (PEND/PROC) para esta cirugía
+            $sqlOrdenActiva = "
+                SELECT om.id_orden
+                FROM orden_medica om
+                JOIN estado e ON e.id_estado = om.id_estado
+                WHERE om.id_persona_asiste = :id_persona_asiste
+                  AND om.id_cirugia_catalogo = :id_cirugia
+                  AND e.codigo IN ('PEND', 'PROC')
+                LIMIT 1
+            ";
+            $stmtOrdenActiva = $pdo->prepare($sqlOrdenActiva);
+            $stmtOrdenActiva->execute([
                 ':id_persona_asiste' => $id_persona_asiste,
-                ':id_profesional' => $id_profesional,
-                ':id_cirugia' => $id_cirugia,
-                ':id_estado' => $id_estado_orden
+                ':id_cirugia' => $id_cirugia
             ]);
-            $id_orden = $stmtInsertOrden->fetch(PDO::FETCH_COLUMN);
+            $id_orden = $stmtOrdenActiva->fetch(PDO::FETCH_COLUMN);
 
-            // 8. Obtener id_estado para ADMISION (EN_ADMISION)
+            $ordenReusada = false;
+
+            if (!$id_orden) {
+                // 8. Insertar orden_medica solo si no hay una activa
+                $sqlOrden = "INSERT INTO orden_medica (id_persona_asiste, id_profesional, id_cirugia_catalogo, id_estado, fecha_orden)
+                             VALUES (:id_persona_asiste, :id_profesional, :id_cirugia, :id_estado, CURRENT_DATE)
+                             RETURNING id_orden";
+                $stmtInsertOrden = $pdo->prepare($sqlOrden);
+                $stmtInsertOrden->execute([
+                    ':id_persona_asiste' => $id_persona_asiste,
+                    ':id_profesional' => $id_profesional,
+                    ':id_cirugia' => $id_cirugia,
+                    ':id_estado' => $id_estado_orden
+                ]);
+                $id_orden = $stmtInsertOrden->fetch(PDO::FETCH_COLUMN);
+            } else {
+                $ordenReusada = true;
+            }
+
+            // 9. Obtener id_estado para ADMISION (EN_ADMISION)
             $id_estado_admision = id_estado('ADMISION', 'EN_ADMISION');
             if (!$id_estado_admision) {
                 throw new Exception("No se encontró el estado EN_ADMISION para ADMISION.");
             }
 
-            // 9. Insertar admision
+            // 10. Insertar admision
             $sqlAdmision = "INSERT INTO admision (id_orden, id_estado, fecha_inicio)
                             VALUES (:id_orden, :id_estado, CURRENT_TIMESTAMP)
                             RETURNING id_admision";
@@ -243,7 +266,7 @@ class ConsultasAdmision {
             ]);
             
             $pdo->commit();
-            return true;
+            return ['success' => true, 'ordenReusada' => $ordenReusada];
         } catch (Exception $e) {
             $pdo->rollBack();
             throw $e;

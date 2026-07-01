@@ -61,7 +61,7 @@ function buscarTurnos(filtro, valor, limite, orden, pagina) {
                                 : t.estado_codigo === 'FIN' ? 'bg-secondary text-white'
                                     : 'bg-secondary-subtle text-secondary';
 
-                var acciones = generarAcciones(t.id_turno, t.estado_codigo, t.fecha_hora);
+                var acciones = generarAcciones(t.id_turno, t.estado_codigo, t.fecha_hora, t.dni);
 
                 var tr = document.createElement('tr');
                 tr.id = 'turno-' + t.id_turno;
@@ -90,7 +90,7 @@ function buscarTurnos(filtro, valor, limite, orden, pagina) {
         });
 }
 
-function generarAcciones(id_turno, estado_codigo, fecha_hora) {
+function generarAcciones(id_turno, estado_codigo, fecha_hora, dni) {
     var detalleBtn = '<button class="btn btn-sm btn-outline-secondary ms-1" onclick="verDetalles(' + id_turno + ')" title="Ver detalles">' +
         '<i class="bi bi-eye"></i></button>';
 
@@ -107,14 +107,14 @@ function generarAcciones(id_turno, estado_codigo, fecha_hora) {
         return '<div style="white-space:nowrap;">' +
             '<button class="btn btn-sm btn-success me-1" onclick="marcarAsistencia(' + id_turno + ')" title="Asistió">' +
             '<i class="bi bi-check-lg"></i> Asistió</button>' +
-            '<button class="btn btn-sm btn-danger me-1" onclick="cancelarTurno(' + id_turno + ')" title="Cancelar">' +
+            '<button class="btn btn-sm btn-danger me-1" onclick="cancelarTurno(' + id_turno + ', \'' + dni + '\')" title="Cancelar">' +
             '<i class="bi bi-x-lg"></i> Cancelar</button>' +
             detalleBtn +
             '</div>';
     } else if (estado_codigo === 'CONF') {
         return '<span class="text-success small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Asistió</span>' + detalleBtn;
     } else if (estado_codigo === 'CANC') {
-        var reprogramarBtn = '<a href="index.php?modulo=menu_circuitoquirurgico&accion=agenda" class="btn btn-sm btn-outline-info ms-1" title="Reprogramar turno">' +
+        var reprogramarBtn = '<a href="index.php?modulo=menu_circuitoquirurgico&accion=agenda&dni=' + dni + '" class="btn btn-sm btn-outline-info ms-1" title="Reprogramar turno">' +
             '<i class="bi bi-calendar-plus"></i> Reprogramar</a>';
         return '<span class="text-danger small fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Cancelado</span>' + reprogramarBtn + detalleBtn;
     }
@@ -218,7 +218,7 @@ function marcarAsistencia(id_turno) {
 }
 
 
-function cancelarTurno(id_turno) {
+function cancelarTurno(id_turno, dni) {
     Swal.fire({
         title: 'Cancelar turno',
         text: 'Indique el motivo de la cancelación:',
@@ -238,12 +238,12 @@ function cancelarTurno(id_turno) {
         }
     }).then(function (result) {
         if (result.isConfirmed && result.value) {
-            enviarAccion(id_turno, 'cancelar_turno', 'Turno cancelado correctamente.', result.value.trim(), true);
+            enviarAccion(id_turno, 'cancelar_turno', 'Turno cancelado correctamente.', result.value.trim(), true, dni);
         }
     });
 }
 
-function enviarAccion(id_turno, accion, mensaje_exito, motivo, showReprogramar) {
+function enviarAccion(id_turno, accion, mensaje_exito, motivo, showReprogramar, dni) {
     var body = { id_turno: id_turno, accion: accion };
     if (motivo) { body.motivo = motivo; }
     fetch(ENDPOINT_ASISTENCIA, {
@@ -259,14 +259,13 @@ function enviarAccion(id_turno, accion, mensaje_exito, motivo, showReprogramar) 
                     icon: 'success',
                     title: 'Turno cancelado',
                     text: mensaje_exito,
-                    confirmButtonColor: '#3085d6',
                     showCancelButton: true,
                     confirmButtonText: '<i class="bi bi-calendar-plus me-1"></i> Reprogramar Turno',
                     cancelButtonText: 'Cerrar',
                     confirmButtonColor: '#0dcaf0',
                 }).then(function (result) {
                     if (result.isConfirmed) {
-                        window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
+                        window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda&dni=' + (dni || '');
                     } else {
                         ejecutarBusqueda();
                     }

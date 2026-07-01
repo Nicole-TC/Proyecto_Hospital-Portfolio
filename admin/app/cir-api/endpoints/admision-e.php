@@ -97,15 +97,17 @@ try {
         'obra_social' => filter_var($input['obraSocial'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 't' : 'f'
     ];
 
-    ConsultasAdmision::procesarAdmision($datos, $paciente_existente);
+    $resultado = ConsultasAdmision::procesarAdmision($datos, $paciente_existente);
 
-    if ($paciente_existente) {
+    if ($resultado['ordenReusada']) {
+        $mensaje = "El paciente ya tenía una orden activa para {$input['tipoCirugia']}. No se generó una nueva orden.";
+    } elseif ($paciente_existente) {
         $mensaje = "Cirugía de {$input['tipoCirugia']} registrada para el paciente.";
     } else {
         $mensaje = "Paciente {$input['apellido']}, {$input['nombre']} registrado correctamente con cirugía de {$input['tipoCirugia']}.";
     }
 
-    echo json_encode(['ok' => true, 'mensaje' => $mensaje]);
+    echo json_encode(['ok' => true, 'mensaje' => $mensaje, 'ordenReusada' => $resultado['ordenReusada']]);
 
 } catch (Exception $e) {
     echo json_encode(['ok' => false, 'error' => 'Error interno: ' . $e->getMessage()]);

@@ -259,35 +259,11 @@ class ConsultasAgenda {
             ];
         }
 
-        // 2. Verificar turno duplicado ANTES de validar estado de orden
-        $sqlTurno = "
-            SELECT t.id_turno
-            FROM turno t
-            JOIN estado et ON et.id_estado = t.id_estado
-            WHERE t.id_persona_asiste = :id_persona_asiste
-              AND t.id_tipo_turno     = :id_tipo_turno
-              AND et.codigo IN ('CONF', 'AUS', 'PROG')
-            LIMIT 1
-        ";
-        $stmtT = $pdo->prepare($sqlTurno);
-        $stmtT->bindParam(':id_persona_asiste', $persona['id_persona_asiste'], PDO::PARAM_INT);
-        $stmtT->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
-        $stmtT->execute();
-        $turnoActivo = $stmtT->fetch(PDO::FETCH_ASSOC);
-
-        if ($turnoActivo) {
-            return [
-                'ok'         => true,
-                'encontrado' => false,
-                'motivo'     => 'turno_duplicado',
-                'mensaje'    => 'El paciente ya tiene un turno prequirúrgico activo. No se puede asignar otro.'
-            ];
-        }
-
-        // 3. Buscar la orden médica más reciente y validar su estado
+        // 2. Buscar la orden médica más reciente y validar su estado
         $sqlOrden = "
             SELECT
                 om.id_orden,
+                om.id_cirugia_catalogo,
                 om.id_estado        AS id_estado_orden,
                 eo.codigo           AS codigo_estado_orden,
                 eo.descripcion      AS desc_estado_orden,
@@ -298,7 +274,13 @@ class ConsultasAgenda {
             LEFT JOIN profesional prf ON prf.id_profesional  = om.id_profesional
             LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
             WHERE om.id_persona_asiste = :id_persona_asiste
-            ORDER BY om.id_orden DESC
+              AND eo.codigo NOT IN ('FIN', 'CANC', 'RECH', 'ELIM')
+            ORDER BY
+              (SELECT COUNT(*) FROM turno t2
+               JOIN estado e2 ON e2.id_estado = t2.id_estado
+               WHERE t2.id_orden = om.id_orden
+               AND e2.codigo IN ('CANC', 'AUS')) DESC,
+              om.id_orden DESC
             LIMIT 1
         ";
         $stmtO = $pdo->prepare($sqlOrden);
@@ -328,6 +310,34 @@ class ConsultasAgenda {
                 'encontrado' => false,
                 'motivo'     => 'orden_bloqueada',
                 'mensaje'    => $descripciones[$orden['codigo_estado_orden']] . ' No es posible asignar un nuevo turno.'
+            ];
+        }
+
+        // 3. Verificar turno duplicado solo para la MISMA cirugía
+        $sqlTurno = "
+            SELECT t.id_turno
+            FROM turno t
+            JOIN estado et ON et.id_estado = t.id_estado
+            JOIN orden_medica om2 ON om2.id_orden = t.id_orden
+            WHERE t.id_persona_asiste = :id_persona_asiste
+              AND t.id_tipo_turno     = :id_tipo_turno
+              AND om2.id_cirugia_catalogo = :id_cirugia_catalogo
+              AND et.codigo IN ('PROG', 'CONF')
+            LIMIT 1
+        ";
+        $stmtT = $pdo->prepare($sqlTurno);
+        $stmtT->bindParam(':id_persona_asiste', $persona['id_persona_asiste'], PDO::PARAM_INT);
+        $stmtT->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmtT->bindParam(':id_cirugia_catalogo', $orden['id_cirugia_catalogo'], PDO::PARAM_INT);
+        $stmtT->execute();
+        $turnoActivo = $stmtT->fetch(PDO::FETCH_ASSOC);
+
+        if ($turnoActivo) {
+            return [
+                'ok'         => true,
+                'encontrado' => false,
+                'motivo'     => 'turno_duplicado',
+                'mensaje'    => 'El paciente ya tiene un turno activo para esta cirugía. No puede asignarse otro hasta que el actual se cancele o finalice.'
             ];
         }
 
@@ -391,6 +401,26 @@ class ConsultasAgenda {
             $datos['fecha_hora'] = $fechaSolo . ' ' . $cupoCheck['hora_inicio'];
         }
 
+
+        // Validar que la nueva fecha no sea anterior al turno cancelado/ausente
+        $sqlRef = "
+            SELECT MIN(DATE(t.fecha_hora))
+            FROM turno t
+            JOIN estado e ON e.id_estado = t.id_estado
+            WHERE t.id_orden = :id_orden
+              AND e.codigo IN ('CANC', 'AUS')
+        ";
+        $stmtRef = $pdo->prepare($sqlRef);
+        $stmtRef->bindValue(':id_orden', $datos['id_orden'], PDO::PARAM_INT);
+        $stmtRef->execute();
+        $fechaReferencia = $stmtRef->fetchColumn();
+
+        if ($fechaReferencia && $fechaSolo < $fechaReferencia) {
+            $fechaFormateada = date('d/m/Y', strtotime($fechaReferencia));
+            return ['ok' => false, 'errores' => [
+                "No se puede reprogramar para antes del {$fechaFormateada} (fecha del turno cancelado)."
+            ]];
+        }
 
         // Obtener estado PROG para turno (programado por defecto)
         $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'PROG' AND entidad = 'TURNO' LIMIT 1";

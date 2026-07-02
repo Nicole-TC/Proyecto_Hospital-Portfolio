@@ -106,6 +106,163 @@ $urlVolver = 'index.php?modulo=menu_circuitoquirurgico&accion=gestion_ordenes';
     </div>
 </div>
 
+<style>
+/* Clases propias - Ver Orden Médica */
+.busqueda-autocomplete {
+    position: relative;
+    z-index: 1;
+}
+.busqueda-autocomplete.is-open {
+    z-index: 1060;
+}
+.sugerencias-busqueda {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0 0 0.5rem 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 0.25rem 0;
+}
+.sugerencias-busqueda .sugerencias-titulo {
+    padding: 0.35rem 0.75rem 0.25rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+.sugerencias-busqueda .sugerencia-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+.sugerencias-busqueda .sugerencia-item:hover,
+.sugerencias-busqueda .sugerencia-item.active {
+    background-color: #f8f9fa;
+}
+.sugerencias-busqueda .sugerencia-nombre {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #212529;
+}
+.sugerencias-busqueda .sugerencia-meta {
+    display: block;
+    font-size: 0.78rem;
+    color: #6c757d;
+}
+.sugerencias-busqueda .sugerencia-vacia {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+.historial-modificaciones {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    max-height: 280px;
+    overflow-y: auto;
+}
+.historial-modificaciones-item {
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.historial-modificaciones-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+.historial-modificaciones-item:first-child {
+    padding-top: 0;
+}
+.historial-modificaciones-fecha {
+    font-size: 0.75rem;
+    color: #6c757d;
+    white-space: nowrap;
+}
+.historial-modificaciones-cambio {
+    line-height: 1.45;
+    color: #343a40;
+}
+
+/* Dark Mode - Ver Orden Médica */
+body.modo-oscuro .card.bg-white {
+    background-color: #2a2a2a !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .bg-light {
+    background-color: #1a1a1a !important;
+    color: #888 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro textarea.form-control {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .form-control.bg-light {
+    background-color: #1a1a1a !important;
+    color: #888 !important;
+}
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro textarea.form-control:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+body.modo-oscuro .form-control::placeholder {
+    color: #888 !important;
+}
+body.modo-oscuro .form-label {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .text-secondary {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .historial-modificaciones {
+    background: #1e1e1e;
+    border-color: #444;
+}
+body.modo-oscuro .historial-modificaciones-item {
+    border-bottom-color: #444;
+}
+body.modo-oscuro .historial-modificaciones-fecha {
+    color: #aaa;
+}
+body.modo-oscuro .historial-modificaciones-cambio {
+    color: #e0e0e0;
+}
+body.modo-oscuro .sugerencias-busqueda {
+    background: #2a2a2a;
+    border-color: #444;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+body.modo-oscuro .sugerencias-busqueda .sugerencias-titulo { color: #aaa; }
+body.modo-oscuro .sugerencias-busqueda .sugerencia-item:hover,
+body.modo-oscuro .sugerencias-busqueda .sugerencia-item.active { background-color: #3a3a3a; }
+body.modo-oscuro .sugerencias-busqueda .sugerencia-nombre { color: #f1f1f1; }
+body.modo-oscuro .sugerencias-busqueda .sugerencia-meta  { color: #aaa; }
+body.modo-oscuro .sugerencias-busqueda .sugerencia-vacia { color: #aaa; }
+body.modo-oscuro .alert-warning {
+    background-color: #3d2e00 !important;
+    color: #ffd553 !important;
+    border-color: #5a4500 !important;
+}
+</style>
+
 <?php if ($idOrden > 0): ?>
 <script src="js/circuitoquirurgico/form_orden.js?v=<?= @filemtime(__DIR__ . '/../../js/circuitoquirurgico/form_orden.js') ?: time() ?>"></script>
 <?php endif; ?>

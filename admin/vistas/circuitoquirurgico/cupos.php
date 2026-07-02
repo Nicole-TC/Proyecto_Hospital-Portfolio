@@ -332,4 +332,34 @@ if ($tipoCodigo) {
   </div>
 </div>
 
+<style>
+/* === Dark Mode — Cupos === */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .bg-white {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .input-group-text {
+    background-color: #2a2a2a !important;
+    color: #adb5bd !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .card-tipo-hover:hover {
+    background-color: #333 !important;
+}
+body.modo-oscuro .modal-header.bg-light,
+body.modo-oscuro .modal-footer.bg-light {
+    background-color: #333 !important;
+    border-color: #444 !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/cupos.js"></script>

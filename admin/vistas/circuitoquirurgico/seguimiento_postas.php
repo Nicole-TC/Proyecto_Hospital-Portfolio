@@ -174,6 +174,89 @@
   </div>
 </div>
 
+<style>
+/* Dark Mode - Seguimiento de Postas */
+body.modo-oscuro .card {
+    background-color: #2a2a2a !important;
+    border-color: #444 !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .card-header {
+    background-color: #333 !important;
+    border-color: #444 !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .text-dark {
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .text-muted {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .text-secondary {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .table {
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .table thead th {
+    background-color: #333 !important;
+    color: #adb5bd !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .table tbody tr:hover {
+    background-color: #333 !important;
+}
+body.modo-oscuro .table td,
+body.modo-oscuro .table th {
+    border-color: #444 !important;
+}
+/* Dots del timeline: sacar bg-white, el ícono no necesita fondo */
+body.modo-oscuro .bg-white {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .badge.bg-light {
+    background-color: #3a3a3a !important;
+    color: #f1f1f1 !important;
+    border-color: #555 !important;
+}
+body.modo-oscuro .list-group-item {
+    background-color: transparent !important;
+    border-color: #444 !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .modal-content {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border: 1px solid #444 !important;
+}
+body.modo-oscuro .modal-header.bg-primary {
+    background-color: #0056b3 !important;
+}
+body.modo-oscuro .modal-footer {
+    border-color: #444 !important;
+}
+body.modo-oscuro .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+/* DataTables dark mode */
+body.modo-oscuro .dataTables_wrapper .dataTables_filter input,
+body.modo-oscuro .dataTables_wrapper select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .dataTables_wrapper .dataTables_info,
+body.modo-oscuro .dataTables_wrapper .dataTables_length label,
+body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
+    color: #adb5bd !important;
+}
+</style>
+
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.js"></script>
 

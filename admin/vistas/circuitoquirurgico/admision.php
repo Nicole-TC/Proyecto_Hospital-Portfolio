@@ -118,4 +118,58 @@
     </div>
   </main>
 
+<style>
+/* Dark Mode - Admisión */
+body.modo-oscuro .card.bg-white {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .card-header.bg-primary {
+    background-color: #0056b3 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .form-control:disabled,
+body.modo-oscuro .form-select:disabled {
+    background-color: #1a1a1a !important;
+    color: #888 !important;
+}
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+body.modo-oscuro .form-control::placeholder {
+    color: #888 !important;
+}
+body.modo-oscuro .form-label {
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .text-muted {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .text-dark {
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .border-dark {
+    border-color: #555 !important;
+}
+body.modo-oscuro .select-boton {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .alert-info {
+    background-color: #1a3a4a !important;
+    color: #90d4f0 !important;
+    border-color: #2a5a7a !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/admision.js"></script>

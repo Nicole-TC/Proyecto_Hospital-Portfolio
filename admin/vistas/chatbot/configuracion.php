@@ -81,41 +81,58 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                         <p class="text-muted mb-0">Establece y administra las credenciales de conexión para los canales de comunicación de OmniBot Hospital.</p>
                     </div>
 
-                    <!-- Contenedor para tarjetas de credenciales (Telegram y WhatsApp) -->
-                    <div class="row g-4" id="tarjetas-credenciales-container">
-                        <?php
-                        // Valores de estado iniciales (se vincularán con el backend en pasos posteriores)
-                        $telegram_token = "";
-                        $telegram_chat_id = "";
-                        $whatsapp_phone = "";
-                        $whatsapp_token = "";
+                    <!-- Formulario de Configuración -->
+                    <form id="form-configuracion-conexion" class="needs-validation" novalidate>
+                        <!-- Contenedor para tarjetas de credenciales (Telegram y WhatsApp) -->
+                        <div class="row g-4" id="tarjetas-credenciales-container">
+                            <?php
+                            // Valores de estado iniciales (se vincularán con el backend en pasos posteriores)
+                            $telegram_token = "";
+                            $telegram_chat_id = "";
+                            $whatsapp_phone = "";
+                            $whatsapp_token = "";
 
-                        // Tarjeta Telegram
-                        renderTarjetaCredencial(
-                            "Telegram",
-                            "fa-brands fa-telegram text-info",
-                            "Token del Bot",
-                            "telegram_token",
-                            $telegram_token,
-                            "ID del Chat",
-                            "telegram_chat_id",
-                            $telegram_chat_id
-                        );
+                            // Tarjeta Telegram
+                            renderTarjetaCredencial(
+                                "Telegram",
+                                "fa-brands fa-telegram text-info",
+                                "Token del Bot",
+                                "telegram_token",
+                                $telegram_token,
+                                "ID del Chat",
+                                "telegram_chat_id",
+                                $telegram_chat_id
+                            );
 
-                        // Tarjeta WhatsApp
-                        renderTarjetaCredencial(
-                            "WhatsApp",
-                            "fa-brands fa-whatsapp text-success",
-                            "Número de Teléfono",
-                            "whatsapp_phone",
-                            $whatsapp_phone,
-                            "Token de API",
-                            "whatsapp_token",
-                            $whatsapp_token,
-                            "password"
-                        );
-                        ?>
-                    </div>
+                            // Tarjeta WhatsApp
+                            renderTarjetaCredencial(
+                                "WhatsApp",
+                                "fa-brands fa-whatsapp text-success",
+                                "Número de Teléfono",
+                                "whatsapp_phone",
+                                $whatsapp_phone,
+                                "Token de API",
+                                "whatsapp_token",
+                                $whatsapp_token,
+                                "password"
+                            );
+                            ?>
+                        </div>
+
+                        <!-- Footer de las tarjetas (Estado de conexión y botón de guardar) -->
+                        <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                            <!-- Estado de conexión (A la izquierda wifi verde + texto) -->
+                            <div class="d-flex align-items-center text-success">
+                                <i class="fa-solid fa-wifi me-2 fa-pulse"></i>
+                                <span class="fw-semibold small">Estado: Conectado con el servicio de Backend</span>
+                            </div>
+
+                            <!-- Botón Guardar (A la derecha botón verde agua con icono de disquete) -->
+                            <button type="submit" class="btn text-white fw-bold d-flex align-items-center px-4 py-2" style="background-color: #20c997; border-radius: 6px; transition: opacity 0.2s ease;">
+                                <i class="fa-solid fa-floppy-disk me-2"></i> Guardar Conexión
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </main>

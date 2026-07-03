@@ -155,3 +155,78 @@ body.modo-oscuro .config-sidebar .nav-link:not([style*="background-color"]):hove
 }
 </style>
 
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("form-configuracion-conexion");
+    if (form) {
+        form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            // Capturar datos del formulario
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value.trim();
+            });
+
+            // Validación de campos vacíos en el Frontend
+            if (!data.telegram_token || !data.telegram_chat_id || !data.whatsapp_phone || !data.whatsapp_token) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Campos incompletos',
+                    text: 'Por favor, completa todas las credenciales de Telegram y WhatsApp antes de guardar.',
+                    confirmButtonColor: '#20c997'
+                });
+                return;
+            }
+
+            // Cambiar estado del botón de guardar (Loading)
+            const btnSubmit = form.querySelector('button[type="submit"]');
+            const originalText = btnSubmit.innerHTML;
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando...';
+            btnSubmit.disabled = true;
+
+            try {
+                // Simulación de latencia de red para demostrar el estado de carga
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Mensaje en consola con los datos listos para el backend
+                console.log("Payload listo para enviar al backend:", data);
+
+                // API Fetch real (ejemplo preparado para conectar en el futuro):
+                /*
+                const response = await fetch('api/chatbot/guardar_conexion.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.status !== 'success') throw new Error(result.message);
+                */
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Configuración Guardada',
+                    text: 'Las credenciales de conexión se han registrado exitosamente.',
+                    confirmButtonColor: '#20c997'
+                });
+            } catch (error) {
+                console.error("Error al guardar credenciales:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo guardar la configuración. Intenta nuevamente.',
+                    confirmButtonColor: '#20c997'
+                });
+            } finally {
+                // Restaurar estado del botón
+                btnSubmit.innerHTML = originalText;
+                btnSubmit.disabled = false;
+            }
+        });
+    }
+});
+</script>
+

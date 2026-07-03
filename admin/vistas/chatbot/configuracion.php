@@ -1,6 +1,43 @@
 <?php
 // Vista: Configuración de Conexión (OmniBot Hospital)
 // Subtarea 1: Maquetado del Layout Principal (Sidebar y contenedor base) que se adapta al modo claro/oscuro
+
+/**
+ * Renderiza la estructura visual de una Tarjeta de Credencial reutilizable
+ * Subtarea 3: Estructura visual base, con soporte para inputs adaptables y estilos coherentes
+ */
+function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2, $name2, $val2, $type2 = "text") {
+    ?>
+    <div class="col-12 col-lg-6">
+        <div class="card shadow-sm h-100 border rounded-3 bg-white">
+            <!-- Cabecera de la Tarjeta -->
+            <div class="card-header bg-transparent border-0 pt-4 pb-2">
+                <h5 class="fw-bold d-flex align-items-center mb-0">
+                    <i class="<?php echo $icono; ?> me-2 fs-4"></i>
+                    <?php echo $canal; ?>
+                </h5>
+            </div>
+            <!-- Cuerpo con Inputs -->
+            <div class="card-body pt-2">
+                <!-- Primer Campo -->
+                <div class="mb-3">
+                    <label for="<?php echo $name1; ?>" class="form-label fw-bold text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                        <?php echo $label1; ?>
+                    </label>
+                    <input type="text" class="form-control" id="<?php echo $name1; ?>" name="<?php echo $name1; ?>" value="<?php echo htmlspecialchars($val1); ?>" placeholder="Ingrese <?php echo strtolower($label1); ?>">
+                </div>
+                <!-- Segundo Campo -->
+                <div class="mb-3">
+                    <label for="<?php echo $name2; ?>" class="form-label fw-bold text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                        <?php echo $label2; ?>
+                    </label>
+                    <input type="<?php echo $type2; ?>" class="form-control" id="<?php echo $name2; ?>" name="<?php echo $name2; ?>" value="<?php echo htmlspecialchars($val2); ?>" placeholder="Ingrese <?php echo strtolower($label2); ?>">
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+}
 ?>
 <div class="container-fluid py-3">
     <div class="row g-4">

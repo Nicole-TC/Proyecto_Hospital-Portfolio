@@ -87,6 +87,8 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                         // Valores de estado iniciales (se vincularán con el backend en pasos posteriores)
                         $telegram_token = "";
                         $telegram_chat_id = "";
+                        $whatsapp_phone = "";
+                        $whatsapp_token = "";
 
                         // Tarjeta Telegram
                         renderTarjetaCredencial(
@@ -98,6 +100,19 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                             "ID del Chat",
                             "telegram_chat_id",
                             $telegram_chat_id
+                        );
+
+                        // Tarjeta WhatsApp
+                        renderTarjetaCredencial(
+                            "WhatsApp",
+                            "fa-brands fa-whatsapp text-success",
+                            "Número de Teléfono",
+                            "whatsapp_phone",
+                            $whatsapp_phone,
+                            "Token de API",
+                            "whatsapp_token",
+                            $whatsapp_token,
+                            "password"
                         );
                         ?>
                     </div>

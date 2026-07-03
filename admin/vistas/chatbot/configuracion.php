@@ -81,11 +81,25 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                         <p class="text-muted mb-0">Establece y administra las credenciales de conexión para los canales de comunicación de OmniBot Hospital.</p>
                     </div>
 
-                    <!-- Contenedor para tarjetas de credenciales (se poblará en subtareas posteriores) -->
+                    <!-- Contenedor para tarjetas de credenciales (Telegram y WhatsApp) -->
                     <div class="row g-4" id="tarjetas-credenciales-container">
-                        <div class="col-12">
-                            <p class="text-muted fst-italic text-center">Las tarjetas de credenciales se configurarán en el siguiente paso...</p>
-                        </div>
+                        <?php
+                        // Valores de estado iniciales (se vincularán con el backend en pasos posteriores)
+                        $telegram_token = "";
+                        $telegram_chat_id = "";
+
+                        // Tarjeta Telegram
+                        renderTarjetaCredencial(
+                            "Telegram",
+                            "fa-brands fa-telegram text-info",
+                            "Token del Bot",
+                            "telegram_token",
+                            $telegram_token,
+                            "ID del Chat",
+                            "telegram_chat_id",
+                            $telegram_chat_id
+                        );
+                        ?>
                     </div>
                 </div>
             </div>

@@ -5,6 +5,11 @@
 $modal = FALSE; // Por defecto no mostramos el botón de ayuda modal en el menú superior
 
 switch (@$_GET["accion"]) {
+    case 'dashboard':
+        $menu = 'Dashboard del Bot';
+        $require = "vistas/chatbot/dashboard.php";
+        break;
+
     case 'configuracion':
         $menu = 'Configuración del Bot';
         $require = "vistas/chatbot/configuracion.php";

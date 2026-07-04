@@ -352,4 +352,39 @@
 
 </div><!-- /col-12 -->
 
+<style>
+/*  Dark Mode — Form Cirugías */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .input-group-text {
+    background-color: #2a2a2a !important;
+    color: #adb5bd !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro #panel-nueva-cirugia > div:first-child,
+body.modo-oscuro #panel-nuevo-estudio > div:first-child {
+    background-color: #1a1a1a !important;
+}
+body.modo-oscuro #panel-nueva-cirugia .p-3,
+body.modo-oscuro #panel-nuevo-estudio .p-3 {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro #lista-estudios {
+    border-color: #444 !important;
+}
+body.modo-oscuro #btn-cerrar-nueva-cirugia,
+body.modo-oscuro #btn-cerrar-nuevo-estudio,
+body.modo-oscuro #btn-volver-paso1 {
+    color: #adb5bd !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/form_cirugias.js"></script>

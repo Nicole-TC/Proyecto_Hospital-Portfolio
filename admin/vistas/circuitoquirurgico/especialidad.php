@@ -250,4 +250,36 @@
     </div>
 </div>
 
+<style>
+/* === Dark Mode — Especialidades === */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .bg-white {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .card-footer.bg-white {
+    background-color: #2a2a2a !important;
+    border-top: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro #modalEspecialidad .modal-header {
+    background: #16232e !important;
+}
+body.modo-oscuro #modalConfirmarEliminar .modal-header {
+    background: #3a1418 !important;
+}
+body.modo-oscuro #modalEspecialidad .rounded-3,
+body.modo-oscuro #modalConfirmarEliminar .rounded-3 {
+    background: #2a2a2a !important;
+    border-color: #444 !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/especialidad.js"></script>

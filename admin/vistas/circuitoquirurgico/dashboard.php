@@ -67,6 +67,23 @@
         </div><!-- /card-body p-4 -->
     </div><!-- /card -->
 </div><!-- /col-12 mb-5 px-3 -->
+
+<style>
+/* Dark Mode — Dashboard */
+body.modo-oscuro .bg-light-blue {
+    background-color: rgba(33, 150, 243, 0.25) !important;
+}
+body.modo-oscuro .bg-light-success {
+    background-color: rgba(22, 211, 154, 0.25) !important;
+}
+body.modo-oscuro .bg-light-warning {
+    background-color: rgba(255, 168, 125, 0.25) !important;
+}
+body.modo-oscuro .text-secondary {
+    color: #adb5bd !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/dashboard.js"></script>
 <script>
 (function () {

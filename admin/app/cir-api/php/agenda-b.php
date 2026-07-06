@@ -145,7 +145,14 @@ class ConsultasAgenda {
         if (!$config['activo'])    return ['disponible' => false, 'motivo' => 'dia_no_habilitado'];
 
         $turnos  = self::obtenerTurnosPorFecha($fecha, $id_tipo_turno);
-        $ocupados = count($turnos);
+        // Solo cuentan para el cupo los turnos que no están cancelados:
+        // al cancelar un turno se libera su lugar para reutilizarlo.
+        $ocupados = 0;
+        foreach ($turnos as $t) {
+            if (($t['estado_codigo'] ?? '') !== 'CANC') {
+                $ocupados++;
+            }
+        }
         $maximo   = $config['cupos_total'];
 
         if ($maximo > 0 && $ocupados >= $maximo) {

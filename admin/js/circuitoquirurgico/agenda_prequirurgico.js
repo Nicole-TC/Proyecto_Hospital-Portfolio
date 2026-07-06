@@ -143,7 +143,7 @@ function _renderSemanaConFeriados(feriados) {
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
-                    ocupados:    data.ok ? data.turnos.length : 0,
+                    ocupados:    data.ok ? (data.ocupados ?? data.turnos.length) : 0,
                     cupos_total: data.ok ? data.cupos_total : 0,
                     activo:      data.ok ? data.cupo_activo : false,
                     sin_config:  data.ok ? (data.sin_config || false) : false
@@ -273,7 +273,7 @@ function _renderMesConFeriados(ref, feriados) {
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
-                    ocupados: data.ok ? data.turnos.length : 0,
+                    ocupados: data.ok ? (data.ocupados ?? data.turnos.length) : 0,
                     cupos_total: data.ok ? data.cupos_total : 0,
                     activo: data.ok ? data.cupo_activo : true
                 };

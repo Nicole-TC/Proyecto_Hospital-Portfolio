@@ -196,23 +196,40 @@ try {
     $temporal = $archivo['tmp_name'];
     
     $extension = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
-    $formatosPermitidos = ["pdf", "jpg", "jpeg", "png"];
     
-    if (!in_array($extension, $formatosPermitidos)) {
-        throw new Exception("Formato no permitido. Solo PDF, JPG o PNG.");
-    }
-
-    // Validar peso del archivo
-    $maxPesoMb = 5; // Fallback
+    // Leer formatos permitidos desde configuraciones
+    $formatosPermitidos = [];
     try {
-        $stmtConf = $bd_dig->prepare("SELECT valor FROM configuraciones WHERE clave = 'max_peso_archivo_mb'");
+        $stmtConf = $bd_dig->prepare("SELECT valor FROM configuraciones WHERE clave = 'formatos_permitidos'");
         $stmtConf->execute();
         $dbVal = $stmtConf->fetchColumn();
         if ($dbVal) {
-            $maxPesoMb = $dbVal;
+            $formatosPermitidos = array_map('trim', explode(',', $dbVal));
         }
     } catch (PDOException $e) {
+        error_log("No se pudo leer configuraciones (formatos): " . $e->getMessage());
+    }
+    
+    if (empty($formatosPermitidos)) {
+        throw new Exception("No hay formatos permitidos configurados en el sistema.");
+    }
+    
+    if (!in_array($extension, $formatosPermitidos)) {
+        throw new Exception("Formato no permitido. Solo " . implode(', ', $formatosPermitidos) . ".");
+    }
+
+    // Validar peso del archivo
+    $maxPesoMb = null;
+    try {
+        $stmtConf = $bd_dig->prepare("SELECT valor FROM configuraciones WHERE clave = 'max_peso_archivo_mb'");
+        $stmtConf->execute();
+        $maxPesoMb = $stmtConf->fetchColumn();
+    } catch (PDOException $e) {
         error_log("No se pudo leer configuraciones (peso maximo): " . $e->getMessage());
+    }
+    
+    if (!$maxPesoMb) {
+        throw new Exception("No hay un límite de peso configurado en el sistema.");
     }
     
     $maxBytes = $maxPesoMb * 1024 * 1024;

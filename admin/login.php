@@ -74,6 +74,12 @@ if (isset($_POST['submit'])) {
             //$_SESSION['formularios']   = $user["formularios"];
             $_SESSION['notas']         = $user["notas"];
             $_SESSION['menu_digitalizar'] = isset($user['menu_digitalizar']) ? $user['menu_digitalizar'] : 0;
+            $_SESSION['dig_nuevo_documento'] = isset($user['dig_nuevo_documento']) ? $user['dig_nuevo_documento'] : 0;
+            $_SESSION['dig_buscar_documentos'] = isset($user['dig_buscar_documentos']) ? $user['dig_buscar_documentos'] : 0;
+            $_SESSION['dig_admin_etiquetas'] = isset($user['dig_admin_etiquetas']) ? $user['dig_admin_etiquetas'] : 0;
+            $_SESSION['dig_tipos_documentos'] = isset($user['dig_tipos_documentos']) ? $user['dig_tipos_documentos'] : 0;
+            $_SESSION['dig_auditoria'] = isset($user['dig_auditoria']) ? $user['dig_auditoria'] : 0;
+            $_SESSION['dig_servicios'] = isset($user['dig_servicios']) ? $user['dig_servicios'] : 0;
 
             // CIRCUITO QUIRURGICO
             $_SESSION['menu_circuitoquirurgico'] = isset($user['menu_circuitoquirurgico']) ? $user['menu_circuitoquirurgico'] : 0;

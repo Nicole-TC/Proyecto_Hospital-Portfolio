@@ -143,14 +143,13 @@
                                 <label for="archivo">Seleccionar Archivo <span class="text-danger">*</span></label>
                                 
                                 <!-- Zona Drag & Drop -->
-                                <div id="drop-zone" class="border border-primary border-2 rounded text-center p-5 mb-2" style="border-style: dashed !important; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Arrastrá y soltá tu archivo acá">
+                                <div id="drop-zone" class="border border-primary border-2 rounded text-center p-5 mb-2" style="border-style: dashed !important; min-height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Hacé clic o arrastrá tu archivo acá">
                                     <i class="fa-solid fa-cloud-arrow-up fa-3x text-primary mb-2"></i>
-                                    <h6 class="text-primary mb-1" id="drop-title">Arrastrá y soltá tu archivo acá</h6>
-                                    <small class="text-muted">o usá el botón de abajo para buscar en tu PC</small>
+                                    <h6 class="text-primary mb-1" id="drop-title">Hacé clic o arrastrá tu archivo acá</h6>
+                                    <small class="text-muted">Formatos: PDF, JPG, PNG — Máximo: <span id="file_size_helper">5MB</span></small>
                                 </div>
-                                <input type="file" class="form-control" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
+                                <input type="file" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required style="display: none;">
                                 <div class="invalid-feedback">Debe adjuntar un archivo válido (PDF, JPG, PNG).</div>
-                                <small class="text-muted d-block mt-1" id="file_size_helper">Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: 5MB</small>
                             </div>
                         </div>
 
@@ -225,6 +224,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         placeholderValue: 'Seleccione etiquetas',
         searchPlaceholderValue: 'Buscar...',
         noResultsText: 'No se encontraron etiquetas',
+        noChoicesText: 'No hay etiquetas disponibles',
         itemSelectText: 'Click para seleccionar',
         callbackOnCreateTemplates: function(template) {
             return {
@@ -291,7 +291,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             
             if (json.data.configuraciones && json.data.configuraciones.max_peso_archivo_mb) {
                 maxFileSizeMB = parseInt(json.data.configuraciones.max_peso_archivo_mb);
-                document.getElementById('file_size_helper').innerText = `Formatos permitidos: PDF, JPG, PNG. Tamaño máximo: ${maxFileSizeMB}MB`;
+                document.getElementById('file_size_helper').innerText = `${maxFileSizeMB}MB`;
             }
         }
     } catch(error) {
@@ -327,6 +327,10 @@ document.addEventListener("DOMContentLoaded", async function() {
         fileInput.dispatchEvent(new Event('change'));
     }
 });
+
+    dropZone.addEventListener('click', () => {
+        fileInput.click();
+    });
 });
 
 // Validación de Número de Identificación (Opcional según tipo, por ahora dejamos libre para pasaportes, etc.)

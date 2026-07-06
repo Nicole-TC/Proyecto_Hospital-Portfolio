@@ -82,15 +82,15 @@ class ConsultasCirugias {
     /**
      * Crear un nuevo estudio prequirúrgico de forma independiente.
      */
-    public static function crearEstudio($nombre, $descripcion, $observacion) {
+    public static function crearEstudio($nombre, $descripcion, $observacion, $id_categoria_estudio = null) {
         $pdo = conexionCircuitoQuirurgico();
         try {
             $idActivo = id_estado('USUARIO', 'ACT');
-            $stmt = $pdo->prepare("INSERT INTO estudio (nombre, descripcion, observacion, id_estado) VALUES (:n, :d, :o, :est) RETURNING id_estudio");
-            return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':o' => trim($observacion), ':est' => $idActivo]) ? (int)$stmt->fetchColumn() : false;
+            $stmt = $pdo->prepare("INSERT INTO estudio (nombre, descripcion, observacion, id_categoria_estudio, id_estado) VALUES (:n, :d, :o, :c, :est) RETURNING id_estudio");
+            return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':o' => trim($observacion), ':c' => $id_categoria_estudio ?: null, ':est' => $idActivo]) ? (int)$stmt->fetchColumn() : false;
         } catch (Exception $e) {
-            $stmt = $pdo->prepare("INSERT INTO estudio (nombre, descripcion, observacion) VALUES (:n, :d, :o) RETURNING id_estudio");
-            return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':o' => trim($observacion)]) ? (int)$stmt->fetchColumn() : false;
+            $stmt = $pdo->prepare("INSERT INTO estudio (nombre, descripcion, observacion, id_categoria_estudio) VALUES (:n, :d, :o, :c) RETURNING id_estudio");
+            return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':o' => trim($observacion), ':c' => $id_categoria_estudio ?: null]) ? (int)$stmt->fetchColumn() : false;
         }
     }
 
@@ -120,9 +120,9 @@ class ConsultasCirugias {
     /**
      * Actualizar datos de un estudio.
      */
-    public static function actualizarEstudio(int $id, string $nombre, string $descripcion, string $observacion): bool {
-        $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE estudio SET nombre = :n, descripcion = :d, observacion = :o WHERE id_estudio = :id");
-        return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':o' => trim($observacion), ':id' => $id]);
+    public static function actualizarEstudio(int $id, string $nombre, string $descripcion, string $observacion, ?int $id_categoria_estudio = null): bool {
+        $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE estudio SET nombre = :n, descripcion = :d, observacion = :o, id_categoria_estudio = :c WHERE id_estudio = :id");
+        return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':o' => trim($observacion), ':c' => $id_categoria_estudio ?: null, ':id' => $id]);
     }
 
     /**
@@ -172,23 +172,23 @@ class ConsultasCirugias {
         $offset = ($pagina - 1) * $limite;
         $idActivo = id_estado('USUARIO', 'ACT');
         $params = [':id_estado' => $idActivo];
-        $where  = 'WHERE id_estado = :id_estado';
+        $where  = 'WHERE e.id_estado = :id_estado';
 
         if ($buscar !== '') {
-            $where .= " AND (nombre ILIKE :buscar OR descripcion ILIKE :buscar)";
+            $where .= " AND (e.nombre ILIKE :buscar OR e.descripcion ILIKE :buscar OR c.nombre ILIKE :buscar)";
             $params[':buscar'] = '%' . $buscar . '%';
         }
 
-        $orderBy = "ORDER BY nombre ASC";
-        if ($orden === 'nombre_desc') $orderBy = "ORDER BY nombre DESC";
-        if ($orden === 'id_desc') $orderBy = "ORDER BY id_estudio DESC";
+        $orderBy = "ORDER BY e.nombre ASC";
+        if ($orden === 'nombre_desc') $orderBy = "ORDER BY e.nombre DESC";
+        if ($orden === 'id_desc') $orderBy = "ORDER BY e.id_estudio DESC";
 
-        $stmtC = $pdo->prepare("SELECT COUNT(*) FROM estudio $where");
+        $stmtC = $pdo->prepare("SELECT COUNT(*) FROM estudio e LEFT JOIN categoria_estudio c ON e.id_categoria_estudio = c.id_categoria_estudio $where");
         foreach ($params as $k => $v) $stmtC->bindValue($k, $v);
         $stmtC->execute();
         $total = (int)$stmtC->fetchColumn();
 
-        $sql  = "SELECT id_estudio AS id, nombre, descripcion, observacion FROM estudio $where $orderBy LIMIT :limite OFFSET :offset";
+        $sql  = "SELECT e.id_estudio AS id, e.nombre, e.descripcion, e.observacion, c.nombre AS categoria, e.id_categoria_estudio FROM estudio e LEFT JOIN categoria_estudio c ON e.id_categoria_estudio = c.id_categoria_estudio $where $orderBy LIMIT :limite OFFSET :offset";
         $stmt = $pdo->prepare($sql);
         foreach ($params as $k => $v) $stmt->bindValue($k, $v);
         $stmt->bindValue(':limite',  $limite,  PDO::PARAM_INT);
@@ -320,6 +320,7 @@ class ConsultasCirugias {
     public static function cirugiaEnUsoOrdenes(int $id): bool { return self::existeRegistro('orden_medica', 'id_cirugia_catalogo', $id); }
     public static function estudioEnUsoCombos(int $id): bool { return self::existeRegistro('combo_cirugia', 'id_estudio', $id); }
     public static function estudioEnUsoOrdenes(int $id): bool { return self::existeRegistro('orden_estudio', 'id_estudio', $id); }
+    public static function categoriaEnUsoEstudios(int $id): bool { return self::existeRegistro('estudio', 'id_categoria_estudio', $id); }
 
     /**
      * Borrado lógico de cirugía del catálogo.
@@ -337,6 +338,72 @@ class ConsultasCirugias {
         $idElim = id_estado('DATO', 'ELIM');
         $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE estudio SET id_estado = :est WHERE id_estudio = :id");
         return $stmt->execute([':est' => $idElim, ':id' => $id]);
+    }
+
+    /**
+     * Borrado lógico de categoría.
+     */
+    public static function eliminarCategoria(int $id): bool {
+        $idElim = id_estado('DATO', 'ELIM');
+        $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE categoria_estudio SET id_estado = :est WHERE id_categoria_estudio = :id");
+        return $stmt->execute([':est' => $idElim, ':id' => $id]);
+    }
+
+    /* ----------------------------------------------------------------
+       CRUD DE CATEGORIAS
+       ---------------------------------------------------------------- */
+
+    public static function listarCategorias() {
+        $pdo = conexionCircuitoQuirurgico();
+        try {
+            $idActivo = id_estado('USUARIO', 'ACT');
+            $stmt = $pdo->prepare("SELECT id_categoria_estudio AS id, nombre, descripcion FROM categoria_estudio WHERE id_estado = :id_estado ORDER BY nombre");
+            $stmt->execute([':id_estado' => $idActivo]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            $stmt = $pdo->query("SELECT id_categoria_estudio AS id, nombre, descripcion FROM categoria_estudio ORDER BY nombre");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+    }
+
+    public static function existeNombreCategoria(string $nombre, ?int $excluirId = null): bool {
+        $pdo = conexionCircuitoQuirurgico();
+        try {
+            $idActivo = id_estado('USUARIO', 'ACT');
+            $sql = "SELECT COUNT(*) FROM categoria_estudio WHERE nombre = :nombre AND id_estado = :id_estado";
+            if ($excluirId) $sql .= " AND id_categoria_estudio != :excluir";
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
+            $stmt->bindValue(':id_estado', $idActivo, PDO::PARAM_INT);
+            if ($excluirId) $stmt->bindValue(':excluir', $excluirId, PDO::PARAM_INT);
+            $stmt->execute();
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (Exception $e) {
+            $sql = "SELECT COUNT(*) FROM categoria_estudio WHERE nombre = :nombre";
+            if ($excluirId) $sql .= " AND id_categoria_estudio != :excluir";
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
+            if ($excluirId) $stmt->bindValue(':excluir', $excluirId, PDO::PARAM_INT);
+            $stmt->execute();
+            return (int)$stmt->fetchColumn() > 0;
+        }
+    }
+
+    public static function crearCategoria(string $nombre, string $descripcion) {
+        $pdo = conexionCircuitoQuirurgico();
+        try {
+            $idActivo = id_estado('USUARIO', 'ACT');
+            $stmt = $pdo->prepare("INSERT INTO categoria_estudio (nombre, descripcion, id_estado) VALUES (:n, :d, :est) RETURNING id_categoria_estudio");
+            return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':est' => $idActivo]) ? (int)$stmt->fetchColumn() : false;
+        } catch (Exception $e) {
+            $stmt = $pdo->prepare("INSERT INTO categoria_estudio (nombre, descripcion) VALUES (:n, :d) RETURNING id_categoria_estudio");
+            return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion)]) ? (int)$stmt->fetchColumn() : false;
+        }
+    }
+
+    public static function actualizarCategoria(int $id, string $nombre, string $descripcion): bool {
+        $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE categoria_estudio SET nombre = :n, descripcion = :d WHERE id_categoria_estudio = :id");
+        return $stmt->execute([':n' => mb_strtoupper(trim($nombre), 'UTF-8'), ':d' => trim($descripcion), ':id' => $id]);
     }
 
 }

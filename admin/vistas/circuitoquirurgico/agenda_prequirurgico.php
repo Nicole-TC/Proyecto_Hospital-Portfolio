@@ -208,4 +208,69 @@
   </div>
 </div>
 
+<style>
+/* Dark Mode - Agenda Prequirúrgico */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .bg-white {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .card-footer.bg-white {
+    background-color: #2a2a2a !important;
+    border-top: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .form-control.border-0,
+body.modo-oscuro .form-select.border-0 {
+    border: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+body.modo-oscuro .form-control::placeholder {
+    color: #888 !important;
+}
+body.modo-oscuro .text-secondary {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .table-hover tbody tr:hover {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+body.modo-oscuro thead.bg-light th {
+    background-color: #333 !important;
+    color: #adb5bd !important;
+}
+body.modo-oscuro #panelDia {
+    border-left: 3px solid #4eaaff !important;
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .modal-content {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border: 1px solid #444 !important;
+}
+body.modo-oscuro .modal-header {
+    border-color: #444 !important;
+}
+body.modo-oscuro .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+body.modo-oscuro .form-control.bg-light {
+    background-color: #1a1a1a !important;
+    color: #888 !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/agenda_prequirurgico.js"></script>

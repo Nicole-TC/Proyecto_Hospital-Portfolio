@@ -102,4 +102,47 @@
   </div>
 </div>
 
+<style>
+/* Dark Mode - Asistencia */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .card-footer.bg-white {
+    background-color: #2a2a2a !important;
+    border-top: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro .form-control.border-0,
+body.modo-oscuro .form-select.border-0 {
+    border: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #80bdff !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+}
+body.modo-oscuro .form-control::placeholder {
+    color: #888 !important;
+}
+body.modo-oscuro .text-secondary {
+    color: #adb5bd !important;
+}
+body.modo-oscuro .table-hover tbody tr:hover {
+    background-color: #333 !important;
+    color: #fff !important;
+}
+body.modo-oscuro thead.bg-light th {
+    background-color: #333 !important;
+    color: #adb5bd !important;
+}
+</style>
+
 <script src="js/circuitoquirurgico/asistencia.js"></script>

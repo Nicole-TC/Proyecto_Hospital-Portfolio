@@ -187,5 +187,32 @@
 
 <!-- ========== TOAST NOTIFICACIÓN ========== -->
 
+<style>
+/* Dark Mode - Gestión de Usuarios */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .bg-white {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .card-footer.bg-white {
+    background-color: #2a2a2a !important;
+    border-top: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro #modalConfirmarBaja .modal-header {
+    background: #3a1418 !important;
+}
+body.modo-oscuro #modalConfirmarBaja .rounded-3 {
+    background: #2a2a2a !important;
+    border-color: #444 !important;
+}
+</style>
 
 <script src="js/circuitoquirurgico/gestion_usuarios.js"></script>

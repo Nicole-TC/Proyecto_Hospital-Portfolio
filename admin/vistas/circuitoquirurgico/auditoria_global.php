@@ -137,6 +137,28 @@
   </div>
 </div>
 
+<style>
+/* Dark Mode - Auditoría Global */
+body.modo-oscuro .bg-light {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+}
+body.modo-oscuro .bg-white {
+    background-color: #2a2a2a !important;
+}
+body.modo-oscuro .card-footer.bg-white {
+    background-color: #2a2a2a !important;
+    border-top: 1px solid #444 !important;
+}
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select {
+    background-color: #2a2a2a !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+</style>
+
+
 <script>
   // Variable de paginación (lista para cuando llegue el back)
   let paginaAuditoria = 1;

@@ -14,6 +14,10 @@
             <!-- Circuito Quirúrgico -->
             <?php HTML::tarjeta("menu_circuitoquirurgico", "Circuito Quirúrgico", "Beta", "fa-solid fa-heart-pulse", "danger", "index.php?modulo=menu_circuitoquirurgico"); ?>
 
+            <!-- Bot -->
+            <?php HTML::tarjeta("menu_bot", "Bot", "Asistente Virtual", "fa-solid fa-robot", "primary", "index.php?modulo=menu_bot"); ?>
+
+
 
 
             <!-- <div class="col-xl-3 col-lg-4 col-sm-6 col-12 mb-1">

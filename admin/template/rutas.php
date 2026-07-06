@@ -75,6 +75,11 @@ switch (@$_GET["modulo"]) {
         //delegamos las rutas a un archivo propio del modulo digtalizar
         $require = "template/digitalizacion/rutas_dig.php";
         break;
+
+    // BOT
+    case 'menu_bot':
+        require_once "template/chatbot/rutas_bot.php";
+        break;
 }
 ?>
 

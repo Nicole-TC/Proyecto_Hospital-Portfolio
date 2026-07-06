@@ -13,6 +13,7 @@ $conversaciones = [
         'hora' => '15:30',
         'ultimo_mensaje' => 'Hola, quería consultar sobre el turno de cardiología para mañana.',
         'estado' => 'Resuelto',
+        'tags' => ['soporte', 'turno', 'resuelto'],
         'mensajes' => [
             ['remitente' => 'usuario', 'texto' => 'Hola, quería consultar sobre el turno de cardiología para mañana.', 'hora' => '15:28'],
             ['remitente' => 'bot', 'texto' => '¡Hola, Juan! Claro, tu turno de cardiología está confirmado para mañana a las 09:30 hs con el Dr. Rossi en el Consultorio 4.', 'hora' => '15:29'],
@@ -32,6 +33,7 @@ $conversaciones = [
         'hora' => '14:15',
         'ultimo_mensaje' => 'Necesito reprogramar mi ecografía.',
         'estado' => 'Escalado',
+        'tags' => ['imágenes', 'reprogramación', 'escalado'],
         'mensajes' => [
             ['remitente' => 'usuario', 'texto' => 'Hola, buenas tardes. Necesito reprogramar mi ecografía.', 'hora' => '14:10'],
             ['remitente' => 'bot', 'texto' => 'Hola María, entiendo. Por favor ingresa tu número de documento.', 'hora' => '14:11'],
@@ -52,6 +54,7 @@ $conversaciones = [
         'hora' => 'Ayer',
         'ultimo_mensaje' => '¿Tienen los resultados del laboratorio?',
         'estado' => 'Resuelto',
+        'tags' => ['laboratorio', 'resultados', 'resuelto'],
         'mensajes' => [
             ['remitente' => 'usuario', 'texto' => 'Hola, ¿tienen los resultados del laboratorio del análisis de sangre del lunes?', 'hora' => 'Ayer 10:00'],
             ['remitente' => 'bot', 'texto' => 'Hola Carlos, ingresando a tu portal de paciente puedes descargarlos directamente.', 'hora' => 'Ayer 10:01'],
@@ -70,6 +73,7 @@ $conversaciones = [
         'hora' => 'Ayer',
         'ultimo_mensaje' => 'Quiero cancelar el turno de pediatría.',
         'estado' => 'Resuelto',
+        'tags' => ['pediatría', 'cancelación', 'resuelto'],
         'mensajes' => [
             ['remitente' => 'usuario', 'texto' => 'Quiero cancelar el turno de pediatría.', 'hora' => 'Ayer 18:30'],
             ['remitente' => 'bot', 'texto' => 'Turno cancelado correctamente. ¿Deseas solicitar otro?', 'hora' => 'Ayer 18:31'],
@@ -88,6 +92,7 @@ $conversaciones = [
         'hora' => '02 Jul',
         'ultimo_mensaje' => '¿Cuál es el horario de farmacia?',
         'estado' => 'Resuelto',
+        'tags' => ['farmacia', 'información', 'resuelto'],
         'mensajes' => [
             ['remitente' => 'usuario', 'texto' => 'Hola, ¿cuál es el horario de farmacia?', 'hora' => '02 Jul 09:12'],
             ['remitente' => 'bot', 'texto' => 'Hola Pedro, la farmacia de guardia atiende las 24 horas del día.', 'hora' => '02 Jul 09:13'],
@@ -105,6 +110,7 @@ $conversaciones = [
         'hora' => '30 Jun',
         'ultimo_mensaje' => 'El bot me da error al sacar turno.',
         'estado' => 'Escalado',
+        'tags' => ['error', 'turnos', 'escalado'],
         'mensajes' => [
             ['remitente' => 'usuario', 'texto' => 'El bot me da error al sacar turno.', 'hora' => '30 Jun 16:40'],
             ['remitente' => 'bot', 'texto' => 'Disculpe las molestias, voy a derivar su consulta con soporte técnico.', 'hora' => '30 Jun 16:41'],
@@ -190,7 +196,7 @@ $conversaciones = [
                                 $platform_icon = 'fa-brands fa-telegram text-info';
                             }
                             ?>
-                            <div class="list-group-item list-group-item-action p-3 chat-item border-bottom" 
+                            <div class="list-group-item list-group-item-action p-3 chat-item border-bottom <?php echo $chat['id'] == 1 ? 'active-chat' : ''; ?>" 
                                  data-id="<?php echo $chat['id']; ?>" 
                                  id="chat-item-<?php echo $chat['id']; ?>"
                                  data-plataforma="<?php echo $chat['plataforma']; ?>"
@@ -240,8 +246,39 @@ $conversaciones = [
                 <div class="card border shadow-sm" style="height: 600px;">
                     <!-- Cabecera del chat activo (Subtarea 5) -->
                     <div id="chat-activo-header" class="card-header bg-transparent py-3 border-bottom">
-                        <!-- Cabecera y métricas se insertarán aquí (Subtarea 5) -->
-                        <div class="text-muted small">Seleccione una conversación de la lista para ver sus detalles</div>
+                        <?php
+                        $primer_chat = $conversaciones[0];
+                        ?>
+                        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark" id="chat-header-nombre"><?php echo $primer_chat['nombre']; ?></h5>
+                                <span class="text-muted small" id="chat-header-ticket">Ticket: <span class="fw-semibold text-secondary" id="chat-header-ticket-val"><?php echo $primer_chat['ticket']; ?></span></span>
+                            </div>
+                            <div id="chat-header-tags" class="d-flex gap-1 flex-wrap">
+                                <?php foreach ($primer_chat['tags'] as $tag): ?>
+                                    <?php
+                                    $tag_badge = 'bg-secondary-subtle text-secondary';
+                                    if ($tag == 'resueltos' || $tag == 'resuelto') $tag_badge = 'bg-success-subtle text-success border-success-subtle';
+                                    if ($tag == 'escalados' || $tag == 'escalado') $tag_badge = 'bg-danger-subtle text-danger border-danger-subtle';
+                                    ?>
+                                    <span class="badge <?php echo $tag_badge; ?> rounded-pill border px-2 py-1" style="font-size: 0.75rem;"><?php echo $tag; ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <!-- Franja gris sutil de métricas -->
+                        <div class="d-flex align-items-center gap-3 px-3 py-2 bg-light border rounded text-muted small flex-wrap" id="chat-header-metricas" style="font-size: 0.8rem;">
+                            <div>
+                                <i class="fa-solid fa-message me-1 text-primary"></i> <span id="chat-metric-mensajes" class="fw-semibold"><?php echo $primer_chat['mensajes_count']; ?></span> mensajes
+                            </div>
+                            <div class="vr d-none d-sm-block" style="height: 14px;"></div>
+                            <div>
+                                <i class="fa-solid fa-clock me-1 text-warning"></i> Duración: <span id="chat-metric-duracion" class="fw-semibold"><?php echo $primer_chat['duracion']; ?></span>
+                            </div>
+                            <div class="vr d-none d-sm-block" style="height: 14px;"></div>
+                            <div>
+                                <i class="fa-solid fa-user-tie me-1 text-success"></i> Agente: <span id="chat-metric-agente" class="fw-semibold"><?php echo $primer_chat['agente']; ?></span>
+                            </div>
+                        </div>
                     </div>
                     <!-- Área de mensajes (Subtarea 6) -->
                     <div class="card-body p-3 overflow-auto" id="chat-activo-mensajes" style="height: calc(100% - 56px); background-color: #f8f9fa;">

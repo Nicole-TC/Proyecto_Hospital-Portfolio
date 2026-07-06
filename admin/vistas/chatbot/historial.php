@@ -1,6 +1,119 @@
 <?php
 // Vista: Historial de Conversaciones (OmniBot Hospital)
 // Subtarea 1: Cabecera de la vista (Título principal y texto de "6 conversaciones en total")
+
+// Datos simulados de conversaciones (Subtarea 4)
+$conversaciones = [
+    [
+        'id' => 1,
+        'ticket' => '#TK-8472',
+        'nombre' => 'Juan Pérez',
+        'iniciales' => 'JP',
+        'plataforma' => 'whatsapp',
+        'hora' => '15:30',
+        'ultimo_mensaje' => 'Hola, quería consultar sobre el turno de cardiología para mañana.',
+        'estado' => 'Resuelto',
+        'mensajes' => [
+            ['remitente' => 'usuario', 'texto' => 'Hola, quería consultar sobre el turno de cardiología para mañana.', 'hora' => '15:28'],
+            ['remitente' => 'bot', 'texto' => '¡Hola, Juan! Claro, tu turno de cardiología está confirmado para mañana a las 09:30 hs con el Dr. Rossi en el Consultorio 4.', 'hora' => '15:29'],
+            ['remitente' => 'usuario', 'texto' => 'Excelente, muchas gracias por la información.', 'hora' => '15:30'],
+            ['remitente' => 'bot', 'texto' => '¡De nada! Si tienes otra duda, aquí estaré. Que tengas un buen día.', 'hora' => '15:30'],
+        ],
+        'mensajes_count' => 4,
+        'duracion' => '2 min',
+        'agente' => 'OmniBot'
+    ],
+    [
+        'id' => 2,
+        'ticket' => '#TK-9102',
+        'nombre' => 'María Gómez',
+        'iniciales' => 'MG',
+        'plataforma' => 'telegram',
+        'hora' => '14:15',
+        'ultimo_mensaje' => 'Necesito reprogramar mi ecografía.',
+        'estado' => 'Escalado',
+        'mensajes' => [
+            ['remitente' => 'usuario', 'texto' => 'Hola, buenas tardes. Necesito reprogramar mi ecografía.', 'hora' => '14:10'],
+            ['remitente' => 'bot', 'texto' => 'Hola María, entiendo. Por favor ingresa tu número de documento.', 'hora' => '14:11'],
+            ['remitente' => 'usuario', 'texto' => 'Mi DNI es 12.345.678.', 'hora' => '14:11'],
+            ['remitente' => 'bot', 'texto' => 'Lo siento, no encuentro turnos disponibles para reprogramación automática esta semana. Te derivo con un agente del área de imágenes.', 'hora' => '14:12'],
+            ['remitente' => 'usuario', 'texto' => 'Bueno, aguardo que me contacten.', 'hora' => '14:15'],
+        ],
+        'mensajes_count' => 5,
+        'duracion' => '5 min',
+        'agente' => 'Humano (Soporte)'
+    ],
+    [
+        'id' => 3,
+        'ticket' => '#TK-2281',
+        'nombre' => 'Carlos López',
+        'iniciales' => 'CL',
+        'plataforma' => 'whatsapp',
+        'hora' => 'Ayer',
+        'ultimo_mensaje' => '¿Tienen los resultados del laboratorio?',
+        'estado' => 'Resuelto',
+        'mensajes' => [
+            ['remitente' => 'usuario', 'texto' => 'Hola, ¿tienen los resultados del laboratorio del análisis de sangre del lunes?', 'hora' => 'Ayer 10:00'],
+            ['remitente' => 'bot', 'texto' => 'Hola Carlos, ingresando a tu portal de paciente puedes descargarlos directamente.', 'hora' => 'Ayer 10:01'],
+            ['remitente' => 'usuario', 'texto' => '¡Ahí los vi! Buenísimo.', 'hora' => 'Ayer 10:05'],
+        ],
+        'mensajes_count' => 3,
+        'duracion' => '5 min',
+        'agente' => 'OmniBot'
+    ],
+    [
+        'id' => 4,
+        'ticket' => '#TK-7741',
+        'nombre' => 'Ana Martínez',
+        'iniciales' => 'AM',
+        'plataforma' => 'whatsapp',
+        'hora' => 'Ayer',
+        'ultimo_mensaje' => 'Quiero cancelar el turno de pediatría.',
+        'estado' => 'Resuelto',
+        'mensajes' => [
+            ['remitente' => 'usuario', 'texto' => 'Quiero cancelar el turno de pediatría.', 'hora' => 'Ayer 18:30'],
+            ['remitente' => 'bot', 'texto' => 'Turno cancelado correctamente. ¿Deseas solicitar otro?', 'hora' => 'Ayer 18:31'],
+            ['remitente' => 'usuario', 'texto' => 'No por el momento, gracias.', 'hora' => 'Ayer 18:32'],
+        ],
+        'mensajes_count' => 3,
+        'duracion' => '2 min',
+        'agente' => 'OmniBot'
+    ],
+    [
+        'id' => 5,
+        'ticket' => '#TK-4431',
+        'nombre' => 'Pedro Sánchez',
+        'iniciales' => 'PS',
+        'plataforma' => 'telegram',
+        'hora' => '02 Jul',
+        'ultimo_mensaje' => '¿Cuál es el horario de farmacia?',
+        'estado' => 'Resuelto',
+        'mensajes' => [
+            ['remitente' => 'usuario', 'texto' => 'Hola, ¿cuál es el horario de farmacia?', 'hora' => '02 Jul 09:12'],
+            ['remitente' => 'bot', 'texto' => 'Hola Pedro, la farmacia de guardia atiende las 24 horas del día.', 'hora' => '02 Jul 09:13'],
+        ],
+        'mensajes_count' => 2,
+        'duracion' => '1 min',
+        'agente' => 'OmniBot'
+    ],
+    [
+        'id' => 6,
+        'ticket' => '#TK-1092',
+        'nombre' => 'Lucía Torres',
+        'iniciales' => 'LT',
+        'plataforma' => 'whatsapp',
+        'hora' => '30 Jun',
+        'ultimo_mensaje' => 'El bot me da error al sacar turno.',
+        'estado' => 'Escalado',
+        'mensajes' => [
+            ['remitente' => 'usuario', 'texto' => 'El bot me da error al sacar turno.', 'hora' => '30 Jun 16:40'],
+            ['remitente' => 'bot', 'texto' => 'Disculpe las molestias, voy a derivar su consulta con soporte técnico.', 'hora' => '30 Jun 16:41'],
+        ],
+        'mensajes_count' => 2,
+        'duracion' => '1 min',
+        'agente' => 'Humano (Soporte)'
+    ]
+];
 ?>
 <div class="container-fluid py-3">
     <div class="card p-4 shadow-sm">
@@ -61,10 +174,62 @@
                         </h6>
                     </div>
                     <div class="card-body p-0 overflow-auto" id="lista-conversaciones" style="height: calc(100% - 56px);">
-                        <!-- Las tarjetas de la lista se insertarán aquí (Subtarea 4) -->
-                        <div class="p-4 text-center text-muted">
-                            <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i>
-                            <p class="mb-0 small">Cargando lista de chats...</p>
+                        <div class="list-group list-group-flush" id="lista-chats-group">
+                            <?php foreach ($conversaciones as $chat): ?>
+                            <?php
+                            // Colores de los badges según estado
+                            $badge_class = 'bg-success-subtle text-success border border-success-subtle';
+                            if ($chat['estado'] == 'Escalado') {
+                                $badge_class = 'bg-danger-subtle text-danger border border-danger-subtle';
+                            } elseif ($chat['estado'] == 'Pendiente') {
+                                $badge_class = 'bg-info-subtle text-info border border-info-subtle';
+                            }
+                            // Icono de plataforma
+                            $platform_icon = 'fa-brands fa-whatsapp text-success';
+                            if ($chat['plataforma'] == 'telegram') {
+                                $platform_icon = 'fa-brands fa-telegram text-info';
+                            }
+                            ?>
+                            <div class="list-group-item list-group-item-action p-3 chat-item border-bottom" 
+                                 data-id="<?php echo $chat['id']; ?>" 
+                                 id="chat-item-<?php echo $chat['id']; ?>"
+                                 data-plataforma="<?php echo $chat['plataforma']; ?>"
+                                 data-estado="<?php echo strtolower($chat['estado']); ?>">
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Avatar Circular -->
+                                    <div class="avatar rounded-circle d-flex align-items-center justify-content-center fw-bold bg-light text-secondary border shadow-sm" 
+                                         style="width: 42px; height: 42px; flex-shrink: 0; font-size: 0.9rem;">
+                                        <?php echo $chat['iniciales']; ?>
+                                    </div>
+                                    
+                                    <!-- Detalles -->
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <h6 class="fw-bold mb-0 text-truncate text-dark" style="font-size: 0.9rem;">
+                                                <?php echo $chat['nombre']; ?>
+                                            </h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">
+                                                <?php echo $chat['hora']; ?>
+                                            </small>
+                                        </div>
+                                        
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="text-muted small fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.02em;">
+                                                <?php echo $chat['ticket']; ?>
+                                            </span>
+                                            <i class="<?php echo $platform_icon; ?>" style="font-size: 0.85rem;"></i>
+                                            <span class="badge <?php echo $badge_class; ?> rounded-pill ms-auto px-2 py-1" style="font-size: 0.65rem;">
+                                                <?php echo $chat['estado']; ?>
+                                            </span>
+                                        </div>
+                                        
+                                        <p class="mb-0 text-muted text-truncate small" style="font-size: 0.8rem;">
+                                            <?php echo $chat['ultimo_mensaje']; ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
@@ -91,5 +256,38 @@
         </div>
 
         <!-- Las siguientes subtareas se irán agregando aquí abajo de forma iterativa -->
+
+        <style>
+        .chat-item {
+            cursor: pointer;
+            transition: background-color 0.15s ease, border-left-color 0.15s ease;
+            border-left: 3px solid transparent;
+        }
+        .chat-item:hover {
+            background-color: rgba(32, 201, 151, 0.03) !important;
+        }
+        .chat-item.active-chat {
+            background-color: rgba(32, 201, 151, 0.08) !important;
+            border-left-color: #20c997 !important;
+        }
+        /* Custom scrollbar para la lista y mensajes */
+        #lista-conversaciones::-webkit-scrollbar,
+        #chat-activo-mensajes::-webkit-scrollbar {
+            width: 6px;
+        }
+        #lista-conversaciones::-webkit-scrollbar-track,
+        #chat-activo-mensajes::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #lista-conversaciones::-webkit-scrollbar-thumb,
+        #chat-activo-mensajes::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        #lista-conversaciones::-webkit-scrollbar-thumb:hover,
+        #chat-activo-mensajes::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        </style>
     </div>
 </div>

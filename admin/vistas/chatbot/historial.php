@@ -318,7 +318,175 @@ $conversaciones = [
             </div>
         </div>
 
-        <!-- Las siguientes subtareas se irán agregando aquí abajo de forma iterativa -->
+        <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Cargar datos codificados desde PHP
+            const conversaciones = <?php echo json_encode($conversaciones); ?>;
+            
+            const chatItems = document.querySelectorAll(".chat-item");
+            const searchInput = document.getElementById("input-busqueda");
+            const chips = document.querySelectorAll(".chip-filtro");
+            const messagesContainer = document.getElementById("chat-activo-mensajes");
+            
+            // Hacer scroll al fondo en el chat inicial al cargar
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            // --- Lógica del Estado Activo de Chats (Subtarea 7) ---
+            chatItems.forEach(item => {
+                item.addEventListener("click", function() {
+                    const chatId = parseInt(this.getAttribute("data-id"));
+                    const chat = conversaciones.find(c => c.id === chatId);
+                    
+                    if (!chat) return;
+
+                    // 1. Cambiar estado visual en la lista
+                    chatItems.forEach(i => i.classList.remove("active-chat"));
+                    this.classList.add("active-chat");
+
+                    // 2. Actualizar Cabecera de la columna derecha
+                    document.getElementById("chat-header-nombre").innerText = chat.nombre;
+                    document.getElementById("chat-header-ticket-val").innerText = chat.ticket;
+                    document.getElementById("chat-metric-mensajes").innerText = chat.mensajes_count;
+                    document.getElementById("chat-metric-duracion").innerText = chat.duracion;
+                    document.getElementById("chat-metric-agente").innerText = chat.agente;
+
+                    // Reconstruir Tags
+                    const tagsContainer = document.getElementById("chat-header-tags");
+                    tagsContainer.innerHTML = "";
+                    chat.tags.forEach(tag => {
+                        let tagBadge = "bg-secondary-subtle text-secondary";
+                        if (tag === "resueltos" || tag === "resuelto") tagBadge = "bg-success-subtle text-success border-success-subtle";
+                        if (tag === "escalados" || tag === "escalado") tagBadge = "bg-danger-subtle text-danger border-danger-subtle";
+                        
+                        const span = document.createElement("span");
+                        span.className = `badge ${tagBadge} rounded-pill border px-2 py-1`;
+                        span.style.fontSize = "0.75rem";
+                        span.innerText = tag;
+                        tagsContainer.appendChild(span);
+                    });
+
+                    // 3. Reconstruir Burbujas de Mensajes
+                    messagesContainer.innerHTML = "";
+                    chat.mensajes.forEach(msg => {
+                        if (msg.remitente === "bot") {
+                            const div = document.createElement("div");
+                            div.className = "d-flex flex-row-reverse align-items-start gap-2 msg-container";
+                            div.setAttribute("data-remitente", "bot");
+                            div.innerHTML = `
+                                <div class="avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" 
+                                     style="width: 32px; height: 32px; flex-shrink: 0; background-color: #20c997;">
+                                    <i class="fa-solid fa-robot" style="font-size: 0.8rem;"></i>
+                                </div>
+                                <div class="d-flex flex-column align-items-end">
+                                    <div class="p-3 rounded-3 text-white shadow-sm msg-bubble" style="background-color: #20c997; max-width: 85%; font-size: 0.9rem; border-top-right-radius: 0px !important;">
+                                        ${escapeHTML(msg.texto)}
+                                    </div>
+                                    <small class="text-muted" style="font-size: 0.7rem; margin-top: 2px;">
+                                        ${msg.hora}
+                                    </small>
+                                </div>
+                            `;
+                            messagesContainer.appendChild(div);
+                        } else {
+                            const div = document.createElement("div");
+                            div.className = "d-flex align-items-start gap-2 msg-container";
+                            div.setAttribute("data-remitente", "usuario");
+                            div.innerHTML = `
+                                <div class="d-flex flex-column">
+                                    <div class="p-3 rounded-3 text-dark border shadow-sm bg-white msg-bubble" style="max-width: 85%; font-size: 0.9rem; border-top-left-radius: 0px !important;">
+                                        ${escapeHTML(msg.texto)}
+                                    </div>
+                                    <small class="text-muted ps-1" style="font-size: 0.7rem; margin-top: 2px;">
+                                        ${msg.hora}
+                                    </small>
+                                </div>
+                            `;
+                            messagesContainer.appendChild(div);
+                        }
+                    });
+
+                    // Hacer scroll al fondo de la conversación seleccionada
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+            });
+
+            // --- Lógica de Filtros por Chips y Búsqueda ---
+            let filtroActual = "todos";
+            let busquedaActual = "";
+
+            function aplicarFiltros() {
+                chatItems.forEach(item => {
+                    const id = parseInt(item.getAttribute("data-id"));
+                    const chat = conversaciones.find(c => c.id === id);
+                    if (!chat) return;
+
+                    const matchesFiltro = 
+                        filtroActual === "todos" ||
+                        (filtroActual === "whatsapp" && chat.plataforma === "whatsapp") ||
+                        (filtroActual === "telegram" && chat.plataforma === "telegram") ||
+                        (filtroActual === "resueltos" && chat.estado.toLowerCase() === "resuelto") ||
+                        (filtroActual === "escalados" && chat.estado.toLowerCase() === "escalado");
+
+                    const matchesBusqueda = 
+                        chat.nombre.toLowerCase().includes(busquedaActual) ||
+                        chat.ticket.toLowerCase().includes(busquedaActual) ||
+                        chat.ultimo_mensaje.toLowerCase().includes(busquedaActual);
+
+                    if (matchesFiltro && matchesBusqueda) {
+                        item.style.setProperty("display", "block", "important");
+                    } else {
+                        item.style.setProperty("display", "none", "important");
+                    }
+                });
+            }
+
+            // Evento input para la búsqueda
+            if (searchInput) {
+                searchInput.addEventListener("input", function() {
+                    busquedaActual = this.value.toLowerCase().trim();
+                    aplicarFiltros();
+                });
+            }
+
+            // Evento click para los chips
+            chips.forEach(chip => {
+                chip.addEventListener("click", function() {
+                    // Actualizar estilos activos de los chips
+                    chips.forEach(c => {
+                        c.classList.remove("active");
+                        c.classList.add("bg-white", "text-muted", "border");
+                        c.style.backgroundColor = "";
+                        c.style.color = "";
+                        c.style.border = "";
+                    });
+
+                    this.classList.add("active");
+                    this.classList.remove("bg-white", "text-muted", "border");
+                    this.style.backgroundColor = "#20c997";
+                    this.style.color = "white";
+                    this.style.border = "none";
+
+                    filtroActual = this.getAttribute("data-filtro");
+                    aplicarFiltros();
+                });
+            });
+
+            // Función de escape HTML para evitar vulnerabilidades XSS
+            function escapeHTML(str) {
+                return str.replace(/[&<>'"]/g, 
+                    tag => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[tag] || tag)
+                );
+            }
+        });
+        </script>
 
         <style>
         .chat-item {

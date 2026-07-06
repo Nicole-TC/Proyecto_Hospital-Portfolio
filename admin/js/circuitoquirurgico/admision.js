@@ -279,25 +279,35 @@ form.addEventListener('submit', function (e) {
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.ok) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Operación exitosa',
-          text: data.mensaje,
-          confirmButtonText: 'Ir a agenda',
-          confirmButtonColor: '#3085d6',
-        }).then(function (result) {
-          if (result.isConfirmed) {
-            var datos = serializarFormulario();
-            sessionStorage.setItem('pacienteAgenda', JSON.stringify({
-              dni: datos.dni,
-              nombre: datos.nombre,
-              apellido: datos.apellido,
-              email: datos.email
-            }));
+        var datos = serializarFormulario();
+        if (data.ordenReusada) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Orden existente',
+            text: data.mensaje,
+            confirmButtonText: 'Volver',
+            confirmButtonColor: '#3085d6',
+          }).then(function () {
             reiniciarFormulario();
-            window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
-          }
-        });
+          });
+        } else {
+          Swal.fire({
+            icon: 'success',
+            title: 'Operación exitosa',
+            html:
+              '<p style="margin:5px 0 0;color:#666;">DNI del paciente:</p>' +
+              '<p style="font-size:2rem;font-weight:bold;color:#0d6efd;letter-spacing:3px;margin:5px 0 0;">' +
+                datos.dni +
+              '</p>',
+            confirmButtonText: 'Ir a agenda',
+            confirmButtonColor: '#3085d6',
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              reiniciarFormulario();
+              window.location.href = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda&dni=' + datos.dni;
+            }
+          });
+        }
       } else {
         var msg = data.errores ? data.errores.join('\n') : (data.error || 'Error desconocido');
         Swal.fire({

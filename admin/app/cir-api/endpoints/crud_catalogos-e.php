@@ -58,6 +58,19 @@ try {
                 : ["status" => "success", "message" => "Nombre disponible."]);
             break;
 
+        case 'validar_nombre_categoria':
+            $nombre = trim($_GET['nombre'] ?? '');
+            if (empty($nombre)) {
+                echo json_encode(["status" => "error", "message" => "Nombre vacío."]);
+                exit;
+            }
+            $excluirId = isset($_GET['excluir']) ? (int)$_GET['excluir'] : null;
+            $existe = ConsultasCirugias::existeNombreCategoria($nombre, $excluirId);
+            echo json_encode($existe
+                ? ["status" => "error",   "message" => "Ya existe una categoría con ese nombre."]
+                : ["status" => "success", "message" => "Nombre disponible."]);
+            break;
+
         case 'validar_nombre_estudio':
             $nombre = trim($_GET['nombre'] ?? '');
             if (empty($nombre)) {
@@ -72,6 +85,11 @@ try {
             break;
 
         /* ---------- LISTAR ---------- */
+        case 'listar_categorias':
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
+            echo json_encode(["status" => "success", "categorias" => ConsultasCirugias::listarCategorias()]);
+            break;
+
         case 'listar_cirugias':
             if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
             $buscar = trim($_GET['buscar'] ?? '');
@@ -128,11 +146,31 @@ try {
                 : json_encode(["status" => "error",   "message" => "No se pudo guardar la cirugía."]);
             break;
 
+        case 'crear_categoria':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+            $nombre      = mb_strtoupper(trim($data['nombre'] ?? ''), 'UTF-8');
+            $descripcion = trim($data['descripcion'] ?? '');
+
+            $err = validarNombreCampo($nombre, 3, 150, 'nombre de la categoría');
+            if ($err) { echo json_encode(["status" => "error", "message" => $err]); exit; }
+
+            if (ConsultasCirugias::existeNombreCategoria($nombre)) {
+                echo json_encode(["status" => "error", "message" => "Ya existe una categoría con ese nombre."]);
+                exit;
+            }
+
+            $id = ConsultasCirugias::crearCategoria($nombre, $descripcion);
+            echo $id
+                ? json_encode(["status" => "success", "message" => "Categoría creada correctamente.", "id" => $id])
+                : json_encode(["status" => "error",   "message" => "No se pudo guardar la categoría."]);
+            break;
+
         case 'crear_estudio':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
             $nombre      = mb_strtoupper(trim($data['nombre'] ?? ''), 'UTF-8');
             $descripcion = trim($data['descripcion'] ?? '');
             $observacion = trim($data['observacion'] ?? '');
+            $id_categoria_estudio = isset($data['id_categoria_estudio']) && $data['id_categoria_estudio'] ? (int)$data['id_categoria_estudio'] : null;
 
             $err = validarNombreCampo($nombre, 3, 100, 'nombre del estudio');
             if ($err) { echo json_encode(["status" => "error", "message" => $err]); exit; }
@@ -143,7 +181,7 @@ try {
                 exit;
             }
 
-            $id = ConsultasCirugias::crearEstudio($nombre, $descripcion, $observacion);
+            $id = ConsultasCirugias::crearEstudio($nombre, $descripcion, $observacion, $id_categoria_estudio);
             echo $id
                 ? json_encode(["status" => "success", "message" => "Estudio creado correctamente.", "id" => $id, "estudio" => ["id" => $id, "nombre" => $nombre, "descripcion" => $descripcion, "observaciones" => $observacion]])
                 : json_encode(["status" => "error",   "message" => "No se pudo guardar el estudio."]);
@@ -172,12 +210,35 @@ try {
                 : json_encode(["status" => "error",   "message" => "No se pudo actualizar la cirugía."]);
             break;
 
+        case 'editar_categoria':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+            $id          = (int)($data['id'] ?? 0);
+            $nombre      = mb_strtoupper(trim($data['nombre'] ?? ''), 'UTF-8');
+            $descripcion = trim($data['descripcion'] ?? '');
+
+            if (!$id) { echo json_encode(["status" => "error", "message" => "ID inválido."]); exit; }
+
+            $err = validarNombreCampo($nombre, 3, 150, 'nombre de la categoría');
+            if ($err) { echo json_encode(["status" => "error", "message" => $err]); exit; }
+
+            if (ConsultasCirugias::existeNombreCategoria($nombre, $id)) {
+                echo json_encode(["status" => "error", "message" => "Ya existe otra categoría con ese nombre."]);
+                exit;
+            }
+
+            $ok = ConsultasCirugias::actualizarCategoria($id, $nombre, $descripcion);
+            echo $ok
+                ? json_encode(["status" => "success", "message" => "Categoría actualizada correctamente."])
+                : json_encode(["status" => "error",   "message" => "No se pudo actualizar la categoría."]);
+            break;
+
         case 'editar_estudio':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
             $id          = (int)($data['id'] ?? 0);
             $nombre      = mb_strtoupper(trim($data['nombre'] ?? ''), 'UTF-8');
             $descripcion = trim($data['descripcion'] ?? '');
             $observacion = trim($data['observacion'] ?? '');
+            $id_categoria_estudio = isset($data['id_categoria_estudio']) && $data['id_categoria_estudio'] ? (int)$data['id_categoria_estudio'] : null;
 
             if (!$id) { echo json_encode(["status" => "error", "message" => "ID inválido."]); exit; }
 
@@ -190,7 +251,7 @@ try {
                 exit;
             }
 
-            $ok = ConsultasCirugias::actualizarEstudio($id, $nombre, $descripcion, $observacion);
+            $ok = ConsultasCirugias::actualizarEstudio($id, $nombre, $descripcion, $observacion, $id_categoria_estudio);
             echo $ok
                 ? json_encode(["status" => "success", "message" => "Estudio actualizado correctamente."])
                 : json_encode(["status" => "error",   "message" => "No se pudo actualizar el estudio."]);
@@ -218,6 +279,24 @@ try {
             echo $ok
                 ? json_encode(["status" => "success", "message" => "Cirugía eliminada correctamente."])
                 : json_encode(["status" => "error",   "message" => "No se pudo eliminar la cirugía."]);
+            break;
+
+        case 'eliminar_categoria':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+            $id = (int)($data['id'] ?? 0);
+            if (!$id) { echo json_encode(["status" => "error", "message" => "ID inválido."]); exit; }
+
+            // Verificar si la categoría tiene estudios
+            if (ConsultasCirugias::categoriaEnUsoEstudios($id)) {
+                echo json_encode(["status" => "error",
+                    "message" => "No se puede eliminar: la categoría tiene estudios vinculados."]);
+                exit;
+            }
+
+            $ok = ConsultasCirugias::eliminarCategoria($id);
+            echo $ok
+                ? json_encode(["status" => "success", "message" => "Categoría eliminada correctamente."])
+                : json_encode(["status" => "error",   "message" => "No se pudo eliminar la categoría."]);
             break;
 
         case 'eliminar_estudio':

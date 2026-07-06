@@ -143,7 +143,7 @@ function _renderSemanaConFeriados(feriados) {
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
-                    ocupados:    data.ok ? data.turnos.length : 0,
+                    ocupados:    data.ok ? (data.ocupados ?? data.turnos.length) : 0,
                     cupos_total: data.ok ? data.cupos_total : 0,
                     activo:      data.ok ? data.cupo_activo : false,
                     sin_config:  data.ok ? (data.sin_config || false) : false
@@ -273,7 +273,7 @@ function _renderMesConFeriados(ref, feriados) {
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 cuposCache[fecha] = {
-                    ocupados: data.ok ? data.turnos.length : 0,
+                    ocupados: data.ok ? (data.ocupados ?? data.turnos.length) : 0,
                     cupos_total: data.ok ? data.cupos_total : 0,
                     activo: data.ok ? data.cupo_activo : true
                 };
@@ -662,6 +662,14 @@ document.getElementById('modalNuevoTurno').addEventListener('hidden.bs.modal', f
     limpiarDatosPacienteModal();
 });
 
+document.getElementById('modalNuevoTurno').addEventListener('shown.bs.modal', function () {
+    if (!dniDesdeUrl) return;
+    var input = document.getElementById('modalDni');
+    input.value = dniDesdeUrl;
+    input.dispatchEvent(new Event('blur'));
+    dniDesdeUrl = '';
+});
+
 document.getElementById('formNuevoTurno').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -852,6 +860,19 @@ function renderPaginacion(paginaActualLocal, totalPaginas, filtro, valor, limite
     });
     ul.appendChild(liNext);
 }
+
+/* ── DNI desde URL (proveniente de admisión) ── */
+var dniDesdeUrl = (function() {
+    var params = new URLSearchParams(window.location.search);
+    var dni = params.get('dni') || '';
+    if (dni) {
+        params.delete('dni');
+        var newUrl = window.location.pathname + '?' + params.toString() + window.location.hash;
+        newUrl = newUrl.replace(/\?$/, '');
+        window.history.replaceState({}, '', newUrl);
+    }
+    return dni;
+})();
 
 /* ── Inicialización ── */
 fetch(ENDPOINT_AGENDA + '?action=obtener_tipo_turno_preq')

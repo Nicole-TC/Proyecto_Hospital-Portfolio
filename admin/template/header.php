@@ -49,10 +49,6 @@
   <!-- Bootstrap overrides -->
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
 
-  <?php if (@$_GET['modulo'] === 'menu_circuitoquirurgico'): ?>
-  <link rel="stylesheet" href="css/circuitoquirurgico/cq-componentes.css">
-  <?php endif; ?>
-
   <link href="https://fonts.googleapis.com/css?family=Montserrat&display=swap" rel="stylesheet">
 
   <!-- JS adicional -->

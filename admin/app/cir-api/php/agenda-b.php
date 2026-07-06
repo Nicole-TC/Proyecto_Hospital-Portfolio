@@ -1,6 +1,6 @@
 <?php
 $envPath = __DIR__ . '/../../../../.env';
-if (empty(getenv('DB_HOST')) && file_exists($envPath)) {
+if (file_exists($envPath)) {
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         if (strpos(trim($line), '#') === 0) continue;
@@ -145,7 +145,14 @@ class ConsultasAgenda {
         if (!$config['activo'])    return ['disponible' => false, 'motivo' => 'dia_no_habilitado'];
 
         $turnos  = self::obtenerTurnosPorFecha($fecha, $id_tipo_turno);
-        $ocupados = count($turnos);
+        // Solo cuentan para el cupo los turnos que no están cancelados:
+        // al cancelar un turno se libera su lugar para reutilizarlo.
+        $ocupados = 0;
+        foreach ($turnos as $t) {
+            if (($t['estado_codigo'] ?? '') !== 'CANC') {
+                $ocupados++;
+            }
+        }
         $maximo   = $config['cupos_total'];
 
         if ($maximo > 0 && $ocupados >= $maximo) {
@@ -259,35 +266,11 @@ class ConsultasAgenda {
             ];
         }
 
-        // 2. Verificar turno duplicado ANTES de validar estado de orden
-        $sqlTurno = "
-            SELECT t.id_turno
-            FROM turno t
-            JOIN estado et ON et.id_estado = t.id_estado
-            WHERE t.id_persona_asiste = :id_persona_asiste
-              AND t.id_tipo_turno     = :id_tipo_turno
-              AND et.codigo IN ('CONF', 'AUS')
-            LIMIT 1
-        ";
-        $stmtT = $pdo->prepare($sqlTurno);
-        $stmtT->bindParam(':id_persona_asiste', $persona['id_persona_asiste'], PDO::PARAM_INT);
-        $stmtT->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
-        $stmtT->execute();
-        $turnoActivo = $stmtT->fetch(PDO::FETCH_ASSOC);
-
-        if ($turnoActivo) {
-            return [
-                'ok'         => true,
-                'encontrado' => false,
-                'motivo'     => 'turno_duplicado',
-                'mensaje'    => 'El paciente ya tiene un turno prequirúrgico activo. No se puede asignar otro.'
-            ];
-        }
-
-        // 3. Buscar la orden médica más reciente y validar su estado
+        // 2. Buscar la orden médica más reciente y validar su estado
         $sqlOrden = "
             SELECT
                 om.id_orden,
+                om.id_cirugia_catalogo,
                 om.id_estado        AS id_estado_orden,
                 eo.codigo           AS codigo_estado_orden,
                 eo.descripcion      AS desc_estado_orden,
@@ -298,7 +281,13 @@ class ConsultasAgenda {
             LEFT JOIN profesional prf ON prf.id_profesional  = om.id_profesional
             LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
             WHERE om.id_persona_asiste = :id_persona_asiste
-            ORDER BY om.id_orden DESC
+              AND eo.codigo NOT IN ('FIN', 'CANC', 'RECH', 'ELIM')
+            ORDER BY
+              (SELECT COUNT(*) FROM turno t2
+               JOIN estado e2 ON e2.id_estado = t2.id_estado
+               WHERE t2.id_orden = om.id_orden
+               AND e2.codigo IN ('CANC', 'AUS')) DESC,
+              om.id_orden DESC
             LIMIT 1
         ";
         $stmtO = $pdo->prepare($sqlOrden);
@@ -328,6 +317,34 @@ class ConsultasAgenda {
                 'encontrado' => false,
                 'motivo'     => 'orden_bloqueada',
                 'mensaje'    => $descripciones[$orden['codigo_estado_orden']] . ' No es posible asignar un nuevo turno.'
+            ];
+        }
+
+        // 3. Verificar turno duplicado solo para la MISMA cirugía
+        $sqlTurno = "
+            SELECT t.id_turno
+            FROM turno t
+            JOIN estado et ON et.id_estado = t.id_estado
+            JOIN orden_medica om2 ON om2.id_orden = t.id_orden
+            WHERE t.id_persona_asiste = :id_persona_asiste
+              AND t.id_tipo_turno     = :id_tipo_turno
+              AND om2.id_cirugia_catalogo = :id_cirugia_catalogo
+              AND et.codigo IN ('PROG', 'CONF')
+            LIMIT 1
+        ";
+        $stmtT = $pdo->prepare($sqlTurno);
+        $stmtT->bindParam(':id_persona_asiste', $persona['id_persona_asiste'], PDO::PARAM_INT);
+        $stmtT->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmtT->bindParam(':id_cirugia_catalogo', $orden['id_cirugia_catalogo'], PDO::PARAM_INT);
+        $stmtT->execute();
+        $turnoActivo = $stmtT->fetch(PDO::FETCH_ASSOC);
+
+        if ($turnoActivo) {
+            return [
+                'ok'         => true,
+                'encontrado' => false,
+                'motivo'     => 'turno_duplicado',
+                'mensaje'    => 'El paciente ya tiene un turno activo para esta cirugía. No puede asignarse otro hasta que el actual se cancele o finalice.'
             ];
         }
 
@@ -392,17 +409,37 @@ class ConsultasAgenda {
         }
 
 
-        // Obtener estado AUS para turno (por defecto ausente hasta que asista)
-        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'AUS' AND entidad = 'TURNO' LIMIT 1";
+        // Validar que la nueva fecha no sea anterior al turno cancelado/ausente
+        $sqlRef = "
+            SELECT MIN(DATE(t.fecha_hora))
+            FROM turno t
+            JOIN estado e ON e.id_estado = t.id_estado
+            WHERE t.id_orden = :id_orden
+              AND e.codigo IN ('CANC', 'AUS')
+        ";
+        $stmtRef = $pdo->prepare($sqlRef);
+        $stmtRef->bindValue(':id_orden', $datos['id_orden'], PDO::PARAM_INT);
+        $stmtRef->execute();
+        $fechaReferencia = $stmtRef->fetchColumn();
+
+        if ($fechaReferencia && $fechaSolo < $fechaReferencia) {
+            $fechaFormateada = date('d/m/Y', strtotime($fechaReferencia));
+            return ['ok' => false, 'errores' => [
+                "No se puede reprogramar para antes del {$fechaFormateada} (fecha del turno cancelado)."
+            ]];
+        }
+
+        // Obtener estado PROG para turno (programado por defecto)
+        $sqlEstado = "SELECT id_estado FROM estado WHERE codigo = 'PROG' AND entidad = 'TURNO' LIMIT 1";
         $id_estado = $pdo->query($sqlEstado)->fetchColumn();
         if (!$id_estado) {
-            return ['ok' => false, 'errores' => ['No se encontró el estado AUS para turno.']];
+            return ['ok' => false, 'errores' => ['No se encontró el estado PROG para turno.']];
         }
 
         // Insertar turno
         $sqlTurno = "
             INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora, ausente)
-            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, true)
+            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, false)
             RETURNING id_turno
         ";
         $stmt = $pdo->prepare($sqlTurno);
@@ -605,46 +642,50 @@ try {
             'body' => $cuerpo
         ];
 
+          $mailServiceUrl = getenv('MAIL_SERVICE_URL');
+          $mailServiceUser = getenv('MAIL_SERVICE_USER');
+          $mailServicePassword = getenv('MAIL_SERVICE_PASSWORD');
 
-        $ch = curl_init('http://149.50.137.127:3080/public/index.php');
+         $ch = curl_init($mailServiceUrl);
 
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERPWD => 'cirugia:Cirugia2026',
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json'
-            ],
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_TIMEOUT => 5
+         curl_setopt_array($ch, [
+           CURLOPT_POST => true,
+           CURLOPT_RETURNTRANSFER => true,
+           CURLOPT_USERPWD => $mailServiceUser . ':' . $mailServicePassword,
+           CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json'
+         ],
+           CURLOPT_POSTFIELDS => json_encode($payload),
+           CURLOPT_TIMEOUT => 5
         ]);
 
-        $response = curl_exec($ch);
-        $curlError = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+         $response = curl_exec($ch);
+         $curlError = curl_error($ch);
+         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-        curl_close($ch);
+         curl_close($ch);
 
-        // 3. LOGS (no interrumpe flujo)
-        error_log("MAIL RESPONSE: " . $response);
-        error_log("MAIL ERROR: " . $curlError);
-        error_log("MAIL HTTP CODE: " . $httpCode);
+         // 3. LOGS (no interrumpe flujo)
+         error_log("MAIL RESPONSE: " . $response);
+         error_log("MAIL ERROR: " . $curlError);
+         error_log("MAIL HTTP CODE: " . $httpCode);
 
-        // 4. fallback silencioso
-        if ($curlError || $httpCode !== 200) {
-            error_log("MAIL FAIL - turno {$id_turno}");
+         // 4. fallback silencioso
+         if ($curlError || $httpCode !== 200) {
+          error_log("MAIL FAIL - turno {$id_turno}");
         }
 
-    } else {
-        error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
-    }
+        } else {
+         error_log("MAIL SKIP - sin email paciente, turno {$id_turno}");
+        }
 
-       } catch (Exception $e) {
-    error_log("MAIL EXCEPTION: " . $e->getMessage());
-       }
+        } catch (Exception $e) {
+         error_log("MAIL EXCEPTION: " . $e->getMessage());
+        }
+        
 
-        return ['ok' => true, 'id_turno' => $id_turno];
-    }
+            return ['ok' => true, 'id_turno' => $id_turno];
+        }
 
     // ── Helper interno ─────────────────────────────────────────────────
     private static function _getDniPorPersonaAsiste($id_persona_asiste, $pdo) {

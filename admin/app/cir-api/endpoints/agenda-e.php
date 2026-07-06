@@ -17,7 +17,15 @@ if ($method === 'GET' && $action === 'turnos_del_dia') {
     }
     try {
         $turnos = ConsultasAgenda::obtenerTurnosPorFecha($fecha, $id_tipo_turno);
-        
+
+        // Los turnos cancelados liberan su lugar.
+        $ocupados = 0;
+        foreach ($turnos as $t) {
+            if (($t['estado_codigo'] ?? '') !== 'CANC') {
+                $ocupados++;
+            }
+        }
+
         $cupoConfig = ['activo' => false, 'cupos_total' => 0, 'sin_config' => true];
         if ($id_tipo_turno) {
             $config = ConsultasAgenda::obtenerConfiguracionCupo($fecha, $id_tipo_turno);
@@ -31,6 +39,7 @@ if ($method === 'GET' && $action === 'turnos_del_dia') {
         echo json_encode([
             'ok'         => true, 
             'turnos'     => $turnos,
+            'ocupados'   => $ocupados,
             'cupo_activo'=> $cupoConfig['activo'],
             'cupos_total'=> $cupoConfig['cupos_total'],
             'sin_config' => $cupoConfig['sin_config'] ?? true

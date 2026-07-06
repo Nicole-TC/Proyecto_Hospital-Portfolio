@@ -50,6 +50,46 @@
             </div>
         </div>
 
+        <!-- Layout de Dos Columnas -->
+        <div class="row g-4">
+            <!-- Columna Izquierda: Lista de chats -->
+            <div class="col-12 col-md-5 col-lg-4">
+                <div class="card border shadow-sm" style="height: 600px;">
+                    <div class="card-header bg-transparent py-3 border-bottom">
+                        <h6 class="fw-bold mb-0 text-muted text-uppercase" style="font-size: 0.85rem; letter-spacing: 0.05em;">
+                            <i class="fa-solid fa-list me-1"></i> Chats Recientes
+                        </h6>
+                    </div>
+                    <div class="card-body p-0 overflow-auto" id="lista-conversaciones" style="height: calc(100% - 56px);">
+                        <!-- Las tarjetas de la lista se insertarán aquí (Subtarea 4) -->
+                        <div class="p-4 text-center text-muted">
+                            <i class="fa-solid fa-spinner fa-spin fa-2x mb-3 text-primary"></i>
+                            <p class="mb-0 small">Cargando lista de chats...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Detalle y mensajes del chat activo -->
+            <div class="col-12 col-md-7 col-lg-8">
+                <div class="card border shadow-sm" style="height: 600px;">
+                    <!-- Cabecera del chat activo (Subtarea 5) -->
+                    <div id="chat-activo-header" class="card-header bg-transparent py-3 border-bottom">
+                        <!-- Cabecera y métricas se insertarán aquí (Subtarea 5) -->
+                        <div class="text-muted small">Seleccione una conversación de la lista para ver sus detalles</div>
+                    </div>
+                    <!-- Área de mensajes (Subtarea 6) -->
+                    <div class="card-body p-3 overflow-auto" id="chat-activo-mensajes" style="height: calc(100% - 56px); background-color: #f8f9fa;">
+                        <!-- Los mensajes de Usuario y Bot se insertarán aquí (Subtarea 6) -->
+                        <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
+                            <i class="fa-solid fa-comments fa-3x mb-3" style="opacity: 0.4;"></i>
+                            <p class="mb-0 small fw-semibold">No hay ninguna conversación seleccionada</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Las siguientes subtareas se irán agregando aquí abajo de forma iterativa -->
     </div>
 </div>

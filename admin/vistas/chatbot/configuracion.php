@@ -40,9 +40,9 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
 }
 ?>
 <div class="container-fluid py-3">
-    <div class="row g-4">        
+    <div class="row g-4">
         <!-- Contenedor Base Principal Adaptativo (Usa .card) -->
-        <main class="col-12 col-md-9 col-lg-10">
+        <main class="col-12">
             <div class="card p-4 shadow-sm h-100" style="min-height: 400px;">
                 <!-- El contenido de la vista se inyectará aquí en las siguientes subtareas -->
                 <div id="vista-configuracion-contenido">
@@ -110,21 +110,6 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
     </div>
 </div>
 
-<style>
-/* Efectos de hover sutiles y premium para los links del sidebar interno */
-.config-sidebar .nav-link {
-    transition: background-color 0.2s ease, color 0.2s ease;
-    border-radius: 6px;
-}
-.config-sidebar .nav-link:not([style*="background-color"]):hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #212529 !important;
-}
-body.modo-oscuro .config-sidebar .nav-link:not([style*="background-color"]):hover {
-    background-color: rgba(255, 255, 255, 0.07);
-    color: #ffffff !important;
-}
-</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {

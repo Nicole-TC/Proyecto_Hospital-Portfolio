@@ -281,12 +281,38 @@ $conversaciones = [
                         </div>
                     </div>
                     <!-- Área de mensajes (Subtarea 6) -->
-                    <div class="card-body p-3 overflow-auto" id="chat-activo-mensajes" style="height: calc(100% - 56px); background-color: #f8f9fa;">
-                        <!-- Los mensajes de Usuario y Bot se insertarán aquí (Subtarea 6) -->
-                        <div class="h-100 d-flex flex-column align-items-center justify-content-center text-muted">
-                            <i class="fa-solid fa-comments fa-3x mb-3" style="opacity: 0.4;"></i>
-                            <p class="mb-0 small fw-semibold">No hay ninguna conversación seleccionada</p>
-                        </div>
+                    <div class="card-body p-3 overflow-auto d-flex flex-column gap-3" id="chat-activo-mensajes" style="height: calc(100% - 56px); background-color: #f8f9fa;">
+                        <?php foreach ($primer_chat['mensajes'] as $msg): ?>
+                            <?php if ($msg['remitente'] == 'bot'): ?>
+                                <!-- Mensaje del Bot (Alineado a la derecha con Avatar) -->
+                                <div class="d-flex flex-row-reverse align-items-start gap-2 msg-container" data-remitente="bot">
+                                    <div class="avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" 
+                                         style="width: 32px; height: 32px; flex-shrink: 0; background-color: #20c997;">
+                                        <i class="fa-solid fa-robot" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    <div class="d-flex flex-column align-items-end">
+                                        <div class="p-3 rounded-3 text-white shadow-sm msg-bubble" style="background-color: #20c997; max-width: 85%; font-size: 0.9rem; border-top-right-radius: 0px !important;">
+                                            <?php echo htmlspecialchars($msg['texto']); ?>
+                                        </div>
+                                        <small class="text-muted" style="font-size: 0.7rem; margin-top: 2px;">
+                                            <?php echo $msg['hora']; ?>
+                                        </small>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <!-- Mensaje del Usuario (Alineado a la izquierda) -->
+                                <div class="d-flex align-items-start gap-2 msg-container" data-remitente="usuario">
+                                    <div class="d-flex flex-column">
+                                        <div class="p-3 rounded-3 text-dark border shadow-sm bg-white msg-bubble" style="max-width: 85%; font-size: 0.9rem; border-top-left-radius: 0px !important;">
+                                            <?php echo htmlspecialchars($msg['texto']); ?>
+                                        </div>
+                                        <small class="text-muted ps-1" style="font-size: 0.7rem; margin-top: 2px;">
+                                            <?php echo $msg['hora']; ?>
+                                        </small>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
                     </div>
                 </div>
             </div>

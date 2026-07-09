@@ -57,7 +57,18 @@ try {
                 exit;
             }
 
-            $exito = ConsultasSeguimiento::registrarAptoFisico($id_orden, $id_profesional, $observaciones, $codigo_estado);
+            try {
+                $exito = ConsultasSeguimiento::registrarAptoFisico($id_orden, $id_profesional, $observaciones, $codigo_estado);
+            } catch (AptoDuplicadoException $e) {
+                echo json_encode([
+                    "status"          => "error",
+                    "message"         => $e->getMessage(),
+                    "ya_registrado"   => true,
+                    "fecha_registro"  => $e->fechaExistente,
+                    "estado_registro" => $e->estadoExistente
+                ]);
+                exit;
+            }
             
             if ($exito) {
                 echo json_encode(["status" => "success", "message" => "Apto Físico registrado correctamente."]);

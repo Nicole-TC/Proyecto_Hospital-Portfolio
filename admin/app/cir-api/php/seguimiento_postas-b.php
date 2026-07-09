@@ -3,6 +3,22 @@ require_once __DIR__ . '/../../../model/cir_conexion.php';
 require_once __DIR__ . '/funciones.php';
 require_once __DIR__ . '/ordenes_medicas-b.php';
 
+/*
+ * se lanza cuando ya existe un Apto Físico registrado para la
+ * orden y se intenta registrar otro. Transporta los datos del registro
+ * previo para que el endpoint los pueda devolver al frontend.
+ */
+class AptoDuplicadoException extends Exception {
+    public string $fechaExistente;
+    public string $estadoExistente;
+
+    public function __construct(string $fechaExistente, string $estadoExistente) {
+        $this->fechaExistente = $fechaExistente;
+        $this->estadoExistente = $estadoExistente;
+        parent::__construct('Ya existe un Apto Físico registrado para esta orden.');
+    }
+}
+
 class ConsultasSeguimiento {
 
     // fecha_desde, fecha_hasta y estado_apto son OBLIGATORIOS.
@@ -136,7 +152,25 @@ class ConsultasSeguimiento {
 
     public static function registrarAptoFisico(int $id_orden, int $id_profesional, string $observaciones, string $codigo_estado): bool {
         $pdo = conexionCircuitoQuirurgico();
-        
+
+        // el Apto Físico se carga UNA sola vez por orden. Si ya
+        // existe cualquier verificación previa (OK o RECH), se rechaza el
+        // registro y se informa fecha/hora + estado del registro existente.
+        $stmtCheck = $pdo->prepare("
+            SELECT v.fecha, ev.codigo AS estado_codigo
+            FROM verificacion_pre_cirugia v
+            INNER JOIN estado ev ON ev.id_estado = v.id_estado
+            WHERE v.id_orden = :id_orden
+            ORDER BY v.fecha DESC NULLS LAST, v.id_verificacion DESC
+            LIMIT 1
+        ");
+        $stmtCheck->execute([':id_orden' => $id_orden]);
+        $existente = $stmtCheck->fetch(PDO::FETCH_ASSOC);
+
+        if ($existente) {
+            throw new AptoDuplicadoException($existente['fecha'], $existente['estado_codigo']);
+        }
+
         // Obtener id de estado
         $idEstado = id_estado('VERIFICACION', $codigo_estado);
         if (!$idEstado) {

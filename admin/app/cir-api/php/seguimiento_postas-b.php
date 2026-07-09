@@ -5,7 +5,7 @@ require_once __DIR__ . '/ordenes_medicas-b.php';
 
 class ConsultasSeguimiento {
 
-    // CIR-723: fecha_desde, fecha_hasta y estado_apto son OBLIGATORIOS.
+    // fecha_desde, fecha_hasta y estado_apto son OBLIGATORIOS.
     // Sin los 3 completos, no se devuelve ningún registro.
     public static function listarSeguimiento(string $fecha_desde, string $fecha_hasta, string $estado_apto, string $buscar = ''): array {
         $pdo = conexionCircuitoQuirurgico();
@@ -34,12 +34,12 @@ class ConsultasSeguimiento {
         $params[':id_rech'] = $idRech ?: 0;
         $params[':id_canc'] = $idCanc ?: 0;
 
-        // CIR-723: rango de fechas de admisión (obligatorio)
+        // rango de fechas de admisión (obligatorio)
         $where .= " AND om.fecha_orden::date BETWEEN :fecha_desde AND :fecha_hasta";
         $params[':fecha_desde'] = $fecha_desde;
         $params[':fecha_hasta'] = $fecha_hasta;
 
-        // CIR-723: estado del Apto Físico (obligatorio, TODOS = sin restricción)
+        // estado del Apto Físico (obligatorio, TODOS = sin restricción)
         if ($estado_apto === 'PEND') {
             $where .= " AND NOT EXISTS (SELECT 1 FROM verificacion_pre_cirugia v2 WHERE v2.id_orden = om.id_orden)";
         } elseif ($estado_apto !== 'TODOS') {

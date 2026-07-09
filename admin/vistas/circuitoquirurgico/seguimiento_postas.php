@@ -4,12 +4,47 @@
             Seguimiento de Postas
         </div>
         <div class="col-12 mt-1 mb-1">
+            <div class="col-12 mt-1 mb-1">
+
+            <!-- Filtros obligatorios: sin completarlos no se muestran registros -->
+            <div class="row g-2 align-items-end mb-3 mt-2 mx-1">
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary mb-1" for="filtro-fecha-desde">Admisión desde <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control form-control-sm" id="filtro-fecha-desde">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary mb-1" for="filtro-fecha-hasta">Admisión hasta <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control form-control-sm" id="filtro-fecha-hasta">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-secondary mb-1" for="filtro-estado-apto">Estado Apto Físico <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" id="filtro-estado-apto">
+                        <option value="">Seleccione...</option>
+                        <option value="PEND">Pendiente</option>
+                        <option value="OK">Aprobado</option>
+                        <option value="RECH">Observado</option>
+                        <option value="TODOS">Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex">
+                    <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar-postas">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i> Buscar
+                    </button>
+                </div>
+            </div>
+            <!-- (corrección de alerta): oculto por defecto. Solo se muestra si se aprieta "Buscar" sin completar los filtros. -->
+            <div id="postas-sin-filtro" class="alert alert-warning mx-1 py-2 small d-none">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Seleccioná el estado de Apto Físico y el rango de fechas de admisión, y presioná "Buscar" para ver los registros.
+            </div>
+
             <div class="table-responsive">
                 <table class="table align-center display" id="tabla-postas">
                     <thead>
                         <tr>
                             <th scope="col" class="text-center">DNI</th>
                             <th scope="col">Paciente</th>
+                            <th scope="col" class="text-center">Solicitud</th>
                             <th scope="col">Cirugía Indicada</th>
                             <th scope="col" class="text-center">Admisión</th>
                             <th scope="col" class="text-center">Postas (Estudios)</th>
@@ -66,6 +101,14 @@
                 </div>
              </div>
           </div>
+        </div>
+
+        <div id="modal-solicitud-usuario" class="alert alert-danger d-flex align-items-start gap-2 mb-4 d-none">
+            <i class="fa-solid fa-triangle-exclamation fs-5 mt-1"></i>
+            <div>
+                <strong>Solicitud importante del profesional:</strong>
+                <p class="mb-0" id="modal-solicitud-texto"></p>
+            </div>
         </div>
 
         <!-- Dos columnas -->
@@ -199,16 +242,67 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
 <script>
     let seguimientosMap = {}; // Para guardar los datos localmente y no tener que hacer otro fetch al abrir modal
 
+    // la tabla no debe traer nada hasta que se complete el filtro obligatorio.
+    function filtrosPostasCompletos() {
+        return !!($('#filtro-fecha-desde').val() && $('#filtro-fecha-hasta').val() && $('#filtro-estado-apto').val());
+    }
+
+    // normalizar fechas
+    function formatearFecha(valor, conHora) {
+        if (!valor) return '-';
+        let match = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+        if (!match) return valor;
+        let [, anio, mes, dia, hora, min] = match;
+        let texto = `${dia}/${mes}/${anio}`;
+        if (conHora && hora !== undefined) {
+            texto += ` ${hora}:${min}`;
+        }
+        return texto;
+    }
+
     $(document).ready(function() {
         $('#tabla-postas').DataTable({
-            'ajax': {
-                'url': 'app/cir-api/endpoints/seguimiento_postas-e.php?accion=listar_seguimiento',
-                'dataSrc': 'registros'
+            'ajax': function(data, callback) {
+                // (corrección): si faltan filtros, la tabla queda vacía
+                // y SIN mostrar ningún aviso automático (el aviso solo aparece
+                // al presionar "Buscar".
+                if (!filtrosPostasCompletos()) {
+                    callback({ 'data': [] });
+                    return;
+                }
+                $.ajax({
+                    'url': 'app/cir-api/endpoints/seguimiento_postas-e.php',
+                    'data': {
+                        'accion': 'listar_seguimiento',
+                        'fecha_desde': $('#filtro-fecha-desde').val(),
+                        'fecha_hasta': $('#filtro-fecha-hasta').val(),
+                        'estado_apto': $('#filtro-estado-apto').val()
+                    },
+                    'dataType': 'json',
+                    'success': function(json) {
+                        if (json.status === 'error') {
+                            alert('Error: ' + json.message);
+                            callback({ 'data': [] });
+                            return;
+                        }
+                        callback({ 'data': json.registros || [] });
+                    }
+                });
             },
             'columns': [
                 { 'data': 'dni', 'className': 'text-center' },
                 { 'data': null, 'render': function(data) { 
                     return data.paciente_apellido + ', ' + data.paciente_nombre; 
+                }},
+                { 'data': 'observaciones', 'className': 'text-center', 'render': function(data) {
+                    if (!data) return '<span class="text-muted">-</span>';
+                    let texto = String(data).replace(/"/g, '&quot;');
+                    return '<span class="badge bg-danger" title="' + texto + '">' +
+                           '<i class="fa-solid fa-triangle-exclamation me-1"></i>Ver solicitud</span>';
+                }},
+                { 'data': 'cirugia_nombre' },
+                { 'data': 'fecha_orden', 'className': 'text-center', 'render': function(data) {
+                    return formatearFecha(data);
                 }},
                 { 'data': 'cirugia_nombre' },
                 { 'data': 'fecha_orden', 'className': 'text-center' },
@@ -260,6 +354,16 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         });
     });
 
+    // (corrección): el aviso solo se muestra si se intenta buscar sin completar los filtros.
+    $('#btn-filtrar-postas').on('click', function() {
+        if (!filtrosPostasCompletos()) {
+            $('#postas-sin-filtro').removeClass('d-none');
+            return;
+        }
+        $('#postas-sin-filtro').addClass('d-none');
+        $('#tabla-postas').DataTable().ajax.reload();
+    });
+
     function abrirModalExpediente(id_orden) {
         let data = seguimientosMap[id_orden];
         if (!data) return;
@@ -268,7 +372,15 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         $('#modal-paciente').text(data.paciente_apellido + ', ' + data.paciente_nombre);
         $('#modal-dni').text(data.dni);
         $('#modal-cirugia').text(data.cirugia_nombre || 'No definida');
-        $('#modal-admision').text(data.fecha_orden || '-');
+        $('#modal-admision').text(formatearFecha(data.fecha_orden));
+
+        // Solicitud / observación crítica del profesional
+        if (data.observaciones) {
+            $('#modal-solicitud-texto').text(data.observaciones);
+            $('#modal-solicitud-usuario').removeClass('d-none');
+        } else {
+            $('#modal-solicitud-usuario').addClass('d-none');
+        }
 
         // Formulario de Apto
         $('#apto-id-orden').val(id_orden);
@@ -309,7 +421,7 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
               <div class="bg-white text-primary mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle fs-5"></i></div>
               <div>
                  <p class="mb-0 fw-bold text-dark">Admisión Creada</p>
-                 <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${data.fecha_orden}</span>
+                 <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${formatearFecha(data.fecha_orden)}</span>
               </div>
            </div>
         `);
@@ -327,7 +439,7 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
                      <p class="mb-0 fw-bold text-dark">${textOk}</p>
                      <p class="mb-1 small text-secondary">Evaluado por: ${data.apto_fisico.profesional_nombre} ${data.apto_fisico.profesional_apellido} <br/> 
                      Obs: ${data.apto_fisico.checklist || 'Sin observaciones'}</p>
-                     <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${data.apto_fisico.fecha}</span>
+                     <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${formatearFecha(data.apto_fisico.fecha, true)}</span>
                   </div>
                </div>
             `);

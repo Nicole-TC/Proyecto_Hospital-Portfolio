@@ -241,6 +241,23 @@ body.modo-oscuro .dataTables_wrapper .dataTables_length label,
 body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
     color: #adb5bd !important;
 }
+
+/* (corrección): ícono de alerta para solicitud crítica del
+   profesional, ubicado en la fila del datatable (sin
+   necesidad de entrar al detalle)*/
+@keyframes parpadeoAlertaCritica {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+.icono-alerta-critica {
+    font-size: 1.6rem;
+    color: #dc3545;
+    cursor: help;
+    animation: parpadeoAlertaCritica 1.2s ease-in-out infinite;
+}
+body.modo-oscuro .icono-alerta-critica {
+    color: #ff6b6b;
+}
 </style>
 
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
@@ -337,9 +354,11 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
                 }},
                 { 'data': 'observaciones', 'className': 'text-center', 'render': function(data) {
                     if (!data) return '<span class="text-muted">-</span>';
+                    // (corrección)el badge chico quedaba poco visible. Se refuerza con un
+                    // ícono de alerta grande y parpadeante, con el texto completo
                     let texto = String(data).replace(/"/g, '&quot;');
-                    return '<span class="badge bg-danger" title="' + texto + '">' +
-                           '<i class="fa-solid fa-triangle-exclamation me-1"></i>Ver solicitud</span>';
+                    return '<i class="fa-solid fa-triangle-exclamation icono-alerta-critica" ' +
+                           'title="Solicitud crítica del profesional: ' + texto + '"></i>';
                 }},
                 { 'data': 'cirugia_nombre' },
                 { 'data': 'fecha_orden', 'className': 'text-center', 'render': function(data) {

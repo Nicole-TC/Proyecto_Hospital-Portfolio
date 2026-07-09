@@ -17,6 +17,9 @@
 
             <!-- Historial -->
             <?php HTML::tarjeta("menu_bot", "Historial", "Auditoría del bot", "fa-solid fa-clock-rotate-left", "info", "index.php?modulo=menu_bot&accion=historial"); ?>
+
+            <!-- Auditoría -->
+            <?php HTML::tarjeta("menu_bot", "Auditoría", "Cambios del sistema", "fa-solid fa-clipboard-list", "dark", "index.php?modulo=menu_bot&accion=auditoria"); ?>
         </div>
     </section>
 </div>

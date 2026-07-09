@@ -20,6 +20,11 @@ switch (@$_GET["accion"]) {
         $require = "vistas/chatbot/historial.php";
         break;
 
+    case 'auditoria':
+        $menu = 'Auditoría del Bot';
+        $require = "vistas/chatbot/auditoria.php";
+        break;
+
     default:
         // Si no hay acción, o la acción no existe, mostramos el menú principal del bot
         $menu = 'Menú del Bot';

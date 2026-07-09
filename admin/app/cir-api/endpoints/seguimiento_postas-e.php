@@ -30,11 +30,12 @@ try {
         
         case 'listar_seguimiento':
             if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
-            $buscar = trim($_GET['buscar'] ?? '');
-            $pagina = max(1, (int)($_GET['pagina'] ?? 1));
-            $limite = max(1, (int)($_GET['limite'] ?? 10));
-            
-            $resultado = ConsultasSeguimiento::listarSeguimiento($buscar, $pagina, $limite);
+            $fecha_desde = trim($_GET['fecha_desde'] ?? '');
+            $fecha_hasta = trim($_GET['fecha_hasta'] ?? '');
+            $estado_apto = trim($_GET['estado_apto'] ?? '');
+            $buscar      = trim($_GET['buscar'] ?? '');
+
+            $resultado = ConsultasSeguimiento::listarSeguimiento($fecha_desde, $fecha_hasta, $estado_apto, $buscar);
             echo json_encode(["status" => "success"] + $resultado);
             break;
 

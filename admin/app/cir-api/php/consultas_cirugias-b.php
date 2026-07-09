@@ -222,6 +222,8 @@ class ConsultasCirugias {
             $params[':buscar'] = '%' . $buscar . '%';
         }
 
+        $where .= " AND cc.id_estado = :id_estado";
+
         $sqlBase = "FROM combo_cirugia cc
                     JOIN catalogo_cirugia c ON c.id_cirugia_catalogo = cc.id_cirugia_catalogo
                     JOIN estudio e ON e.id_estudio = cc.id_estudio
@@ -275,12 +277,12 @@ class ConsultasCirugias {
         $pdo  = conexionCircuitoQuirurgico();
         try {
             $idActivo = id_estado('USUARIO', 'ACT');
-            $stmt = $pdo->prepare("SELECT id_cirugia_catalogo AS id, nombre FROM catalogo_cirugia WHERE id_estado = :id_estado AND id_cirugia_catalogo NOT IN (SELECT id_cirugia_catalogo FROM combo_cirugia) ORDER BY nombre");
+            $stmt = $pdo->prepare("SELECT id_cirugia_catalogo AS id, nombre FROM catalogo_cirugia WHERE id_estado = :id_estado AND id_cirugia_catalogo NOT IN (SELECT id_cirugia_catalogo FROM combo_cirugia WHERE id_estado = :id_estado) ORDER BY nombre");
             $stmt->execute([':id_estado' => $idActivo]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
-            $stmt = $pdo->prepare("SELECT id_cirugia_catalogo AS id, nombre FROM catalogo_cirugia WHERE id_cirugia_catalogo NOT IN (SELECT id_cirugia_catalogo FROM combo_cirugia) ORDER BY nombre");
-            $stmt->execute();
+            $stmt = $pdo->prepare("SELECT id_cirugia_catalogo AS id, nombre FROM catalogo_cirugia WHERE id_cirugia_catalogo NOT IN (SELECT id_cirugia_catalogo FROM combo_cirugia WHERE id_estado = :id_estado) ORDER BY nombre");
+            $stmt->execute([':id_estado' => $idActivo]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
@@ -292,8 +294,10 @@ class ConsultasCirugias {
         $pdo = conexionCircuitoQuirurgico();
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("INSERT INTO combo_cirugia (id_cirugia_catalogo, id_estudio) VALUES (:id_cirugia, :id_estudio)");
+            $idActivo = id_estado('USUARIO', 'ACT');
+            $stmt = $pdo->prepare("INSERT INTO combo_cirugia (id_cirugia_catalogo, id_estudio, id_estado) VALUES (:id_cirugia, :id_estudio, :id_estado) ON CONFLICT (id_cirugia_catalogo, id_estudio) DO UPDATE SET id_estado = :id_estado");
             $stmt->bindValue(':id_cirugia', $idCirugia, PDO::PARAM_INT);
+            $stmt->bindValue(':id_estado', $idActivo, PDO::PARAM_INT);
             foreach ($estudios as $idEstudio) {
                 $stmt->bindValue(':id_estudio', $idEstudio, PDO::PARAM_INT);
                 $stmt->execute();
@@ -316,11 +320,107 @@ class ConsultasCirugias {
         return (bool)$stmt->fetchColumn();
     }
 
-    public static function cirugiaEnUsoCombos(int $id): bool { return self::existeRegistro('combo_cirugia', 'id_cirugia_catalogo', $id); }
+    private static function existeRegistroActivo(string $tabla, string $columna, int $id, int $idActivo): bool {
+        $stmt = conexionCircuitoQuirurgico()->prepare("SELECT 1 FROM $tabla WHERE $columna = :id AND id_estado = :id_estado LIMIT 1");
+        $stmt->execute([':id' => $id, ':id_estado' => $idActivo]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public static function cirugiaEnUsoCombos(int $id): bool {
+        $idActivo = id_estado('USUARIO', 'ACT');
+        return self::existeRegistroActivo('combo_cirugia', 'id_cirugia_catalogo', $id, $idActivo);
+    }
     public static function cirugiaEnUsoOrdenes(int $id): bool { return self::existeRegistro('orden_medica', 'id_cirugia_catalogo', $id); }
-    public static function estudioEnUsoCombos(int $id): bool { return self::existeRegistro('combo_cirugia', 'id_estudio', $id); }
+    public static function estudioEnUsoCombos(int $id): bool {
+        $idActivo = id_estado('USUARIO', 'ACT');
+        return self::existeRegistroActivo('combo_cirugia', 'id_estudio', $id, $idActivo);
+    }
     public static function estudioEnUsoOrdenes(int $id): bool { return self::existeRegistro('orden_estudio', 'id_estudio', $id); }
     public static function categoriaEnUsoEstudios(int $id): bool { return self::existeRegistro('estudio', 'id_categoria_estudio', $id); }
+
+    /**
+     * Verifica si la cirugía tiene órdenes médicas activas (no canceladas, rechazadas ni eliminadas).
+     */
+    public static function cirugiaEnUsoOrdenesActivas(int $id): bool {
+        $pdo = conexionCircuitoQuirurgico();
+        $idCanc = id_estado('ORDEN', 'CANC');
+        $idRech = id_estado('ORDEN', 'RECH');
+        $idElim = id_estado('DATO', 'ELIM');
+
+        $sql = "SELECT 1 FROM orden_medica WHERE id_cirugia_catalogo = :id";
+        $params = [':id' => $id];
+
+        $excluir = [];
+        if ($idCanc) $excluir[] = $idCanc;
+        if ($idRech) $excluir[] = $idRech;
+        if ($idElim) $excluir[] = $idElim;
+
+        if (!empty($excluir)) {
+            $placeholders = [];
+            foreach ($excluir as $i => $eid) {
+                $pk = ':excluir_' . $i;
+                $placeholders[] = $pk;
+                $params[$pk] = $eid;
+            }
+            $sql .= " AND id_estado NOT IN (" . implode(',', $placeholders) . ")";
+        }
+
+        $sql .= " LIMIT 1";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    /**
+     * Eliminar una vinculación individual de combo (borrado lógico).
+     */
+    public static function eliminarCombo(int $idCirugia, int $idEstudio): bool {
+        $idElim = id_estado('DATO', 'ELIM');
+        $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE combo_cirugia SET id_estado = :est WHERE id_cirugia_catalogo = :id_c AND id_estudio = :id_e");
+        return $stmt->execute([':est' => $idElim, ':id_c' => $idCirugia, ':id_e' => $idEstudio]);
+    }
+
+    /**
+     * Eliminar todas las vinculaciones de un combo por cirugía (borrado lógico).
+     */
+    public static function eliminarCombosPorCirugia(int $idCirugia): bool {
+        $idElim = id_estado('DATO', 'ELIM');
+        $stmt = conexionCircuitoQuirurgico()->prepare("UPDATE combo_cirugia SET id_estado = :est WHERE id_cirugia_catalogo = :id");
+        return $stmt->execute([':est' => $idElim, ':id' => $idCirugia]);
+    }
+
+    /**
+     * Actualizar combo completo: actualiza nombre de cirugía, elimina vinculaciones existentes e inserta nuevas.
+     */
+    public static function actualizarComboCompleto(int $idCirugia, string $nombreCirugia, array $estudios): bool {
+        $pdo = conexionCircuitoQuirurgico();
+        $pdo->beginTransaction();
+        try {
+            $stmt1 = $pdo->prepare("UPDATE catalogo_cirugia SET nombre = :n WHERE id_cirugia_catalogo = :id");
+            $stmt1->execute([':n' => mb_strtoupper(trim($nombreCirugia), 'UTF-8'), ':id' => $idCirugia]);
+
+            $idElim = id_estado('DATO', 'ELIM');
+            $stmt2 = $pdo->prepare("UPDATE combo_cirugia SET id_estado = :est WHERE id_cirugia_catalogo = :id");
+            $stmt2->execute([':est' => $idElim, ':id' => $idCirugia]);
+
+            if (!empty($estudios)) {
+                $idActivo = id_estado('USUARIO', 'ACT');
+                $stmt3 = $pdo->prepare("INSERT INTO combo_cirugia (id_cirugia_catalogo, id_estudio, id_estado) VALUES (:id_c, :id_e, :id_est) ON CONFLICT (id_cirugia_catalogo, id_estudio) DO UPDATE SET id_estado = :id_est");
+                $stmt3->bindValue(':id_c', $idCirugia, PDO::PARAM_INT);
+                $stmt3->bindValue(':id_est', $idActivo, PDO::PARAM_INT);
+                foreach ($estudios as $idEstudio) {
+                    $stmt3->bindValue(':id_e', (int)$idEstudio, PDO::PARAM_INT);
+                    $stmt3->execute();
+                }
+            }
+
+            $pdo->commit();
+            return true;
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            return false;
+        }
+    }
 
     /**
      * Borrado lógico de cirugía del catálogo.

@@ -77,6 +77,39 @@ try {
             }
             break;
 
+        case 'marcar_estudio':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+
+            // SOLO EL ADMIN PUEDE TILDAR LOS ESTUDIOS (0/4 -> 4/4).
+            if (!isset($_SESSION['admin']) || $_SESSION['admin'] != 1) {
+                http_response_code(403);
+                echo json_encode(["status" => "error", "message" => "Acceso restringido a administradores."]);
+                exit;
+            }
+
+            $id_orden      = (int)($data['id_orden'] ?? 0);
+            $id_estudio    = (int)($data['id_estudio'] ?? 0);
+            $codigo_estado = mb_strtoupper(trim($data['codigo_estado'] ?? ''), 'UTF-8');
+
+            if (!$id_orden || !$id_estudio) {
+                echo json_encode(["status" => "error", "message" => "Faltan parámetros obligatorios (id_orden o id_estudio)."]);
+                exit;
+            }
+
+            if (!in_array($codigo_estado, ['PEND', 'REAL', 'OBS'])) {
+                echo json_encode(["status" => "error", "message" => "Código de estado inválido. Debe ser PEND, REAL u OBS."]);
+                exit;
+            }
+
+            $exito = ConsultasSeguimiento::marcarEstudio($id_orden, $id_estudio, $codigo_estado);
+
+            if ($exito) {
+                echo json_encode(["status" => "success", "message" => "Estudio actualizado."]);
+            } else {
+                echo json_encode(["status" => "error", "message" => "No se pudo actualizar el estudio."]);
+            }
+            break;
+
         default:
             echo json_encode(["status" => "error", "message" => "Acción no válida."]);
             break;

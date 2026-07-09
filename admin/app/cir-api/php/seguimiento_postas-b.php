@@ -191,5 +191,27 @@ class ConsultasSeguimiento {
             ':id_estado'      => $idEstado
         ]);
     }
+
+    // tildado de estudios/postas. Solo llamable por admin.
+    public static function marcarEstudio(int $id_orden, int $id_estudio, string $codigo_estado): bool {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $idEstado = id_estado('ESTUDIO', $codigo_estado);
+        if (!$idEstado) {
+            throw new Exception("El estado '$codigo_estado' no existe para Estudio.");
+        }
+
+        $stmt = $pdo->prepare("
+            UPDATE orden_estudio
+            SET id_estado = :id_estado
+            WHERE id_orden = :id_orden AND id_estudio = :id_estudio
+        ");
+
+        return $stmt->execute([
+            ':id_estado'  => $idEstado,
+            ':id_orden'   => $id_orden,
+            ':id_estudio' => $id_estudio,
+        ]);
+    }
 }
 ?>

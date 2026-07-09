@@ -1,3 +1,7 @@
+<?php
+// bandera para habilitar el tildado de estudios solo a usuarios admin.
+$esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
+?>
 <div class="col-12 mb-5">
     <div class="card">
         <div class="card-header">
@@ -115,7 +119,10 @@
         <div class="row g-4 mt-1">
           <!-- Estudios requeridos -->
           <div class="col-md-6">
-            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2"><i class="fa-solid fa-vial-circle-check me-2"></i>Estudios Requeridos</h6>
+            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2 d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-vial-circle-check me-2"></i>Estudios Requeridos</span>
+                <span class="badge bg-secondary" id="modal-contador-estudios">0/0</span>
+            </h6>
             <div class="list-group list-group-flush mt-3" id="modal-lista-estudios">
               <!-- Cargado via AJAX -->
             </div>
@@ -132,16 +139,17 @@
         </div>
 
       </div>
-      <div class="modal-footer border-top pt-3 pb-3 d-flex justify-content-between align-items-center">
-        
+      <div class="modal-footer border-top pt-3 pb-3 d-flex flex-wrap justify-content-between align-items-center">
+
+        <div id="apto-aviso" class="alert alert-warning w-100 py-2 small mb-2 d-none"></div>
+
         <div class="d-flex align-items-center flex-grow-1 me-4">
             <input type="hidden" id="apto-id-orden">
-            <select class="form-select w-auto me-2" id="apto-estado">
                 <option value="OK">Aprobar Apto Físico</option>
                 <option value="RECH">Observar / Rechazar</option>
             </select>
             <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica...">
-            <button type="button" class="btn btn-primary text-nowrap" onclick="guardarApto()">
+            <button type="button" class="btn btn-primary text-nowrap" id="btn-guardar-apto" onclick="guardarApto()">
                 <i class="fa-solid fa-save me-1"></i> Registrar
             </button>
         </div>
@@ -241,6 +249,9 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
 <!-- DATATABLES -->
 <script>
     let seguimientosMap = {}; // Para guardar los datos localmente y no tener que hacer otro fetch al abrir modal
+
+    // solo admin puede tildar estudios; se resuelve en PHP y se vuelca acá.
+    const ES_ADMIN_POSTAS = <?php echo $esAdminPostas ? 'true' : 'false'; ?>;
 
     // la tabla no debe traer nada hasta que se complete el filtro obligatorio.
     function filtrosPostasCompletos() {
@@ -395,12 +406,26 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
             data.estudios.forEach(e => {
                 let isCompletado = (e.estado_codigo === 'REAL');
                 let icon = isCompletado ? '<i class="fa-solid fa-file-medical text-success me-2"></i>' : '<i class="fa-solid fa-clock text-warning me-2"></i>';
-                
+
+                // checkbox de tildado, solo visible/habilitado para admin.
+                let checkboxHtml = '';
+                if (ES_ADMIN_POSTAS) {
+                    checkboxHtml = `
+                       <div class="form-check form-switch me-2">
+                          <input class="form-check-input chk-estudio" type="checkbox"
+                                 data-id-orden="${id_orden}" data-id-estudio="${e.id_estudio}"
+                                 ${isCompletado ? 'checked' : ''}>
+                       </div>`;
+                }
+
                 estudiosContainer.append(`
                     <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3 border-bottom">
-                       <div>
-                          <h6 class="mb-1 fw-bold text-dark">${icon} ${e.nombre}</h6>
-                          <small class="text-muted"><i class="fa-solid fa-building me-1"></i> Categoria: ${e.categoria || 'Sin categoría'}</small>
+                       <div class="d-flex align-items-center">
+                          ${checkboxHtml}
+                          <div>
+                             <h6 class="mb-1 fw-bold text-dark">${icon} ${e.nombre}</h6>
+                             <small class="text-muted"><i class="fa-solid fa-building me-1"></i> Categoria: ${e.categoria || 'Sin categoría'}</small>
+                          </div>
                        </div>
                        ${isCompletado ? '<span class="badge bg-success">Completado</span>' : '<span class="badge bg-warning text-dark">Pendiente</span>'}
                     </div>
@@ -409,6 +434,8 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         } else {
             estudiosContainer.append('<p class="text-muted mt-2">No hay estudios postas requeridos.</p>');
         }
+        actualizarContadorEstudios(data.estudios || []);
+        actualizarEstadoFormularioApto(data);
 
         // Historial Apto Físico
         let auditoriaContainer = $('#modal-auditoria');
@@ -458,6 +485,95 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         let myModal = new bootstrap.Modal(document.getElementById('expedienteModal'));
         myModal.show();
     }
+
+    // actualiza el contador 0/4 -> 4/4 del contenedor de estudios.
+    function actualizarContadorEstudios(estudios) {
+        let total = estudios.length;
+        let realizados = estudios.filter(e => e.estado_codigo === 'REAL').length;
+        $('#modal-contador-estudios')
+            .text(`${realizados}/${total}`)
+            .removeClass('bg-secondary bg-success bg-warning')
+            .addClass(total > 0 && realizados === total ? 'bg-success' : 'bg-secondary');
+    }
+
+    // habilita/bloquea el formulario de Apto Físico según:
+    // 1) si ya existe un Apto Físico registrado > solo lectura.
+    // 2) si faltan postas por completar > deshabilitado con aviso.
+    // 3) caso contrario > habilitado para registrar.
+    function actualizarEstadoFormularioApto(data) {
+        let $aviso = $('#apto-aviso');
+        let $estado = $('#apto-estado');
+        let $obs = $('#apto-observaciones');
+        let $btn = $('#btn-guardar-apto');
+
+        let estudios = data.estudios || [];
+        let totalEstudios = estudios.length;
+        let realizados = estudios.filter(e => e.estado_codigo === 'REAL').length;
+        let postasCompletas = totalEstudios === 0 || realizados === totalEstudios;
+
+        $estado.prop('disabled', false);
+        $obs.prop('disabled', false);
+        $btn.prop('disabled', false);
+        $aviso.addClass('d-none').text('');
+
+        if (data.apto_fisico) {
+            let estadoTexto = data.apto_fisico.estado_codigo === 'OK' ? 'Aprobado' : 'Observado';
+            $estado.prop('disabled', true);
+            $obs.prop('disabled', true);
+            $btn.prop('disabled', true);
+            $aviso.removeClass('d-none').html(
+                `<i class="fa-solid fa-lock me-1"></i> Apto Físico ya registrado (${estadoTexto}) el ` +
+                `${formatearFecha(data.apto_fisico.fecha, true)}. No puede volver a cargarse.`
+            );
+        } else if (!postasCompletas) {
+            $estado.prop('disabled', true);
+            $obs.prop('disabled', true);
+            $btn.prop('disabled', true);
+            $aviso.removeClass('d-none').html(
+                `<i class="fa-solid fa-triangle-exclamation me-1"></i> Deben completarse las postas ` +
+                `(${realizados}/${totalEstudios}) antes de poder registrar el Apto Físico.`
+            );
+        }
+    }
+
+    // tildar/destildar un estudio (solo admin). Marca REAL al tildar, PEND al destildar.
+    $(document).on('change', '.chk-estudio', function() {
+        let $chk = $(this);
+        let idOrden = $chk.data('id-orden');
+        let idEstudio = $chk.data('id-estudio');
+        let nuevoCodigo = $chk.is(':checked') ? 'REAL' : 'PEND';
+
+        $chk.prop('disabled', true);
+
+        fetch('app/cir-api/endpoints/seguimiento_postas-e.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                accion: 'marcar_estudio',
+                id_orden: idOrden,
+                id_estudio: idEstudio,
+                codigo_estado: nuevoCodigo
+            })
+        })
+        .then(response => response.json())
+        .then(json => {
+            if (json.status !== 'success') {
+                alert('Error: ' + json.message);
+                $chk.prop('checked', !$chk.is(':checked'));
+                return;
+            }
+            let registro = seguimientosMap[idOrden];
+            if (registro && registro.estudios) {
+                let estudio = registro.estudios.find(e => e.id_estudio == idEstudio);
+                if (estudio) estudio.estado_codigo = nuevoCodigo;
+                actualizarContadorEstudios(registro.estudios);
+                actualizarEstadoFormularioApto(registro);
+            }
+            $('#tabla-postas').DataTable().ajax.reload(null, false);
+        })
+        .catch(() => alert('Ocurrió un error al actualizar el estudio.'))
+        .finally(() => $chk.prop('disabled', false));
+    });
 
     function guardarApto() {
         let id_orden = $('#apto-id-orden').val();

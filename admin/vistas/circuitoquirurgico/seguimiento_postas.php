@@ -18,7 +18,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-secondary mb-1" for="filtro-fecha-hasta">Admisión hasta <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control form-control-sm" id="filtro-fecha-hasta">
+                    <input type="date" class="form-control form-control-sm" id="filtro-fecha-hasta" max="">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-secondary mb-1" for="filtro-estado-apto">Estado Apto Físico <span class="text-danger">*</span></label>
@@ -271,10 +271,21 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         return texto;
     }
 
+    // CIR-723 (corrección 4): fecha de hoy en formato YYYY-MM-DD, usada como
+    // tope máximo para "Admisión hasta" (input y validación previa a buscar).
+    function fechaHoyISO() {
+        let hoy = new Date();
+        let mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        let dia = String(hoy.getDate()).padStart(2, '0');
+        return `${hoy.getFullYear()}-${mes}-${dia}`;
+    }
+
     $(document).ready(function() {
+        $('#filtro-fecha-hasta').attr('max', fechaHoyISO());
+
         $('#tabla-postas').DataTable({
             'ajax': function(data, callback) {
-                // (corrección): si faltan filtros, la tabla queda vacía
+                // CIR-723 (corrección): si faltan filtros, la tabla queda vacía
                 // y SIN mostrar ningún aviso automático (el aviso solo aparece
                 // al presionar "Buscar".
                 if (!filtrosPostasCompletos()) {

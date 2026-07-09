@@ -36,6 +36,16 @@ class ConsultasSeguimiento {
             throw new Exception("Estado de Apto Físico inválido.");
         }
 
+        // (corrección) no permitir fecha futura en "Admisión hasta",
+        // validado también acá para no depender solo del input del navegador.
+        $hoy = date('Y-m-d');
+        if ($fecha_hasta > $hoy) {
+            throw new Exception('La fecha "Admisión hasta" no puede ser posterior a hoy.');
+        }
+        if ($fecha_desde > $fecha_hasta) {
+            throw new Exception('La fecha "Admisión desde" no puede ser posterior a "Admisión hasta".');
+        }
+
         // Filtramos por órdenes que no estén ni canceladas ni eliminadas, y que no sean rechazadas.
         $where = "WHERE 1=1";
         $params = [];

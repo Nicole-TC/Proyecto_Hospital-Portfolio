@@ -448,6 +448,64 @@
     </div>
 </div>
 
+<!-- ========== MODAL EDITAR COMBO ========== -->
+<div class="modal fade" id="modalEditarCombo" tabindex="-1" aria-labelledby="modalEditarComboLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow" style="border-radius: 0.75rem; overflow: hidden;">
+            <div class="modal-header border-0 pb-0 modal-header-custom-blue">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:40px; height:40px; background:#0984e3;">
+                        <i class="bi bi-pencil-square text-white" style="font-size:1.2rem;"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title mb-0 fw-bold" id="modalEditarComboLabel" style="color:#0984e3;">Editar Combo</h6>
+                        <small class="text-secondary" id="modal-editar-combo-subtitulo">Modifique la cirugía y los estudios vinculados</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body px-4 pt-3 pb-3">
+                <input type="hidden" id="mec-id-cirugia">
+                <div class="mb-3">
+                    <label for="mec-nombre" class="form-label text-secondary small fw-bold">NOMBRE DE LA CIRUGÍA <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="mec-nombre" placeholder="Ej. APENDICECTOMÍA LAPAROSCÓPICA"
+                           style="border-radius: 4px; height:42px; text-transform: uppercase;">
+                    <div id="mec-nombre-feedback" class="mt-1" style="font-size: 0.78rem;"></div>
+                </div>
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label text-secondary small fw-bold mb-0">ESTUDIOS VINCULADOS <span class="text-danger">*</span></label>
+                        <span id="mec-badge-count" class="badge rounded-pill" style="background:#0984e3;font-size:0.78rem;display:none;">0 seleccionados</span>
+                    </div>
+                    <div class="input-group mb-2">
+                        <span class="input-group-text bg-light border-0" style="border-radius:6px 0 0 6px;">
+                            <i class="bi bi-search text-secondary"></i>
+                        </span>
+                        <input type="text" id="mec-buscar-estudio" class="form-control border-0 bg-light" placeholder="Filtrar estudios..." autocomplete="off" style="border-radius:0 6px 6px 0;">
+                    </div>
+                    <div id="mec-lista-estudios" style="max-height:260px;overflow-y:auto;border:1px solid #e9ecef;border-radius:8px;">
+                        <div class="text-center py-4 text-secondary" id="mec-msg-cargando">
+                            <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando estudios...
+                        </div>
+                    </div>
+                    <div id="mec-estudios-feedback" class="mt-1" style="font-size: 0.78rem;"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4 gap-2 justify-content-center">
+                <button type="button" class="btn border-0 shadow-sm px-4" data-bs-dismiss="modal"
+                        style="background:#e9ecef; color:#555; border-radius:4px; font-size:0.9rem;">
+                    Cancelar
+                </button>
+                <button type="button" class="btn border-0 shadow-sm px-4" id="btn-guardar-editar-combo"
+                        style="background:#0984e3; color:#fff; border-radius:4px; font-size:0.9rem;">
+                    <i class="bi bi-save me-1"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ========== MODAL VER DETALLES ========== -->
 <div class="modal fade" id="modalDetalles" tabindex="-1" aria-labelledby="modalDetallesLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">

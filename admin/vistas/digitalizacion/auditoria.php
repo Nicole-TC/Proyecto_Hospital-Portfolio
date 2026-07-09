@@ -62,6 +62,15 @@
             <!-- Resultados -->
             <div class="card shadow-sm border-0 rounded-4 mt-4" id="card-resultados" style="display: none;">
                 <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 gap-3">
+                        <div class="d-flex align-items-center">
+                            <label for="ordenar-auditoria" class="form-label fw-bold mb-0 me-2">Ordenar por:</label>
+                            <select id="ordenar-auditoria" class="form-select form-select-sm w-auto bg-light">
+                                <option value="6,desc">Fecha (más reciente)</option>
+                                <option value="6,asc">Fecha (más antiguo)</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table id="tabla-auditoria" class="table table-hover table-striped w-100">
                             <thead class="table-light">
@@ -174,7 +183,9 @@ body.modo-oscuro .form-control,
 body.modo-oscuro .form-select { background-color: var(--aud-input-bg) !important; color: #fff !important; }
 body.modo-oscuro .form-control.border-0,
 body.modo-oscuro .form-select.border-0,
-body.modo-oscuro .input-group-text.border-0 { border: 1px solid var(--aud-border) !important; }
+body.modo-oscuro .input-group-text.border-0,
+body.modo-oscuro .form-control:not(.border-0),
+body.modo-oscuro .form-select:not(.border-0) { border: 1px solid var(--aud-border) !important; }
 body.modo-oscuro .form-control:focus,
 body.modo-oscuro .form-select:focus { background-color: #333 !important; color: #fff !important; border-color: var(--aud-focus-border) !important; outline: 0; box-shadow: 0 0 0 0.2rem var(--aud-focus-shadow) !important; }
 body.modo-oscuro .input-group-text { background-color: #333 !important; color: #fff !important; border-color: var(--aud-border) !important; }
@@ -343,13 +354,28 @@ document.addEventListener("DOMContentLoaded", async function() {
         </div>`;
     }
 
+    // Búsqueda sin tildes
+    function sinTildes(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    $.fn.dataTable.ext.type.search.string = function(data) {
+        return sinTildes(data);
+    };
+
     // 4. DataTable
     const tabla = $('#tabla-auditoria').DataTable({
         paging: true,
         lengthChange: true,
-        searching: false,
+        searching: true,
         ordering: true,
         responsive: true,
+        initComplete: function() {
+            var api = this.api();
+            $(api.table().container()).find('.dataTables_filter input').on('input', function() {
+                api.search(this.value).draw();
+            });
+        },
         language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
         drawCallback: function() {
             const data = this.api().data();
@@ -392,7 +418,13 @@ document.addEventListener("DOMContentLoaded", async function() {
         deferLoading: 0
     });
 
-    // 5. Click ojo
+    // 5. Selector de ordenamiento
+    document.getElementById('ordenar-auditoria').addEventListener('change', function() {
+        const [col, dir] = this.value.split(',');
+        tabla.order([[parseInt(col), dir]]).draw();
+    });
+
+    // 6. Click ojo
     let modalInstancia = null;
     $('#tabla-auditoria tbody').on('click', '.btn-detalle-modal', function() {
         const row = tabla.row($(this).closest('tr')).data();
@@ -417,7 +449,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     });
 
     // 6. Limpiar
-    document.getElementById("btn-limpiar").addEventListener("click", function() {
+        document.getElementById("btn-limpiar").addEventListener("click", function() {
         document.getElementById("form-auditoria").reset();
         document.getElementById("filtro_fecha_hasta").max = new Date().toISOString().slice(0, 10);
         document.getElementById("card-resultados").style.display = "none";
@@ -430,11 +462,14 @@ document.addEventListener("DOMContentLoaded", async function() {
         e.preventDefault();
         const desde = $('#filtro_fecha_desde').val();
         const hasta = $('#filtro_fecha_hasta').val();
+        const tablaAfectada = $('#filtro_tabla').val();
         const hoy = new Date().toISOString().slice(0, 10);
         if (hasta && hasta > hoy) {
             mostrarAlerta('danger', 'La fecha "hasta" no puede ser una fecha futura.');
         } else if (desde && hasta && desde > hasta) {
             mostrarAlerta('danger', 'La fecha "desde" no puede ser mayor que la fecha "hasta".');
+        } else if (!tablaAfectada && !desde && !hasta) {
+            mostrarAlerta('danger', 'Debe seleccionar al menos un filtro adicional: Tabla afectada o Rango de fechas.');
         } else {
             mostrarAlerta('danger', '');
             document.getElementById("card-resultados").style.display = "block";

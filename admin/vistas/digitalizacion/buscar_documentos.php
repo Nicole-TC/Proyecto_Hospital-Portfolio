@@ -90,6 +90,21 @@
             <!-- Tarjeta de Resultados -->
             <div class="card shadow-sm border-0 rounded-4 mt-4" id="card-resultados" style="display: none;">
                 <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 gap-3">
+                        <div class="d-flex align-items-center">
+                            <label for="ordenar-busqueda" class="form-label fw-bold mb-0 me-2">Ordenar por:</label>
+                            <select id="ordenar-busqueda" class="form-select form-select-sm w-auto bg-light">
+                                <option value="1,asc">Paciente (A-Z)</option>
+                                <option value="1,desc">Paciente (Z-A)</option>
+                                <option value="2,asc">Tipo Documento (A-Z)</option>
+                                <option value="2,desc">Tipo Documento (Z-A)</option>
+                                <option value="3,asc">Servicio (A-Z)</option>
+                                <option value="3,desc">Servicio (Z-A)</option>
+                                <option value="5,desc" selected>Fecha (más reciente)</option>
+                                <option value="5,asc">Fecha (más antiguo)</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table id="tabla-busqueda" class="table table-hover table-striped w-100">
                             <thead class="table-light">
@@ -261,7 +276,9 @@ body.modo-oscuro .form-select {
 }
 body.modo-oscuro .form-control.border-0,
 body.modo-oscuro .form-select.border-0,
-body.modo-oscuro .input-group-text.border-0 {
+body.modo-oscuro .input-group-text.border-0,
+body.modo-oscuro .form-control:not(.border-0),
+body.modo-oscuro .form-select:not(.border-0) {
     border: 1px solid #444 !important;
 }
 body.modo-oscuro .form-control:focus,
@@ -456,13 +473,29 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
     }
 
-// 2. Inicializar DataTables sin ajax
+// Búsqueda sin tildes
+    function sinTildes(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    $.fn.dataTable.ext.type.search.string = function(data) {
+        return sinTildes(data);
+    };
+
+    // 2. Inicializar DataTables sin ajax
     let tablaBusqueda = $('#tabla-busqueda').DataTable({
         paging: true,
         lengthChange: true,
-        searching: false,
+        searching: true,
         ordering: true,
+        order: [[5, 'desc']],
         responsive: true,
+        initComplete: function() {
+            var api = this.api();
+            $(api.table().container()).find('.dataTables_filter input').on('input', function() {
+                api.search(this.value).draw();
+            });
+        },
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
@@ -537,6 +570,12 @@ document.addEventListener("DOMContentLoaded", async function() {
                 }
             }
         ]
+    });
+
+    // Selector de ordenamiento
+    document.getElementById('ordenar-busqueda').addEventListener('change', function() {
+        const [col, dir] = this.value.split(',');
+        tablaBusqueda.order([[parseInt(col), dir]]).draw();
     });
 
     // Función que llama a la API solo cuando el usuario busca

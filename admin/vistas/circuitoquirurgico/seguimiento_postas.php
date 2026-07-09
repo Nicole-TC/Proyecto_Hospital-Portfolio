@@ -271,7 +271,7 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         return texto;
     }
 
-    // CIR-723 (corrección 4): fecha de hoy en formato YYYY-MM-DD, usada como
+    // (corrección) fecha de hoy en formato YYYY-MM-DD, usada como
     // tope máximo para "Admisión hasta" (input y validación previa a buscar).
     function fechaHoyISO() {
         let hoy = new Date();
@@ -280,12 +280,31 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         return `${hoy.getFullYear()}-${mes}-${dia}`;
     }
 
+    // (corrección): normaliza texto sacando tildes y pasando a minúsculas.
+    function normalizarTexto(texto) {
+        return String(texto || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
+    // término ya normalizado que usa el buscador "Filtrar" propio de la tabla.
+    let terminoBusquedaPostas = '';
+
+    // reemplaza la comparación por defecto de DataTables (sensible a tildes)
+    // por una que compara texto normalizado, solo para #tabla-postas.
+    $.fn.dataTable.ext.search.push(function(settings, filaData) {
+        if (settings.nTable.id !== 'tabla-postas') return true;
+        if (!terminoBusquedaPostas) return true;
+        return filaData.some(celda => normalizarTexto(celda).indexOf(terminoBusquedaPostas) !== -1);
+    });
+
     $(document).ready(function() {
         $('#filtro-fecha-hasta').attr('max', fechaHoyISO());
 
-        $('#tabla-postas').DataTable({
+        let tablaPostas = $('#tabla-postas').DataTable({
             'ajax': function(data, callback) {
-                // CIR-723 (corrección): si faltan filtros, la tabla queda vacía
+                // (corrección) si faltan filtros, la tabla queda vacía
                 // y SIN mostrar ningún aviso automático (el aviso solo aparece
                 // al presionar "Buscar".
                 if (!filtrosPostasCompletos()) {
@@ -372,14 +391,30 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
                     'next': 'Siguiente',
                     'previous': 'Anterior'
                 }
+            },
+            'initComplete': function() {
+                // CIR-723 (corrección 5): desactivamos el listener nativo de
+                // DataTables (compara con tildes) y lo reemplazamos por el
+                // nuestro, que normaliza el texto antes de cada búsqueda.
+                $('#tabla-postas_filter input')
+                    .off('keyup.DT search.DT input.DT paste.DT cut.DT')
+                    .on('keyup input', function() {
+                        terminoBusquedaPostas = normalizarTexto($(this).val());
+                        tablaPostas.draw();
+                    });
             }
         });
     });
 
-    // (corrección): el aviso solo se muestra si se intenta buscar sin completar los filtros.
+    // (corrección) el aviso solo se muestra si se intenta buscar sin completar los filtros.
     $('#btn-filtrar-postas').on('click', function() {
         if (!filtrosPostasCompletos()) {
             $('#postas-sin-filtro').removeClass('d-none');
+            return;
+        }
+        // (corrección) no permitir fecha futura en "Admisión hasta".
+        if ($('#filtro-fecha-hasta').val() > fechaHoyISO()) {
+            alert('La fecha "Admisión hasta" no puede ser posterior a hoy.');
             return;
         }
         $('#postas-sin-filtro').addClass('d-none');

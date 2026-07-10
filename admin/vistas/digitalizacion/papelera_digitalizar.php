@@ -92,6 +92,21 @@
             <!-- Tarjeta de Resultados -->
             <div id="card-resultados-papelera" class="card shadow-sm border-0 rounded-4 d-none">
                 <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3 gap-3">
+                        <div class="d-flex align-items-center">
+                            <label for="ordenar-papelera" class="form-label fw-bold mb-0 me-2">Ordenar por:</label>
+                            <select id="ordenar-papelera" class="form-select form-select-sm w-auto bg-light">
+                                <option value="1,asc">Paciente (A-Z)</option>
+                                <option value="1,desc">Paciente (Z-A)</option>
+                                <option value="2,asc">Tipo Documento (A-Z)</option>
+                                <option value="2,desc">Tipo Documento (Z-A)</option>
+                                <option value="3,asc">Servicio (A-Z)</option>
+                                <option value="3,desc">Servicio (Z-A)</option>
+                                <option value="5,desc" selected>Fecha (más reciente)</option>
+                                <option value="5,asc">Fecha (más antiguo)</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table id="tabla-papelera" class="table table-hover table-striped w-100">
                             <thead class="table-light">
@@ -138,7 +153,9 @@ body.modo-oscuro .form-select {
 }
 body.modo-oscuro .form-control.border-0,
 body.modo-oscuro .form-select.border-0,
-body.modo-oscuro .input-group-text.border-0 {
+body.modo-oscuro .input-group-text.border-0,
+body.modo-oscuro .form-control:not(.border-0),
+body.modo-oscuro .form-select:not(.border-0) {
     border: 1px solid #444 !important;
 }
 body.modo-oscuro .form-control:focus,
@@ -295,12 +312,32 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
     }
 
+    // Búsqueda sin tildes
+    function sinTildes(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    $.fn.dataTable.ext.type.search.string = function(data) {
+        return sinTildes(data);
+    };
+
     let tabla = $('#tabla-papelera').DataTable({
         paging: true,
         lengthChange: true,
-        searching: false,
+        searching: true,
         ordering: true,
+        order: [[5, 'desc']],
         responsive: true,
+        initComplete: function() {
+            var api = this.api();
+            $(api.table().container()).find('.dataTables_filter input').on('input', function() {
+                var pos = this.selectionStart;
+                var norm = sinTildes(this.value);
+                this.value = norm;
+                this.setSelectionRange(pos, pos);
+                api.search(norm).draw();
+            });
+        },
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
         },
@@ -308,8 +345,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             { data: "id", visible: false },
             {
                 data: null,
-                render: function(data) {
+                render: function(data, type) {
                     const nombre = data.paciente ? capitalizarPorPalabra(data.paciente) : 'Desconocido';
+                    if (type !== 'display') return nombre;
                     return `<strong>${escapeHtml(nombre)}</strong> <br><small class="text-muted">DNI: ${escapeHtml(data.dni)}</small>`;
                 }
             },
@@ -329,29 +367,34 @@ document.addEventListener("DOMContentLoaded", async function() {
             },
             {
                 data: "comentario",
-                render: function(data) {
+                render: function(data, type) {
+                    if (type !== 'display') return data || '';
                     return formatComentario(data);
                 }
             },
             {
                 data: "fecha_subido",
-                render: function(data) {
-                    if (!data) return '-';
-                    const [fecha, hora] = data.split(' ');
-                    const partes = fecha.split('-');
-                    if (partes.length !== 3) return data;
-                    const [anio, mes, dia] = partes;
-                    let r = `${dia}/${mes}/${anio}`;
-                    if (hora) {
-                        const [hh, mm] = hora.split(':');
-                        r += ` ${hh}:${mm}`;
+                render: function(data, type) {
+                    if (type === 'display') {
+                        if (!data) return '-';
+                        const [fecha, hora] = data.split(' ');
+                        const partes = fecha.split('-');
+                        if (partes.length !== 3) return data;
+                        const [anio, mes, dia] = partes;
+                        let r = `${dia}/${mes}/${anio}`;
+                        if (hora) {
+                            const [hh, mm] = hora.split(':');
+                            r += ` ${hh}:${mm}`;
+                        }
+                        return r;
                     }
-                    return r;
+                    return data;
                 }
             },
             {
                 data: "etiquetas",
-                render: function(data) {
+                render: function(data, type) {
+                    if (type !== 'display') return data || '';
                     if (!data) return '<span class="badge bg-secondary">Sin etiquetas</span>';
                     return data.split(', ').map(tag => {
                         const color = mapaColores.get(tag.trim().toLowerCase()) || '#6c757d';
@@ -369,6 +412,12 @@ document.addEventListener("DOMContentLoaded", async function() {
                 orderable: false
             }
         ]
+    });
+
+    // Selector de ordenamiento
+    document.getElementById('ordenar-papelera').addEventListener('change', function() {
+        const [col, dir] = this.value.split(',');
+        tabla.order([[parseInt(col), dir]]).draw();
     });
 
     const cardResultados = document.getElementById('card-resultados-papelera');

@@ -111,6 +111,9 @@ var scanBuffer = '';
 var scanTimeout = null;
 var lastKeyTime = 0;
 var scanDetected = false;
+var scanFastCount = 0;
+var SCAN_KEY_GAP_MS = 50;
+var SCAN_MIN_FAST_KEYS = 3;
 var pacienteCargado = false;
 var dniAntesDeEscanear = '';
 
@@ -388,6 +391,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (fechaInput) fechaInput.setAttribute('max', hoy);
 
   function filtrarInput(e) {
+    if (scanDetected || scanBuffer.length > 0) return;
+
     if (e.target.id === 'dni') {
       e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8);
     }
@@ -457,6 +462,8 @@ document.getElementById('btnObraSocial').addEventListener('click', function () {
 });
 
 inputDni.addEventListener('input', function () {
+  if (scanDetected || scanBuffer.length > 0) return;
+
   var val = this.value.trim();
   if (val === '') {
     pacienteCargado = false;
@@ -472,8 +479,16 @@ el('obraSocial').addEventListener('change', actualizarLabelObraSocial);
 
 // ─── PARSER DEL QR ────────────────────────────────
 
+function normalizarQR(texto) {
+  texto = (texto || '').trim().replace(/"/g, '@');
+  if (texto.indexOf('@') === -1) {
+    texto = texto.replace(/[qQ]/g, '@');
+  }
+  return texto;
+}
+
 function parsearQRCode(texto) {
-  texto = texto.replace(/[qQ"]/g, '@');
+  texto = normalizarQR(texto);
   var fechaMatch = texto.match(/(\d{2})[-\/](\d{2})[-\/](\d{4})/);
   var fechaFormateada = '';
   if (fechaMatch) {
@@ -513,8 +528,11 @@ function parsearQRCode(texto) {
   var apellido = '', nombre = '';
 
   var nameIdx = 0;
-  if (partes.length >= 3 && (/^\d{1,3}$/.test(partes[0]) || partes[0].length <= 1)) {
-    nameIdx = 1;
+  if (partes.length >= 3) {
+    var tramite = (partes[0] || '').replace(/\D/g, '');
+    if ((tramite.length >= 9 && tramite.length <= 11) || /^\d{1,3}$/.test(partes[0]) || partes[0].length <= 1) {
+      nameIdx = 1;
+    }
   }
   if (nameIdx + 1 < partes.length && /^\d{5,8}$/.test(partes[nameIdx])) {
     nameIdx++;
@@ -649,23 +667,39 @@ function procesarEscaneo(texto) {
 }
 
 function cancelarEscaneo() {
+  if (scanDetected && scanBuffer.length > 0 && scanBuffer.length < 30 && !/["@]/.test(scanBuffer)) {
+    var restaurado = scanBuffer.replace(/\D/g, '').slice(0, 8);
+    if (restaurado) inputDni.value = restaurado;
+  }
   scanBuffer = '';
   scanDetected = false;
+  scanFastCount = 0;
   if (scanTimeout) { clearTimeout(scanTimeout); scanTimeout = null; }
 }
 
 // ─── DETECTOR DE ESCANER USB ──────────────────────
 
-/*document.addEventListener('keydown', function (e) {
+document.addEventListener('keydown', function (e) {
   var now = Date.now();
   var timeSinceLast = lastKeyTime ? now - lastKeyTime : 999;
   lastKeyTime = now;
 
-  if (!scanDetected && timeSinceLast < 500) {
-    scanDetected = true;
-    scanBuffer = '';
-    dniAntesDeEscanear = inputDni.value;
-    if (e.target.id !== 'dni') inputDni.focus();
+  if (!scanDetected) {
+    if (e.key && e.key.length === 1) {
+      if (timeSinceLast < SCAN_KEY_GAP_MS) {
+        scanFastCount++;
+      } else {
+        scanFastCount = 1;
+      }
+      if (scanFastCount >= SCAN_MIN_FAST_KEYS) {
+        scanDetected = true;
+        scanBuffer = (e.target && e.target.id === 'dni') ? inputDni.value : '';
+        dniAntesDeEscanear = inputDni.value;
+        if (e.target.id !== 'dni') inputDni.focus();
+      }
+    } else if (e.key !== 'Shift' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') {
+      scanFastCount = 0;
+    }
   }
 
   if (!scanDetected) return;
@@ -698,6 +732,5 @@ function cancelarEscaneo() {
     }, 300);
   }
 });
-*/
 
 

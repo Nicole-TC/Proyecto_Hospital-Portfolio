@@ -331,7 +331,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         initComplete: function() {
             var api = this.api();
             $(api.table().container()).find('.dataTables_filter input').on('input', function() {
-                api.search(this.value).draw();
+                var pos = this.selectionStart;
+                var norm = sinTildes(this.value);
+                this.value = norm;
+                this.setSelectionRange(pos, pos);
+                api.search(norm).draw();
             });
         },
         language: {
@@ -341,8 +345,9 @@ document.addEventListener("DOMContentLoaded", async function() {
             { data: "id", visible: false },
             {
                 data: null,
-                render: function(data) {
+                render: function(data, type) {
                     const nombre = data.paciente ? capitalizarPorPalabra(data.paciente) : 'Desconocido';
+                    if (type !== 'display') return nombre;
                     return `<strong>${escapeHtml(nombre)}</strong> <br><small class="text-muted">DNI: ${escapeHtml(data.dni)}</small>`;
                 }
             },
@@ -362,29 +367,34 @@ document.addEventListener("DOMContentLoaded", async function() {
             },
             {
                 data: "comentario",
-                render: function(data) {
+                render: function(data, type) {
+                    if (type !== 'display') return data || '';
                     return formatComentario(data);
                 }
             },
             {
                 data: "fecha_subido",
-                render: function(data) {
-                    if (!data) return '-';
-                    const [fecha, hora] = data.split(' ');
-                    const partes = fecha.split('-');
-                    if (partes.length !== 3) return data;
-                    const [anio, mes, dia] = partes;
-                    let r = `${dia}/${mes}/${anio}`;
-                    if (hora) {
-                        const [hh, mm] = hora.split(':');
-                        r += ` ${hh}:${mm}`;
+                render: function(data, type) {
+                    if (type === 'display') {
+                        if (!data) return '-';
+                        const [fecha, hora] = data.split(' ');
+                        const partes = fecha.split('-');
+                        if (partes.length !== 3) return data;
+                        const [anio, mes, dia] = partes;
+                        let r = `${dia}/${mes}/${anio}`;
+                        if (hora) {
+                            const [hh, mm] = hora.split(':');
+                            r += ` ${hh}:${mm}`;
+                        }
+                        return r;
                     }
-                    return r;
+                    return data;
                 }
             },
             {
                 data: "etiquetas",
-                render: function(data) {
+                render: function(data, type) {
+                    if (type !== 'display') return data || '';
                     if (!data) return '<span class="badge bg-secondary">Sin etiquetas</span>';
                     return data.split(', ').map(tag => {
                         const color = mapaColores.get(tag.trim().toLowerCase()) || '#6c757d';

@@ -493,7 +493,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         initComplete: function() {
             var api = this.api();
             $(api.table().container()).find('.dataTables_filter input').on('input', function() {
-                api.search(this.value).draw();
+                var pos = this.selectionStart;
+                var norm = sinTildes(this.value);
+                this.value = norm;
+                this.setSelectionRange(pos, pos);
+                api.search(norm).draw();
             });
         },
         language: {
@@ -505,6 +509,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 data: null, 
                 render: function(data, type, row) { 
                     const nombre = row.paciente ? capitalizarPorPalabra(row.paciente) : 'Desconocido';
+                    if (type !== 'display') return nombre;
                     return `<strong>${escapeHtml(nombre)}</strong> <br><small class="text-muted">DNI: ${escapeHtml(row.dni)}</small>`; 
                 } 
             },

@@ -373,7 +373,11 @@ document.addEventListener("DOMContentLoaded", async function() {
         initComplete: function() {
             var api = this.api();
             $(api.table().container()).find('.dataTables_filter input').on('input', function() {
-                api.search(this.value).draw();
+                var pos = this.selectionStart;
+                var norm = sinTildes(this.value);
+                this.value = norm;
+                this.setSelectionRange(pos, pos);
+                api.search(norm).draw();
             });
         },
         language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
@@ -403,7 +407,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         columns: [
             { data: 'id' },
             { data: 'usuario' },
-            { data: 'accion', render: d => `<span class="badge ${metaAccion(d).badge}">${(d || '-').toUpperCase()}</span>` },
+            { data: 'accion', render: (d, type) => type === 'display' ? `<span class="badge ${metaAccion(d).badge}">${(d || '-').toUpperCase()}</span>` : (d || '-') },
             { data: 'tabla_afectada' },
             { data: 'tipo_documento', render: (d, t, row) => row.tabla_afectada === 'documentos' ? d : '' },
             { data: 'ip_origen' },

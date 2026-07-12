@@ -59,3 +59,8 @@
     </a>
 </li>
 <?php } ?>
+<li>
+        <a class="dropdown-item" href="../guiaDeUsoDigitalizar.html" target="_blank">
+        <i class="fa-solid fa-book ml-1 mr-1"></i> Guía de Uso
+    </a>
+</li>

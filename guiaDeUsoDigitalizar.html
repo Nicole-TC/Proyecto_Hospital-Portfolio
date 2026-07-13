@@ -45,13 +45,6 @@
             font-size: 1.5rem;
             margin-bottom: 1rem;
         }
-
-        pre {
-            background-color: #272822;
-            color: #f8f8f2;
-            padding: 1rem;
-            border-radius: 0.5rem;
-        }
     </style>
 </head>
 
@@ -61,59 +54,128 @@
         <div class="container">
             <i class="fa-solid fa-folder-tree fa-4x mb-3"></i>
             <h1 class="display-4 fw-bold">Módulo de Digitalización</h1>
-            <p class="lead">Manual de Usuario y Configuración Técnica</p>
+            <p class="lead">Guía para el usuario</p>
         </div>
     </div>
 
     <div class="container mb-5">
 
-        <!-- Sección 1: Uso del Sistema -->
+        <!-- Sección 1: Accesos -->
         <div class="card p-4 mt-4">
             <div class="d-flex align-items-center mb-3">
                 <div class="icon-circle bg-success text-white me-3">
                     <i class="fa-solid fa-chalkboard-user"></i>
                 </div>
-                <h2 class="h3 fw-bold mb-0">1. ¿Cómo usar el Módulo?</h2>
+                <h2 class="h3 fw-bold mb-0">1. ¿Cómo acceder?</h2>
             </div>
-            <p>Una vez que el proyecto esté corriendo en la VPS (accediendo a través de
-                <a href="http://149.50.137.127:8080" target="_blank">http://149.50.137.127:8080/admin</a>),
-                podrás encontrar la sección "Digitalización" en el
-                <strong>menú lateral izquierdo (Sidebar)</strong>. Este menú ofrece accesos rápidos a las 4 funciones
-                principales:
-            </p>
+            <p>Ingresá a la página del sistema con tu usuario y contraseña. En el menú de la izquierda buscá la sección <strong>Digitalización</strong>. Ahí vas a ver las siguientes opciones:</p>
 
             <div class="row mt-4">
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
-                        <h4 class="h6 fw-bold text-primary"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Nuevo
-                            Documento</h4>
-                        <p class="small text-muted">Permite subir un archivo PDF o imagen. El sistema buscará
-                            automáticamente a la persona por su DNI en la base de datos.</p>
+                        <h4 class="h6 fw-bold text-primary"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Subir Documento</h4>
+                        <p class="small text-muted">Subí un archivo (PDF o imagen) al sistema. Escribí el DNI de la persona y el sistema la busca automáticamente en la base de datos.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li>Subir archivos nuevos en formato PDF, JPG o PNG.</li>
+                            <li>Asignarle un tipo de documento, servicio y etiquetas.</li>
+                            <li>Agregar un título y una descripción al archivo.</li>
+                        </ul>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
-                        <h4 class="h6 fw-bold text-warning"><i class="fa-solid fa-tags me-2"></i> Administrar Etiquetas
-                        </h4>
-                        <p class="small text-muted">Abre el panel CRUD para gestionar los "Tags" de los documentos.
-                            Útiles para clasificar los archivos (Ej: Urgente, Auditoría, Facturado).</p>
+                        <h4 class="h6 fw-bold text-warning"><i class="fa-solid fa-tags me-2"></i> Etiquetas</h4>
+                        <p class="small text-muted">Las etiquetas sirven para organizar y clasificar los documentos. Por ejemplo: "Urgente", "Auditoría", "Facturado".</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Crear</strong> una etiqueta nueva con nombre y color.</li>
+                            <li><strong>Editar</strong> el nombre o color de una etiqueta existente.</li>
+                            <li><strong>Desactivar</strong> una etiqueta si ya no se usa (no se borra, solo se oculta).</li>
+                            <li><strong>Activar</strong> una etiqueta que estaba desactivada.</li>
+                        </ul>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
-                        <h4 class="h6 fw-bold text-success"><i class="fa-solid fa-file-signature me-2"></i> Tipos de
-                            Documentos</h4>
-                        <p class="small text-muted">CRUD flotante (Modal) para gestionar los tipos principales de
-                            archivos (Historia Clínica, Receta, Informe). Usa tecnología de Soft-Delete para no romper
-                            el historial.</p>
+                        <h4 class="h6 fw-bold text-success"><i class="fa-solid fa-file-signature me-2"></i> Tipos de Documento</h4>
+                        <p class="small text-muted">Son las categorías de archivos que se pueden subir: Historia Clínica, Receta, Informe, etc.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Crear</strong> un tipo de documento nuevo.</li>
+                            <li><strong>Editar</strong> el nombre de un tipo existente.</li>
+                            <li><strong>Desactivar</strong> un tipo que ya no se usa (no se borra del todo para mantener el historial).</li>
+                            <li><strong>Activar</strong> un tipo que estaba desactivado.</li>
+                        </ul>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="p-3 border rounded bg-light h-100">
-                        <h4 class="h6 fw-bold text-info"><i class="fa-solid fa-magnifying-glass me-2"></i> Buscar
-                            Documento</h4>
-                        <p class="small text-muted">Motor de búsqueda para encontrar documentos históricos por filtros DNI,
-                            Etiqueta, Servicio, estado del archivo o tipo de archivo. (Módulo en expansión).</p>
+                        <h4 class="h6 fw-bold text-info"><i class="fa-solid fa-magnifying-glass me-2"></i> Buscar Documento</h4>
+                        <p class="small text-muted">Buscá documentos usando diferentes filtros como DNI, etiqueta, servicio o rango de fechas.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Ver</strong> el archivo completo haciendo clic en "Ver".</li>
+                            <li><strong>Editar</strong> los datos del documento (título, persona, tipo, servicio, etiquetas).</li>
+                            <li><strong>Borrar</strong> un documento (se desactiva, no se elimina del todo. Si lo borraste por error, podés recuperarlo desde la Papelera).</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-danger"><i class="fa-solid fa-clipboard-list me-2"></i> Auditoría</h4>
+                        <p class="small text-muted">Es un historial de todo lo que se hizo en el sistema: quién subió, modificó o borró algo, con fecha y hora.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Consultar</strong> las acciones filtrando por tipo (subidos, modificados, eliminados), tabla o fecha.</li>
+                            <li><strong>Ver el detalle</strong> de cada acción haciendo clic en el ojo. Se muestra qué campo cambió y cuál era el valor antes y después.</li>
+                            <li>No se puede modificar ni borrar nada. Es solo de lectura.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-secondary"><i class="fa-solid fa-hospital me-2"></i> Servicios</h4>
+                        <p class="small text-muted">Son los sectores del hospital: Pediatría, Guardia, Cardiología, etc. Cada servicio tiene un responsable asignado.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Crear</strong> un servicio nuevo con nombre, área y responsable.</li>
+                            <li><strong>Editar</strong> el nombre, área, responsable o estado de un servicio.</li>
+                            <li><strong>Desactivar</strong> un servicio que ya no se usa (queda inhabilitado pero no se borra).</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-secondary"><i class="fa-solid fa-gear me-2"></i> Configuraciones
+                            <span class="badge bg-dark ms-1">Solo administradores</span></h4>
+                        <p class="small text-muted">Son las opciones generales del sistema de digitalización. Solo los administradores pueden modificarlas.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Editar</strong> el valor de cada configuración (por ejemplo: cambiar el tamaño máximo de archivo o los formatos aceptados).</li>
+                            <li>No se pueden crear ni borrar configuraciones. Solo se modifican los valores.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <h4 class="h6 fw-bold text-danger"><i class="fa-solid fa-trash-can me-2"></i> Papelera
+                            <span class="badge bg-dark ms-1">Solo administradores</span></h4>
+                        <p class="small text-muted">Acá van a parar los documentos que se "borraron" desde la búsqueda. No se eliminan del todo, quedan guardados por si los necesitás.</p>
+                        <hr class="my-2">
+                        <p class="small mb-1"><strong>¿Qué puedo hacer?</strong></p>
+                        <ul class="small text-muted mb-0 ps-3">
+                            <li><strong>Ver</strong> el archivo completo haciendo clic en "Ver".</li>
+                            <li><strong>Restaurar</strong> un documento para que vuelva a aparecer en las búsquedas normales.</li>
+                            <li><strong>Eliminar definitivamente</strong> un documento. Esto borra el archivo del servidor y no se puede recuperar.</li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -131,10 +193,15 @@
                 en el Backend (PHP).</p>
             <ul>
                 <li><strong>Archivos:</strong> Solo se admiten formatos <code>.pdf</code>, <code>.jpg</code>,
-                    <code>.png</code> con un tamaño máximo de 5000 Bytes.
+                    <code>.png</code> (configurable desde Configuraciones). El límite de peso también es configurable.
                 </li>
                 <li><strong>Bases de Datos:</strong> Independencia total. Digitalización solo lee y escribe en
                     PostgreSQL (<code>$bd_dig</code>).</li>
+                <li><strong>Permisos:</strong> Cada sección tiene control de acceso por sesión:
+                    <code>dig_nuevo_documento</code>, <code>dig_admin_etiquetas</code>, <code>dig_tipos_documentos</code>,
+                    <code>dig_buscar_documentos</code>, <code>dig_auditoria</code>, <code>dig_servicios</code>.
+                    Configuraciones y Papelera son exclusivos de administradores.
+                </li>
             </ul>
         </div>
 

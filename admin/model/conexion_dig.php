@@ -16,6 +16,8 @@ try {
     );
     $bd_dig->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $bd_dig->exec("SET TIME ZONE 'America/Argentina/Buenos_Aires'");
+    $ip_origen = $_SERVER['REMOTE_ADDR'];
+    $bd_dig->exec("SELECT set_config('myapp.ip_origen', " . $bd_dig->quote($ip_origen) . ", false)");
     // echo "Conexión exitosa";
 } catch (Exception $e) {
     error_log("Problema con la conexion de digitalización: " . $e->getMessage());

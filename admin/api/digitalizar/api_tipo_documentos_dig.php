@@ -106,6 +106,17 @@ switch ($method) {
             break;
         }
 
+        if ($estado == 0) {
+            $enUso = $bd_dig->prepare("SELECT 1 FROM documentos WHERE id_tipo_documento = ? AND estado = true LIMIT 1");
+            $enUso->execute([$id]);
+            if ($enUso->fetch()) {
+                http_response_code(400);
+                $msg = 'No se puede desactivar: el tipo de documento está asignado a uno o más documentos. Primero debe quitarlo de los documentos asociados.';
+                echo json_encode(['success' => false, 'errores' => [$msg]]);
+                break;
+            }
+        }
+
         $stmt = $bd_dig->prepare(
             "UPDATE tipos_documentos SET nombre = ?, estado = ?, id_usuario = ? WHERE id = ?"
         );
@@ -135,6 +146,14 @@ switch ($method) {
 
         if ($row['estado'] === 'f' || $row['estado'] === false || $row['estado'] === 0) {
             echo json_encode(['success' => false, 'error' => 'El tipo de documento ya está desactivado']);
+            break;
+        }
+
+        $enUso = $bd_dig->prepare("SELECT 1 FROM documentos WHERE id_tipo_documento = ? AND estado = true LIMIT 1");
+        $enUso->execute([$id]);
+        if ($enUso->fetch()) {
+            $msg = 'No se puede desactivar: el tipo de documento está asignado a uno o más documentos. Primero debe quitarlo de los documentos asociados.';
+            echo json_encode(['success' => false, 'error' => $msg]);
             break;
         }
 

@@ -38,6 +38,20 @@
     </a>
 </li>
 <?php } ?>
+<?php if (@$_SESSION["dig_auditoria"] == 1 || @$_SESSION["admin"] == 1) { ?>
+<li>
+    <a class="dropdown-item" href="index.php?modulo=menu_digitalizar&accion=auditoria">
+        <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Auditoría
+    </a>
+</li>
+<?php } ?>
+<?php if (@$_SESSION["admin"] == 1) { ?>
+<li>
+    <a class="dropdown-item" href="index.php?modulo=menu_digitalizar&accion=papelera_digitalizar">
+        <i class="fa-solid fa-chevron-right ml-1 mr-1"></i> Papelera
+    </a>
+</li>
+<?php } ?>
 <?php if (@$_SESSION["admin"] == 1) { ?>
 <li>
     <a class="dropdown-item" href="index.php?modulo=menu_digitalizar&accion=configuraciones_digitalizar">
@@ -45,3 +59,8 @@
     </a>
 </li>
 <?php } ?>
+<li>
+        <a class="dropdown-item" href="../guiaDeUsoDigitalizar.html" target="_blank">
+        <i class="fa-solid fa-book ml-1 mr-1"></i> Guía de Uso
+    </a>
+</li>

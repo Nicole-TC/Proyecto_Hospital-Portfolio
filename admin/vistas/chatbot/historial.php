@@ -519,6 +519,98 @@ $conversaciones = [
         #chat-activo-mensajes::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+        /* === Dark Mode Compatibility Overrides === */
+        body.modo-oscuro .input-group-text.bg-white,
+        body.modo-oscuro #input-busqueda.bg-white {
+            background-color: #1e1e1e !important;
+            color: #f1f1f1 !important;
+            border-color: #444 !important;
+        }
+        body.modo-oscuro .form-control:focus {
+            background-color: #1e1e1e !important;
+            color: #fff !important;
+            border-color: #20c997 !important;
+            box-shadow: 0 0 0 0.25rem rgba(32, 201, 151, 0.25) !important;
+        }
+        body.modo-oscuro .chip-filtro.bg-white {
+            background-color: #1e1e1e !important;
+            color: #bbb !important;
+            border-color: #444 !important;
+        }
+        body.modo-oscuro .chip-filtro.bg-white:hover {
+            background-color: #2a2a2a !important;
+            color: #fff !important;
+            border-color: #555 !important;
+        }
+        body.modo-oscuro .chat-item.border-bottom,
+        body.modo-oscuro .border-bottom {
+            border-bottom-color: #444 !important;
+        }
+        body.modo-oscuro .chat-item .avatar.bg-light {
+            background-color: #1e1e1e !important;
+            color: #aaa !important;
+            border-color: #444 !important;
+        }
+        body.modo-oscuro .chat-item:hover {
+            background-color: #323232 !important;
+        }
+        body.modo-oscuro .chat-item.active-chat {
+            background-color: #383838 !important;
+            border-left-color: #20c997 !important;
+        }
+        body.modo-oscuro #chat-header-metricas {
+            background-color: #1e1e1e !important;
+            border-color: #444 !important;
+        }
+        body.modo-oscuro #chat-activo-mensajes {
+            background-color: #121212 !important;
+        }
+        body.modo-oscuro .msg-bubble.bg-white {
+            background-color: #2a2a2a !important;
+            color: #e0e0e0 !important;
+            border-color: #444 !important;
+        }
+        body.modo-oscuro .msg-container[data-remitente="bot"] .msg-bubble,
+        body.modo-oscuro .msg-container[data-remitente="bot"] .avatar {
+            background-color: #1b9a74 !important;
+        }
+        body.modo-oscuro #lista-conversaciones::-webkit-scrollbar-thumb,
+        body.modo-oscuro #chat-activo-mensajes::-webkit-scrollbar-thumb {
+            background: #444;
+        }
+        body.modo-oscuro #lista-conversaciones::-webkit-scrollbar-thumb:hover,
+        body.modo-oscuro #chat-activo-mensajes::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        body.modo-oscuro .bg-success-subtle {
+            background-color: rgba(107, 216, 141, 0.15) !important;
+            color: #6bd88d !important;
+            border-color: rgba(107, 216, 141, 0.3) !important;
+        }
+        body.modo-oscuro .bg-danger-subtle {
+            background-color: rgba(255, 107, 107, 0.15) !important;
+            color: #ff6b6b !important;
+            border-color: rgba(255, 107, 107, 0.3) !important;
+        }
+        body.modo-oscuro .bg-info-subtle {
+            background-color: rgba(102, 217, 239, 0.15) !important;
+            color: #66d9ef !important;
+            border-color: rgba(102, 217, 239, 0.3) !important;
+        }
+        body.modo-oscuro .bg-secondary-subtle {
+            background-color: rgba(170, 170, 170, 0.15) !important;
+            color: #aaa !important;
+            border-color: rgba(170, 170, 170, 0.3) !important;
+        }
+        body.modo-oscuro .badge.bg-secondary {
+            background-color: #3a3a3a !important;
+            color: #e0e0e0 !important;
+        }
+        body.modo-oscuro .vr {
+            background-color: #444 !important;
+            opacity: 0.5 !important;
+        }
         </style>
     </div>
 </div>

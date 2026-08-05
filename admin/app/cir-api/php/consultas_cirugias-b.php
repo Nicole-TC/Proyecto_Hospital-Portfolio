@@ -4,6 +4,21 @@ require_once __DIR__ . '/funciones.php';
 
 class ConsultasCirugias {
 
+    /** Cadena de caracteres acentuados para comparación sin acentos en SQL. */
+    private const CADENAS_ACENTUADAS = 'ÁÉÍÓÚÜÑáéíóúüñ';
+    /** Correspondencia sin acentos (misma posición que CADENAS_ACENTUADAS). */
+    private const CADENAS_SIN_ACENTO = 'AEIOUUNaeiouun';
+
+    /**
+     * Genera una condición SQL que compara dos columnas/parámetros ignorando
+     * acentos y mayúsculas (evita duplicados que solo difieren en acentuación).
+     */
+    private static function igualSinAcentos(string $columna1, string $columna2): string {
+        return "translate(lower($columna1), '" . self::CADENAS_ACENTUADAS . "', '" . self::CADENAS_SIN_ACENTO . "')"
+             . " = "
+             . "translate(lower($columna2), '" . self::CADENAS_ACENTUADAS . "', '" . self::CADENAS_SIN_ACENTO . "')";
+    }
+
     /**
      * Listar todos los estudios disponibles para mostrar en el paso 2 del formulario.
      */
@@ -31,7 +46,7 @@ class ConsultasCirugias {
         $pdo = conexionCircuitoQuirurgico();
         try {
             $idActivo = id_estado('USUARIO', 'ACT');
-            $sql = "SELECT COUNT(*) FROM catalogo_cirugia WHERE nombre = :nombre AND id_estado = :id_estado";
+            $sql = "SELECT COUNT(*) FROM catalogo_cirugia WHERE " . self::igualSinAcentos('nombre', ':nombre') . " AND id_estado = :id_estado";
             if ($excluirId) $sql .= " AND id_cirugia_catalogo != :excluir";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
@@ -40,7 +55,7 @@ class ConsultasCirugias {
             $stmt->execute();
             return (int)$stmt->fetchColumn() > 0;
         } catch (Exception $e) {
-            $sql = "SELECT COUNT(*) FROM catalogo_cirugia WHERE nombre = :nombre";
+            $sql = "SELECT COUNT(*) FROM catalogo_cirugia WHERE " . self::igualSinAcentos('nombre', ':nombre');
             if ($excluirId) $sql .= " AND id_cirugia_catalogo != :excluir";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
@@ -60,7 +75,7 @@ class ConsultasCirugias {
         $pdo = conexionCircuitoQuirurgico();
         try {
             $idActivo = id_estado('USUARIO', 'ACT');
-            $sql = "SELECT id_estudio FROM estudio WHERE nombre = :nombre AND id_estado = :id_estado";
+            $sql = "SELECT id_estudio FROM estudio WHERE " . self::igualSinAcentos('nombre', ':nombre') . " AND id_estado = :id_estado";
             if ($excluirId) $sql .= " AND id_estudio != :excluir";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
@@ -69,7 +84,7 @@ class ConsultasCirugias {
             $stmt->execute();
             return $stmt->fetchColumn();
         } catch (Exception $e) {
-            $sql = "SELECT id_estudio FROM estudio WHERE nombre = :nombre";
+            $sql = "SELECT id_estudio FROM estudio WHERE " . self::igualSinAcentos('nombre', ':nombre');
             if ($excluirId) $sql .= " AND id_estudio != :excluir";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
@@ -272,17 +287,39 @@ class ConsultasCirugias {
 
     /**
      * Listar cirugías que aún NO tienen estudios vinculados (para el Select de combos).
+     * También excluye cirugías cuyo nombre solo difiere en acentos de una que ya tiene combo.
      */
     public static function listarCirugiasSinComboSelect(): array {
         $pdo  = conexionCircuitoQuirurgico();
         try {
             $idActivo = id_estado('USUARIO', 'ACT');
-            $stmt = $pdo->prepare("SELECT id_cirugia_catalogo AS id, nombre FROM catalogo_cirugia WHERE id_estado = :id_estado AND id_cirugia_catalogo NOT IN (SELECT id_cirugia_catalogo FROM combo_cirugia WHERE id_estado = :id_estado) ORDER BY nombre");
+            $cmp = self::igualSinAcentos('c.nombre', 'c2.nombre');
+            $sql = "SELECT c.id_cirugia_catalogo AS id, c.nombre
+                    FROM catalogo_cirugia c
+                    WHERE c.id_estado = :id_estado
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM combo_cirugia cc
+                          JOIN catalogo_cirugia c2 ON c2.id_cirugia_catalogo = cc.id_cirugia_catalogo
+                          WHERE cc.id_estado = :id_estado
+                            AND $cmp
+                      )
+                    ORDER BY c.nombre";
+            $stmt = $pdo->prepare($sql);
             $stmt->execute([':id_estado' => $idActivo]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
-            $stmt = $pdo->prepare("SELECT id_cirugia_catalogo AS id, nombre FROM catalogo_cirugia WHERE id_cirugia_catalogo NOT IN (SELECT id_cirugia_catalogo FROM combo_cirugia WHERE id_estado = :id_estado) ORDER BY nombre");
-            $stmt->execute([':id_estado' => $idActivo]);
+            $cmp = self::igualSinAcentos('c.nombre', 'c2.nombre');
+            $sql = "SELECT c.id_cirugia_catalogo AS id, c.nombre
+                    FROM catalogo_cirugia c
+                    WHERE NOT EXISTS (
+                          SELECT 1
+                          FROM combo_cirugia cc
+                          JOIN catalogo_cirugia c2 ON c2.id_cirugia_catalogo = cc.id_cirugia_catalogo
+                          WHERE $cmp
+                    )
+                    ORDER BY c.nombre";
+            $stmt = $pdo->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
@@ -470,7 +507,7 @@ class ConsultasCirugias {
         $pdo = conexionCircuitoQuirurgico();
         try {
             $idActivo = id_estado('USUARIO', 'ACT');
-            $sql = "SELECT COUNT(*) FROM categoria_estudio WHERE nombre = :nombre AND id_estado = :id_estado";
+            $sql = "SELECT COUNT(*) FROM categoria_estudio WHERE " . self::igualSinAcentos('nombre', ':nombre') . " AND id_estado = :id_estado";
             if ($excluirId) $sql .= " AND id_categoria_estudio != :excluir";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));
@@ -479,7 +516,7 @@ class ConsultasCirugias {
             $stmt->execute();
             return (int)$stmt->fetchColumn() > 0;
         } catch (Exception $e) {
-            $sql = "SELECT COUNT(*) FROM categoria_estudio WHERE nombre = :nombre";
+            $sql = "SELECT COUNT(*) FROM categoria_estudio WHERE " . self::igualSinAcentos('nombre', ':nombre');
             if ($excluirId) $sql .= " AND id_categoria_estudio != :excluir";
             $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':nombre', mb_strtoupper(trim($nombre), 'UTF-8'));

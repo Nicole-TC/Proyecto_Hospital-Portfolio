@@ -48,21 +48,21 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                         <tr>
                             <th scope="col" class="text-center">DNI</th>
                             <th scope="col">Paciente</th>
-                            <th scope="col" class="text-center">Solicitud</th>
                             <th scope="col">Cirugía Indicada</th>
                             <th scope="col" class="text-center">Admisión</th>
                             <th scope="col" class="text-center">Postas (Estudios)</th>
                             <th scope="col" class="text-center">Apto Físico</th>
+                            <th scope="col" class="text-center">Observaciones</th>
                             <th scope="col" class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Generado por DataTables -->
+
                     </tbody>
                 </table>
             </div>
 
-            <!-- Leyenda -->
+
             <div class="mt-3 mb-2 ml-2">
                 <span class="text-success"><i class="fa-solid fa-circle-check"></i> Completado / Aprobado</span> &nbsp;|&nbsp;
                 <span class="text-warning"><i class="fa-solid fa-clock"></i> Pendiente</span> &nbsp;|&nbsp;
@@ -145,6 +145,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
         <div class="d-flex align-items-center flex-grow-1 me-4">
             <input type="hidden" id="apto-id-orden">
+            <select class="form-select w-auto me-2" id="apto-estado">
                 <option value="OK">Aprobar Apto Físico</option>
                 <option value="RECH">Observar / Rechazar</option>
             </select>
@@ -250,10 +251,11 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
     50% { opacity: 0.45; }
 }
 .icono-alerta-critica {
-    font-size: 1.6rem;
+    font-size: 2.4rem;
     color: #dc3545;
     cursor: help;
     animation: parpadeoAlertaCritica 1.2s ease-in-out infinite;
+    filter: drop-shadow(0px 0px 5px rgba(220, 53, 69, 0.5));
 }
 body.modo-oscuro .icono-alerta-critica {
     color: #ff6b6b;
@@ -352,20 +354,10 @@ body.modo-oscuro .icono-alerta-critica {
                 { 'data': null, 'render': function(data) { 
                     return data.paciente_apellido + ', ' + data.paciente_nombre; 
                 }},
-                { 'data': 'observaciones', 'className': 'text-center', 'render': function(data) {
-                    if (!data) return '<span class="text-muted">-</span>';
-                    // (corrección)el badge chico quedaba poco visible. Se refuerza con un
-                    // ícono de alerta grande y parpadeante, con el texto completo
-                    let texto = String(data).replace(/"/g, '&quot;');
-                    return '<i class="fa-solid fa-triangle-exclamation icono-alerta-critica" ' +
-                           'title="Solicitud crítica del profesional: ' + texto + '"></i>';
-                }},
                 { 'data': 'cirugia_nombre' },
                 { 'data': 'fecha_orden', 'className': 'text-center', 'render': function(data) {
                     return formatearFecha(data);
                 }},
-                { 'data': 'cirugia_nombre' },
-                { 'data': 'fecha_orden', 'className': 'text-center' },
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     let total = data.estudios ? data.estudios.length : 0;
                     let realizados = 0;
@@ -378,11 +370,24 @@ body.modo-oscuro .icono-alerta-critica {
                 }},
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     if (data.apto_fisico && data.apto_fisico.estado_codigo === 'OK') {
-                        return '<span class="badge bg-success">Aprobado</span>';
+                        let obs = data.apto_fisico.checklist ? ` title="Obs: ${data.apto_fisico.checklist.replace(/"/g, '&quot;')}" style="cursor: help;"` : '';
+                        return `<span class="badge bg-success"${obs}>Aprobado</span>`;
                     } else if (data.apto_fisico && data.apto_fisico.estado_codigo === 'RECH') {
-                        return '<span class="badge bg-danger">Observado</span>';
+                        let obs = data.apto_fisico.checklist ? ` title="Obs: ${data.apto_fisico.checklist.replace(/"/g, '&quot;')}" style="cursor: help;"` : '';
+                        return `<span class="badge bg-danger"${obs}>Observado</span>`;
                     }
                     return '<span class="badge bg-secondary">Pendiente</span>';
+                }},
+                { 'data': null, 'render': function(data, type, row) {
+                    seguimientosMap[row.id_orden] = row;
+                    let obsApto = (row.apto_fisico && row.apto_fisico.checklist) ? row.apto_fisico.checklist : '';
+                    if (!obsApto) return '<div class="text-center text-muted">-</div>';
+                    let textoCorto = obsApto.length > 15 ? obsApto.substring(0, 15) + '...' : obsApto;
+                    return `<div class="d-flex align-items-center justify-content-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation icono-alerta-critica" title="Observación Clínica"></i>
+                                <span class="small text-muted fst-italic text-truncate" style="max-width: 100px;">"${textoCorto}"</span>
+                                <a href="javascript:void(0)" class="small text-danger fw-bold" style="text-decoration: underline;" onclick="verObservacion(${row.id_orden})">Ver más</a>
+                            </div>`;
                 }},
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     seguimientosMap[data.id_orden] = data; // Almacenamos para el modal
@@ -412,10 +417,7 @@ body.modo-oscuro .icono-alerta-critica {
                 }
             },
             'initComplete': function() {
-                // CIR-723 (corrección 5): desactivamos el listener nativo de
-                // DataTables (compara con tildes) y lo reemplazamos por el
-                // nuestro, que normaliza el texto antes de cada búsqueda.
-                $('#tabla-postas_filter input')
+               $('#tabla-postas_filter input')
                     .off('keyup.DT search.DT input.DT paste.DT cut.DT')
                     .on('keyup input', function() {
                         terminoBusquedaPostas = normalizarTexto($(this).val());
@@ -424,8 +426,6 @@ body.modo-oscuro .icono-alerta-critica {
             }
         });
     });
-
-    // (corrección) el aviso solo se muestra si se intenta buscar sin completar los filtros.
     $('#btn-filtrar-postas').on('click', function() {
         if (!filtrosPostasCompletos()) {
             $('#postas-sin-filtro').removeClass('d-none');
@@ -439,6 +439,23 @@ body.modo-oscuro .icono-alerta-critica {
         $('#postas-sin-filtro').addClass('d-none');
         $('#tabla-postas').DataTable().ajax.reload();
     });
+
+    function verObservacion(id_orden) {
+        let data = seguimientosMap[id_orden];
+        let obsApto = (data && data.apto_fisico && data.apto_fisico.checklist) ? data.apto_fisico.checklist : '';
+        if (obsApto) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Observación Clínica',
+                    text: obsApto,
+                    confirmButtonColor: '#0056b3'
+                });
+            } else {
+                alert("Observación Clínica:\n\n" + obsApto);
+            }
+        }
+    }
 
     function abrirModalExpediente(id_orden) {
         let data = seguimientosMap[id_orden];

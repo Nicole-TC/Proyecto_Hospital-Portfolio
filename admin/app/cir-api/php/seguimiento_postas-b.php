@@ -246,6 +246,13 @@ class ConsultasSeguimiento {
     public static function agregarEstudioAdicional(int $id_orden, int $id_estudio): bool {
         $pdo = conexionCircuitoQuirurgico();
 
+        // Verificar que el Apto Físico no haya sido evaluado ya
+        $stmtApto = $pdo->prepare("SELECT 1 FROM verificacion_pre_cirugia WHERE id_orden = :id_orden LIMIT 1");
+        $stmtApto->execute([':id_orden' => $id_orden]);
+        if ($stmtApto->fetch()) {
+            throw new Exception("No se pueden agregar estudios adicionales porque el Apto Físico ya fue evaluado.");
+        }
+
         $idEstadoPendiente = id_estado('ESTUDIO', 'PEND');
         if (!$idEstadoPendiente) {
             throw new Exception("El estado 'PEND' no existe para Estudio.");

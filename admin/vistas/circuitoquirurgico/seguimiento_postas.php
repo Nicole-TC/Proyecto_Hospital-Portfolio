@@ -1,9 +1,47 @@
+<?php
+// bandera para habilitar el tildado de estudios solo a usuarios admin.
+$esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
+?>
 <div class="col-12 mb-5">
     <div class="card">
         <div class="card-header">
             Seguimiento de Postas
         </div>
         <div class="col-12 mt-1 mb-1">
+            <div class="col-12 mt-1 mb-1">
+
+            <!-- Filtros obligatorios: sin completarlos no se muestran registros -->
+            <div class="row g-3 align-items-end mb-4 mt-2 mx-1">
+                <div class="col-md-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">ADMISIÓN DESDE <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-desde" style="border-radius: 0.5rem; height: 45px;">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">ADMISIÓN HASTA <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-hasta" max="" style="border-radius: 0.5rem; height: 45px;">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-estado-apto">ESTADO APTO FÍSICO <span class="text-danger">*</span></label>
+                    <select class="form-select border-0 bg-light" id="filtro-estado-apto" style="border-radius: 0.5rem; height: 45px;">
+                        <option value="">Seleccione...</option>
+                        <option value="PEND">Pendiente</option>
+                        <option value="OK">Aprobado</option>
+                        <option value="RECH">Observado</option>
+                        <option value="TODOS">Todos</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex">
+                    <button type="button" class="btn btn-primary w-100 fw-bold" id="btn-filtrar-postas" style="border-radius: 0.5rem; height: 45px; border: none;">
+                        <i class="bi bi-search me-1"></i> BUSCAR
+                    </button>
+                </div>
+            </div>
+            <!-- (corrección de alerta): oculto por defecto. Solo se muestra si se aprieta "Buscar" sin completar los filtros. -->
+            <div id="postas-sin-filtro" class="alert alert-warning mx-1 py-2 small d-none">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                Seleccioná el estado de Apto Físico y el rango de fechas de admisión, y presioná "Buscar" para ver los registros.
+            </div>
+
             <div class="table-responsive">
                 <table class="table align-center display" id="tabla-postas">
                     <thead>
@@ -14,16 +52,17 @@
                             <th scope="col" class="text-center">Admisión</th>
                             <th scope="col" class="text-center">Postas (Estudios)</th>
                             <th scope="col" class="text-center">Apto Físico</th>
+                            <th scope="col" class="text-center">Observaciones</th>
                             <th scope="col" class="text-center">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Generado por DataTables -->
+
                     </tbody>
                 </table>
             </div>
 
-            <!-- Leyenda -->
+
             <div class="mt-3 mb-2 ml-2">
                 <span class="text-success"><i class="fa-solid fa-circle-check"></i> Completado / Aprobado</span> &nbsp;|&nbsp;
                 <span class="text-warning"><i class="fa-solid fa-clock"></i> Pendiente</span> &nbsp;|&nbsp;
@@ -68,14 +107,39 @@
           </div>
         </div>
 
+        <div id="modal-solicitud-usuario" class="alert alert-danger d-flex align-items-start gap-2 mb-4 d-none">
+            <i class="fa-solid fa-triangle-exclamation fs-5 mt-1"></i>
+            <div>
+                <strong>Solicitud importante del profesional:</strong>
+                <p class="mb-0" id="modal-solicitud-texto"></p>
+            </div>
+        </div>
+
         <!-- Dos columnas -->
         <div class="row g-4 mt-1">
           <!-- Estudios requeridos -->
           <div class="col-md-6">
-            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2"><i class="fa-solid fa-vial-circle-check me-2"></i>Estudios Requeridos</h6>
-            <div class="list-group list-group-flush mt-3" id="modal-lista-estudios">
+            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2 d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-vial-circle-check me-2"></i>Estudios Requeridos</span>
+                <span class="badge bg-secondary" id="modal-contador-estudios">0/0</span>
+            </h6>
+            <div class="list-group list-group-flush mt-3 mb-3" id="modal-lista-estudios">
               <!-- Cargado via AJAX -->
             </div>
+
+            <?php if ($esAdminPostas): ?>
+            <div class="mt-2 p-3 bg-light border rounded shadow-sm" id="div-agregar-estudio">
+                <h6 class="small fw-bold text-dark mb-2"><i class="fa-solid fa-notes-medical me-1 text-primary"></i> Agregar Estudio Adicional</h6>
+                <div class="input-group input-group-sm">
+                    <select class="form-select" id="select-estudio-adicional">
+                        <option value="">Cargando estudios...</option>
+                    </select>
+                    <button class="btn btn-primary fw-bold" type="button" id="btn-agregar-estudio" onclick="agregarEstudioAdicional()">
+                        <i class="fa-solid fa-plus me-1"></i> Añadir
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
           </div>
 
           <!-- Historia de auditoría -->
@@ -89,8 +153,10 @@
         </div>
 
       </div>
-      <div class="modal-footer border-top pt-3 pb-3 d-flex justify-content-between align-items-center">
-        
+      <div class="modal-footer border-top pt-3 pb-3 d-flex flex-wrap justify-content-between align-items-center">
+
+        <div id="apto-aviso" class="alert alert-warning w-100 py-2 small mb-2 d-none"></div>
+
         <div class="d-flex align-items-center flex-grow-1 me-4">
             <input type="hidden" id="apto-id-orden">
             <select class="form-select w-auto me-2" id="apto-estado">
@@ -98,7 +164,7 @@
                 <option value="RECH">Observar / Rechazar</option>
             </select>
             <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica...">
-            <button type="button" class="btn btn-primary text-nowrap" onclick="guardarApto()">
+            <button type="button" class="btn btn-primary text-nowrap" id="btn-guardar-apto" onclick="guardarApto()">
                 <i class="fa-solid fa-save me-1"></i> Registrar
             </button>
         </div>
@@ -150,10 +216,7 @@ body.modo-oscuro .table td,
 body.modo-oscuro .table th {
     border-color: #444 !important;
 }
-/* Dots del timeline: sacar bg-white, el ícono no necesita fondo */
-body.modo-oscuro .bg-white {
-    background-color: #2a2a2a !important;
-}
+/* Dots del timeline: el ícono no necesita fondo */
 body.modo-oscuro .badge.bg-light {
     background-color: #3a3a3a !important;
     color: #f1f1f1 !important;
@@ -178,7 +241,18 @@ body.modo-oscuro .modal-footer {
 body.modo-oscuro .btn-close-white {
     filter: invert(1) grayscale(100%) brightness(200%);
 }
-/* DataTables dark mode */
+/* Icono de calendario nativo visible en modo oscuro */
+body.modo-oscuro input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(200%);
+    cursor: pointer;
+}
+/* DataTables & Forms dark mode */
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select,
+body.modo-oscuro .form-control:hover,
+body.modo-oscuro .form-select:hover,
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus,
 body.modo-oscuro .dataTables_wrapper .dataTables_filter input,
 body.modo-oscuro .dataTables_wrapper select {
     background-color: #2a2a2a !important;
@@ -190,6 +264,24 @@ body.modo-oscuro .dataTables_wrapper .dataTables_length label,
 body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
     color: #adb5bd !important;
 }
+
+/* (corrección): ícono de alerta para solicitud crítica del
+   profesional, ubicado en la fila del datatable (sin
+   necesidad de entrar al detalle)*/
+@keyframes parpadeoAlertaCritica {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+.icono-alerta-critica {
+    font-size: 2.4rem;
+    color: #dc3545;
+    cursor: help;
+    animation: parpadeoAlertaCritica 1.2s ease-in-out infinite;
+    filter: drop-shadow(0px 0px 5px rgba(220, 53, 69, 0.5));
+}
+body.modo-oscuro .icono-alerta-critica {
+    color: #ff6b6b;
+}
 </style>
 
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
@@ -199,11 +291,85 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
 <script>
     let seguimientosMap = {}; // Para guardar los datos localmente y no tener que hacer otro fetch al abrir modal
 
+    // solo admin puede tildar estudios; se resuelve en PHP y se vuelca acá.
+    const ES_ADMIN_POSTAS = <?php echo $esAdminPostas ? 'true' : 'false'; ?>;
+
+    // la tabla no debe traer nada hasta que se complete el filtro obligatorio.
+    function filtrosPostasCompletos() {
+        return !!($('#filtro-fecha-desde').val() && $('#filtro-fecha-hasta').val() && $('#filtro-estado-apto').val());
+    }
+
+    // normalizar fechas
+    function formatearFecha(valor, conHora) {
+        if (!valor) return '-';
+        let match = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+        if (!match) return valor;
+        let [, anio, mes, dia, hora, min] = match;
+        let texto = `${dia}/${mes}/${anio}`;
+        if (conHora && hora !== undefined) {
+            texto += ` ${hora}:${min}`;
+        }
+        return texto;
+    }
+
+    // (corrección) fecha de hoy en formato YYYY-MM-DD, usada como
+    // tope máximo para "Admisión hasta" (input y validación previa a buscar).
+    function fechaHoyISO() {
+        let hoy = new Date();
+        let mes = String(hoy.getMonth() + 1).padStart(2, '0');
+        let dia = String(hoy.getDate()).padStart(2, '0');
+        return `${hoy.getFullYear()}-${mes}-${dia}`;
+    }
+
+    // (corrección): normaliza texto sacando tildes y pasando a minúsculas.
+    function normalizarTexto(texto) {
+        return String(texto || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
+    // término ya normalizado que usa el buscador "Filtrar" propio de la tabla.
+    let terminoBusquedaPostas = '';
+
+    // reemplaza la comparación por defecto de DataTables (sensible a tildes)
+    // por una que compara texto normalizado, solo para #tabla-postas.
+    $.fn.dataTable.ext.search.push(function(settings, filaData) {
+        if (settings.nTable.id !== 'tabla-postas') return true;
+        if (!terminoBusquedaPostas) return true;
+        return filaData.some(celda => normalizarTexto(celda).indexOf(terminoBusquedaPostas) !== -1);
+    });
+
     $(document).ready(function() {
-        $('#tabla-postas').DataTable({
-            'ajax': {
-                'url': 'app/cir-api/endpoints/seguimiento_postas-e.php?accion=listar_seguimiento',
-                'dataSrc': 'registros'
+        $('#filtro-fecha-hasta').attr('max', fechaHoyISO());
+
+        let tablaPostas = $('#tabla-postas').DataTable({
+            'ajax': function(data, callback) {
+                // (corrección) si faltan filtros, la tabla queda vacía
+                // y SIN mostrar ningún aviso automático (el aviso solo aparece
+                // al presionar "Buscar".
+                if (!filtrosPostasCompletos()) {
+                    callback({ 'data': [] });
+                    return;
+                }
+                $.ajax({
+                    'url': 'app/cir-api/endpoints/seguimiento_postas-e.php',
+                    'data': {
+                        'accion': 'listar_seguimiento',
+                        'fecha_desde': $('#filtro-fecha-desde').val(),
+                        'fecha_hasta': $('#filtro-fecha-hasta').val(),
+                        'estado_apto': $('#filtro-estado-apto').val()
+                    },
+                    'dataType': 'json',
+                    'success': function(json) {
+                        if (json.status === 'error') {
+                            alert('Error: ' + json.message);
+                            callback({ 'data': [] });
+                            return;
+                        }
+                        callback({ 'data': json.registros || [] });
+                    }
+                });
             },
             'columns': [
                 { 'data': 'dni', 'className': 'text-center' },
@@ -211,7 +377,9 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
                     return data.paciente_apellido + ', ' + data.paciente_nombre; 
                 }},
                 { 'data': 'cirugia_nombre' },
-                { 'data': 'fecha_orden', 'className': 'text-center' },
+                { 'data': 'fecha_orden', 'className': 'text-center', 'render': function(data) {
+                    return formatearFecha(data);
+                }},
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     let total = data.estudios ? data.estudios.length : 0;
                     let realizados = 0;
@@ -224,11 +392,24 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
                 }},
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     if (data.apto_fisico && data.apto_fisico.estado_codigo === 'OK') {
-                        return '<span class="badge bg-success">Aprobado</span>';
+                        let obs = data.apto_fisico.checklist ? ` title="Obs: ${data.apto_fisico.checklist.replace(/"/g, '&quot;')}" style="cursor: help;"` : '';
+                        return `<span class="badge bg-success"${obs}>Aprobado</span>`;
                     } else if (data.apto_fisico && data.apto_fisico.estado_codigo === 'RECH') {
-                        return '<span class="badge bg-danger">Observado</span>';
+                        let obs = data.apto_fisico.checklist ? ` title="Obs: ${data.apto_fisico.checklist.replace(/"/g, '&quot;')}" style="cursor: help;"` : '';
+                        return `<span class="badge bg-danger"${obs}>Observado</span>`;
                     }
                     return '<span class="badge bg-secondary">Pendiente</span>';
+                }},
+                { 'data': null, 'render': function(data, type, row) {
+                    seguimientosMap[row.id_orden] = row;
+                    let obsApto = (row.apto_fisico && row.apto_fisico.checklist) ? row.apto_fisico.checklist : '';
+                    if (!obsApto) return '<div class="text-center text-muted">-</div>';
+                    let textoCorto = obsApto.length > 15 ? obsApto.substring(0, 15) + '...' : obsApto;
+                    return `<div class="d-flex align-items-center justify-content-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation icono-alerta-critica" title="Observación Clínica"></i>
+                                <span class="small text-muted fst-italic text-truncate" style="max-width: 100px;">"${textoCorto}"</span>
+                                <a href="javascript:void(0)" class="small text-danger fw-bold" style="text-decoration: underline;" onclick="verObservacion(${row.id_orden})">Ver más</a>
+                            </div>`;
                 }},
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     seguimientosMap[data.id_orden] = data; // Almacenamos para el modal
@@ -256,9 +437,47 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
                     'next': 'Siguiente',
                     'previous': 'Anterior'
                 }
+            },
+            'initComplete': function() {
+               $('#tabla-postas_filter input')
+                    .off('keyup.DT search.DT input.DT paste.DT cut.DT')
+                    .on('keyup input', function() {
+                        terminoBusquedaPostas = normalizarTexto($(this).val());
+                        tablaPostas.draw();
+                    });
             }
         });
     });
+    $('#btn-filtrar-postas').on('click', function() {
+        if (!filtrosPostasCompletos()) {
+            $('#postas-sin-filtro').removeClass('d-none');
+            return;
+        }
+        // (corrección) no permitir fecha futura en "Admisión hasta".
+        if ($('#filtro-fecha-hasta').val() > fechaHoyISO()) {
+            alert('La fecha "Admisión hasta" no puede ser posterior a hoy.');
+            return;
+        }
+        $('#postas-sin-filtro').addClass('d-none');
+        $('#tabla-postas').DataTable().ajax.reload();
+    });
+
+    function verObservacion(id_orden) {
+        let data = seguimientosMap[id_orden];
+        let obsApto = (data && data.apto_fisico && data.apto_fisico.checklist) ? data.apto_fisico.checklist : '';
+        if (obsApto) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Observación Clínica',
+                    text: obsApto,
+                    confirmButtonColor: '#0056b3'
+                });
+            } else {
+                alert("Observación Clínica:\n\n" + obsApto);
+            }
+        }
+    }
 
     function abrirModalExpediente(id_orden) {
         let data = seguimientosMap[id_orden];
@@ -268,7 +487,15 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         $('#modal-paciente').text(data.paciente_apellido + ', ' + data.paciente_nombre);
         $('#modal-dni').text(data.dni);
         $('#modal-cirugia').text(data.cirugia_nombre || 'No definida');
-        $('#modal-admision').text(data.fecha_orden || '-');
+        $('#modal-admision').text(formatearFecha(data.fecha_orden));
+
+        // Solicitud / observación crítica del profesional
+        if (data.observaciones) {
+            $('#modal-solicitud-texto').text(data.observaciones);
+            $('#modal-solicitud-usuario').removeClass('d-none');
+        } else {
+            $('#modal-solicitud-usuario').addClass('d-none');
+        }
 
         // Formulario de Apto
         $('#apto-id-orden').val(id_orden);
@@ -283,12 +510,26 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
             data.estudios.forEach(e => {
                 let isCompletado = (e.estado_codigo === 'REAL');
                 let icon = isCompletado ? '<i class="fa-solid fa-file-medical text-success me-2"></i>' : '<i class="fa-solid fa-clock text-warning me-2"></i>';
-                
+
+                // checkbox de tildado, solo visible/habilitado para admin.
+                let checkboxHtml = '';
+                if (ES_ADMIN_POSTAS) {
+                    checkboxHtml = `
+                       <div class="form-check form-switch me-2">
+                          <input class="form-check-input chk-estudio" type="checkbox"
+                                 data-id-orden="${id_orden}" data-id-estudio="${e.id_estudio}"
+                                 ${isCompletado ? 'checked' : ''}>
+                       </div>`;
+                }
+
                 estudiosContainer.append(`
                     <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-3 border-bottom">
-                       <div>
-                          <h6 class="mb-1 fw-bold text-dark">${icon} ${e.nombre}</h6>
-                          <small class="text-muted"><i class="fa-solid fa-building me-1"></i> Categoria: ${e.categoria || 'Sin categoría'}</small>
+                       <div class="d-flex align-items-center">
+                          ${checkboxHtml}
+                          <div>
+                             <h6 class="mb-1 fw-bold text-dark">${icon} ${e.nombre}</h6>
+                             <small class="text-muted"><i class="fa-solid fa-building me-1"></i> Categoria: ${e.categoria || 'Sin categoría'}</small>
+                          </div>
                        </div>
                        ${isCompletado ? '<span class="badge bg-success">Completado</span>' : '<span class="badge bg-warning text-dark">Pendiente</span>'}
                     </div>
@@ -297,6 +538,8 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         } else {
             estudiosContainer.append('<p class="text-muted mt-2">No hay estudios postas requeridos.</p>');
         }
+        actualizarContadorEstudios(data.estudios || []);
+        actualizarEstadoFormularioApto(data);
 
         // Historial Apto Físico
         let auditoriaContainer = $('#modal-auditoria');
@@ -306,10 +549,10 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         // Registro Inicial (Admisión fake para mantener el mockup)
         auditoriaContainer.append(`
            <div class="d-flex mb-4 position-relative">
-              <div class="bg-white text-primary mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle fs-5"></i></div>
+              <div class="bg-transparent text-primary mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle fs-5"></i></div>
               <div>
                  <p class="mb-0 fw-bold text-dark">Admisión Creada</p>
-                 <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${data.fecha_orden}</span>
+                 <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${formatearFecha(data.fecha_orden)}</span>
               </div>
            </div>
         `);
@@ -322,19 +565,19 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
             
             auditoriaContainer.append(`
                <div class="d-flex mb-4 position-relative">
-                  <div class="bg-white ${isOk ? 'text-success' : 'text-danger'} mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid ${iconClass} fs-5"></i></div>
+                  <div class="bg-transparent ${isOk ? 'text-success' : 'text-danger'} mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid ${iconClass} fs-5"></i></div>
                   <div>
                      <p class="mb-0 fw-bold text-dark">${textOk}</p>
                      <p class="mb-1 small text-secondary">Evaluado por: ${data.apto_fisico.profesional_nombre} ${data.apto_fisico.profesional_apellido} <br/> 
                      Obs: ${data.apto_fisico.checklist || 'Sin observaciones'}</p>
-                     <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${data.apto_fisico.fecha}</span>
+                     <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${formatearFecha(data.apto_fisico.fecha, true)}</span>
                   </div>
                </div>
             `);
         } else {
             auditoriaContainer.append(`
                <div class="d-flex mb-2 position-relative">
-                  <div class="bg-white text-warning mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle-notch fa-spin fs-5"></i></div>
+                  <div class="bg-transparent text-warning mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle-notch fa-spin fs-5"></i></div>
                   <div>
                      <p class="mb-0 fw-bold text-dark">Pendiente de Evaluación</p>
                      <p class="mb-1 small text-secondary">Aguardando que un profesional registre el Apto</p>
@@ -343,9 +586,107 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
             `);
         }
 
-        let myModal = new bootstrap.Modal(document.getElementById('expedienteModal'));
+        if (ES_ADMIN_POSTAS) {
+            if (data.apto_fisico) {
+                $('#div-agregar-estudio').addClass('d-none');
+            } else {
+                $('#div-agregar-estudio').removeClass('d-none');
+                cargarEstudiosDisponibles(id_orden);
+            }
+        }
+
+        let myModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('expedienteModal'));
         myModal.show();
     }
+
+    // actualiza el contador 0/4 -> 4/4 del contenedor de estudios.
+    function actualizarContadorEstudios(estudios) {
+        let total = estudios.length;
+        let realizados = estudios.filter(e => e.estado_codigo === 'REAL').length;
+        $('#modal-contador-estudios')
+            .text(`${realizados}/${total}`)
+            .removeClass('bg-secondary bg-success bg-warning')
+            .addClass(total > 0 && realizados === total ? 'bg-success' : 'bg-secondary');
+    }
+
+    // habilita/bloquea el formulario de Apto Físico según:
+    // 1) si ya existe un Apto Físico registrado > solo lectura.
+    // 2) si faltan postas por completar > deshabilitado con aviso.
+    // 3) caso contrario > habilitado para registrar.
+    function actualizarEstadoFormularioApto(data) {
+        let $aviso = $('#apto-aviso');
+        let $estado = $('#apto-estado');
+        let $obs = $('#apto-observaciones');
+        let $btn = $('#btn-guardar-apto');
+
+        let estudios = data.estudios || [];
+        let totalEstudios = estudios.length;
+        let realizados = estudios.filter(e => e.estado_codigo === 'REAL').length;
+        let postasCompletas = totalEstudios === 0 || realizados === totalEstudios;
+
+        $estado.prop('disabled', false);
+        $obs.prop('disabled', false);
+        $btn.prop('disabled', false);
+        $aviso.addClass('d-none').text('');
+
+        if (data.apto_fisico) {
+            let estadoTexto = data.apto_fisico.estado_codigo === 'OK' ? 'Aprobado' : 'Observado';
+            $estado.prop('disabled', true);
+            $obs.prop('disabled', true);
+            $btn.prop('disabled', true);
+            $aviso.removeClass('d-none').html(
+                `<i class="fa-solid fa-lock me-1"></i> Apto Físico ya registrado (${estadoTexto}) el ` +
+                `${formatearFecha(data.apto_fisico.fecha, true)}. No puede volver a cargarse.`
+            );
+        } else if (!postasCompletas) {
+            $estado.prop('disabled', true);
+            $obs.prop('disabled', true);
+            $btn.prop('disabled', true);
+            $aviso.removeClass('d-none').html(
+                `<i class="fa-solid fa-triangle-exclamation me-1"></i> Deben completarse las postas ` +
+                `(${realizados}/${totalEstudios}) antes de poder registrar el Apto Físico.`
+            );
+        }
+    }
+
+    // tildar/destildar un estudio (solo admin). Marca REAL al tildar, PEND al destildar.
+    $(document).on('change', '.chk-estudio', function() {
+        let $chk = $(this);
+        let idOrden = $chk.data('id-orden');
+        let idEstudio = $chk.data('id-estudio');
+        let nuevoCodigo = $chk.is(':checked') ? 'REAL' : 'PEND';
+
+        $chk.prop('disabled', true);
+
+        fetch('app/cir-api/endpoints/seguimiento_postas-e.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                accion: 'marcar_estudio',
+                id_orden: idOrden,
+                id_estudio: idEstudio,
+                codigo_estado: nuevoCodigo
+            })
+        })
+        .then(response => response.json())
+        .then(json => {
+            if (json.status !== 'success') {
+                alert('Error: ' + json.message);
+                $chk.prop('checked', !$chk.is(':checked'));
+                return;
+            }
+            let registro = seguimientosMap[idOrden];
+            if (registro && registro.estudios) {
+                let estudio = registro.estudios.find(e => e.id_estudio == idEstudio);
+                if (estudio) estudio.estado_codigo = nuevoCodigo;
+                actualizarContadorEstudios(registro.estudios);
+                actualizarEstadoFormularioApto(registro);
+            }
+            $('#tabla-postas').DataTable().ajax.reload(null, false);
+        })
+        .catch(() => alert('Ocurrió un error al actualizar el estudio.'))
+        .finally(() => $chk.prop('disabled', false));
+    });
 
     function guardarApto() {
         let id_orden = $('#apto-id-orden').val();
@@ -383,6 +724,94 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
         .catch(error => {
             console.error('Error:', error);
             alert('Ocurrió un error al registrar el apto.');
+        });
+    }
+
+    function cargarEstudiosDisponibles(id_orden) {
+        let $select = $('#select-estudio-adicional');
+        let $btn = $('#btn-agregar-estudio');
+        $select.html('<option value="">Cargando estudios...</option>').prop('disabled', true);
+        $btn.prop('disabled', true);
+
+        fetch(`app/cir-api/endpoints/seguimiento_postas-e.php?accion=listar_estudios_disponibles&id_orden=${id_orden}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (data.estudios && data.estudios.length > 0) {
+                    let options = '<option value="">Seleccione un estudio...</option>';
+                    data.estudios.forEach(e => {
+                        let cat = e.categoria ? ` (${e.categoria})` : '';
+                        options += `<option value="${e.id}">${e.nombre}${cat}</option>`;
+                    });
+                    $select.html(options).prop('disabled', false);
+                    $btn.prop('disabled', false);
+                } else {
+                    $select.html('<option value="">No hay más estudios disponibles</option>');
+                }
+            } else {
+                $select.html('<option value="">Error al cargar estudios</option>');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            $select.html('<option value="">Error de conexión</option>');
+        });
+    }
+
+    function agregarEstudioAdicional() {
+        let id_orden = $('#apto-id-orden').val();
+        let id_estudio = $('#select-estudio-adicional').val();
+        let $btn = $('#btn-agregar-estudio');
+        
+        if (!id_orden || !id_estudio) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Por favor seleccione un estudio.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } else {
+                alert('Por favor seleccione un estudio.');
+            }
+            return;
+        }
+
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i>');
+
+        fetch('app/cir-api/endpoints/seguimiento_postas-e.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                accion: 'agregar_estudio_adicional',
+                id_orden: id_orden,
+                id_estudio: id_estudio
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'success', title: 'Estudio agregado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                }
+                $btn.prop('disabled', false).html('<i class="fa-solid fa-plus me-1"></i> Añadir');
+                $('#tabla-postas').DataTable().ajax.reload(function() {
+                    if ($('#expedienteModal').hasClass('show')) {
+                        abrirModalExpediente(id_orden);
+                    }
+                }, false);
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'No se pudo agregar', text: data.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                } else {
+                    alert('Error: ' + data.message);
+                }
+                $btn.prop('disabled', false).html('<i class="fa-solid fa-plus me-1"></i> Añadir');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'Ocurrió un error al agregar el estudio.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            } else {
+                alert('Ocurrió un error al agregar el estudio.');
+            }
+            $btn.prop('disabled', false).html('<i class="fa-solid fa-plus me-1"></i> Añadir');
         });
     }
 </script>

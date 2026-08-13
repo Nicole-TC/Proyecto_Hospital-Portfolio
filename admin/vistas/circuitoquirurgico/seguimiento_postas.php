@@ -11,18 +11,18 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             <div class="col-12 mt-1 mb-1">
 
             <!-- Filtros obligatorios: sin completarlos no se muestran registros -->
-            <div class="row g-2 align-items-end mb-3 mt-2 mx-1">
+            <div class="row g-3 align-items-end mb-4 mt-2 mx-1">
                 <div class="col-md-3">
-                    <label class="form-label small text-secondary mb-1" for="filtro-fecha-desde">Admisión desde <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control form-control-sm" id="filtro-fecha-desde">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">ADMISIÓN DESDE <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-desde" style="border-radius: 0.5rem; height: 45px;">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-secondary mb-1" for="filtro-fecha-hasta">Admisión hasta <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control form-control-sm" id="filtro-fecha-hasta" max="">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">ADMISIÓN HASTA <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-hasta" max="" style="border-radius: 0.5rem; height: 45px;">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small text-secondary mb-1" for="filtro-estado-apto">Estado Apto Físico <span class="text-danger">*</span></label>
-                    <select class="form-select form-select-sm" id="filtro-estado-apto">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-estado-apto">ESTADO APTO FÍSICO <span class="text-danger">*</span></label>
+                    <select class="form-select border-0 bg-light" id="filtro-estado-apto" style="border-radius: 0.5rem; height: 45px;">
                         <option value="">Seleccione...</option>
                         <option value="PEND">Pendiente</option>
                         <option value="OK">Aprobado</option>
@@ -31,8 +31,8 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     </select>
                 </div>
                 <div class="col-md-3 d-flex">
-                    <button type="button" class="btn btn-primary btn-sm w-100" id="btn-filtrar-postas">
-                        <i class="fa-solid fa-magnifying-glass me-1"></i> Buscar
+                    <button type="button" class="btn btn-primary w-100 fw-bold" id="btn-filtrar-postas" style="border-radius: 0.5rem; height: 45px; border: none;">
+                        <i class="bi bi-search me-1"></i> BUSCAR
                     </button>
                 </div>
             </div>
@@ -128,7 +128,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             </div>
 
             <?php if ($esAdminPostas): ?>
-            <div class="mt-2 p-3 bg-light border rounded shadow-sm">
+            <div class="mt-2 p-3 bg-light border rounded shadow-sm" id="div-agregar-estudio">
                 <h6 class="small fw-bold text-dark mb-2"><i class="fa-solid fa-notes-medical me-1 text-primary"></i> Agregar Estudio Adicional</h6>
                 <div class="input-group input-group-sm">
                     <select class="form-select" id="select-estudio-adicional">
@@ -216,10 +216,7 @@ body.modo-oscuro .table td,
 body.modo-oscuro .table th {
     border-color: #444 !important;
 }
-/* Dots del timeline: sacar bg-white, el ícono no necesita fondo */
-body.modo-oscuro .bg-white {
-    background-color: #2a2a2a !important;
-}
+/* Dots del timeline: el ícono no necesita fondo */
 body.modo-oscuro .badge.bg-light {
     background-color: #3a3a3a !important;
     color: #f1f1f1 !important;
@@ -244,7 +241,18 @@ body.modo-oscuro .modal-footer {
 body.modo-oscuro .btn-close-white {
     filter: invert(1) grayscale(100%) brightness(200%);
 }
-/* DataTables dark mode */
+/* Icono de calendario nativo visible en modo oscuro */
+body.modo-oscuro input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(200%);
+    cursor: pointer;
+}
+/* DataTables & Forms dark mode */
+body.modo-oscuro .form-control,
+body.modo-oscuro .form-select,
+body.modo-oscuro .form-control:hover,
+body.modo-oscuro .form-select:hover,
+body.modo-oscuro .form-control:focus,
+body.modo-oscuro .form-select:focus,
 body.modo-oscuro .dataTables_wrapper .dataTables_filter input,
 body.modo-oscuro .dataTables_wrapper select {
     background-color: #2a2a2a !important;
@@ -541,7 +549,7 @@ body.modo-oscuro .icono-alerta-critica {
         // Registro Inicial (Admisión fake para mantener el mockup)
         auditoriaContainer.append(`
            <div class="d-flex mb-4 position-relative">
-              <div class="bg-white text-primary mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle fs-5"></i></div>
+              <div class="bg-transparent text-primary mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle fs-5"></i></div>
               <div>
                  <p class="mb-0 fw-bold text-dark">Admisión Creada</p>
                  <span class="badge bg-light text-dark border"><i class="fa-regular fa-calendar me-1"></i> ${formatearFecha(data.fecha_orden)}</span>
@@ -557,7 +565,7 @@ body.modo-oscuro .icono-alerta-critica {
             
             auditoriaContainer.append(`
                <div class="d-flex mb-4 position-relative">
-                  <div class="bg-white ${isOk ? 'text-success' : 'text-danger'} mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid ${iconClass} fs-5"></i></div>
+                  <div class="bg-transparent ${isOk ? 'text-success' : 'text-danger'} mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid ${iconClass} fs-5"></i></div>
                   <div>
                      <p class="mb-0 fw-bold text-dark">${textOk}</p>
                      <p class="mb-1 small text-secondary">Evaluado por: ${data.apto_fisico.profesional_nombre} ${data.apto_fisico.profesional_apellido} <br/> 
@@ -569,7 +577,7 @@ body.modo-oscuro .icono-alerta-critica {
         } else {
             auditoriaContainer.append(`
                <div class="d-flex mb-2 position-relative">
-                  <div class="bg-white text-warning mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle-notch fa-spin fs-5"></i></div>
+                  <div class="bg-transparent text-warning mt-1 me-3 position-relative z-1" style="margin-left: -2px;"><i class="fa-solid fa-circle-notch fa-spin fs-5"></i></div>
                   <div>
                      <p class="mb-0 fw-bold text-dark">Pendiente de Evaluación</p>
                      <p class="mb-1 small text-secondary">Aguardando que un profesional registre el Apto</p>
@@ -579,7 +587,12 @@ body.modo-oscuro .icono-alerta-critica {
         }
 
         if (ES_ADMIN_POSTAS) {
-            cargarEstudiosDisponibles(id_orden);
+            if (data.apto_fisico) {
+                $('#div-agregar-estudio').addClass('d-none');
+            } else {
+                $('#div-agregar-estudio').removeClass('d-none');
+                cargarEstudiosDisponibles(id_orden);
+            }
         }
 
         let myModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('expedienteModal'));

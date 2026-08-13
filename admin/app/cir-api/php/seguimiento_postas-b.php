@@ -223,5 +223,51 @@ class ConsultasSeguimiento {
             ':id_estudio' => $id_estudio,
         ]);
     }
+
+    // Obtiene los estudios activos del sistema que NO están ya asignados a esta orden
+    public static function obtenerEstudiosDisponibles(int $id_orden): array {
+        $pdo = conexionCircuitoQuirurgico();
+        // Asumiendo que el id_estado de un estudio activo (Habilitado) es recuperable o podemos filtrarlo. 
+        // O simplemente traemos todos los estudios que no estén en la orden.
+        $stmt = $pdo->prepare("
+            SELECT e.id_estudio AS id, e.nombre, c.nombre AS categoria
+            FROM estudio e
+            LEFT JOIN categoria_estudio c ON c.id_categoria_estudio = e.id_categoria_estudio
+            WHERE e.id_estudio NOT IN (
+                SELECT oe.id_estudio FROM orden_estudio oe WHERE oe.id_orden = :id_orden
+            )
+            ORDER BY e.nombre ASC
+        ");
+        $stmt->execute([':id_orden' => $id_orden]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Agrega un estudio nuevo a la orden con estado Pendiente
+    public static function agregarEstudioAdicional(int $id_orden, int $id_estudio): bool {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $idEstadoPendiente = id_estado('ESTUDIO', 'PEND');
+        if (!$idEstadoPendiente) {
+            throw new Exception("El estado 'PEND' no existe para Estudio.");
+        }
+
+        // Verificamos (evitar duplicados si llaman rápido a la API)
+        $stmtCheck = $pdo->prepare("SELECT 1 FROM orden_estudio WHERE id_orden = :id_orden AND id_estudio = :id_estudio");
+        $stmtCheck->execute([':id_orden' => $id_orden, ':id_estudio' => $id_estudio]);
+        if ($stmtCheck->fetch()) {
+            throw new Exception("El estudio seleccionado ya está asignado a esta orden.");
+        }
+
+        $stmt = $pdo->prepare("
+            INSERT INTO orden_estudio (id_orden, id_estudio, id_estado)
+            VALUES (:id_orden, :id_estudio, :id_estado)
+        ");
+
+        return $stmt->execute([
+            ':id_orden'   => $id_orden,
+            ':id_estudio' => $id_estudio,
+            ':id_estado'  => $idEstadoPendiente
+        ]);
+    }
 }
 ?>

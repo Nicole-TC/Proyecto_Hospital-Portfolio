@@ -1,0 +1,131 @@
+<?php
+require_once __DIR__ . '/../../../model/cir_conexion.php';
+require_once __DIR__ . '/funciones.php';
+
+class ConsultasListasEspera {
+
+    /**
+     * Devuelve los pacientes en lista de espera.
+     * @param string $estado_apto (OK, OBS, RECH, TODOS_MENOS_PENDIENTE)
+     */
+    public static function listarPacientesEspera(string $estado_apto = 'OK', string $fecha_desde = '', string $fecha_hasta = ''): array {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $estado_apto = mb_strtoupper(trim($estado_apto), 'UTF-8');
+        $estadosPermitidos = ['OK', 'OBS', 'TODOS'];
+
+        if (!in_array($estado_apto, $estadosPermitidos)) {
+            $estado_apto = 'OK';
+        }
+
+        // Excluir órdenes eliminadas o canceladas. Ya no filtramos FIN porque pueden querer ver la estadística.
+        $where = "WHERE 1=1";
+        $params = [];
+
+        $idElim = id_estado('DATO', 'ELIM');
+        $idCanc = id_estado('ORDEN', 'CANC');
+
+        $where .= " AND om.id_estado NOT IN (:id_elim, :id_canc)";
+        $params[':id_elim'] = $idElim ?: 0;
+        $params[':id_canc'] = $idCanc ?: 0;
+
+        // Filtrar por el estado del Apto Físico (Verificación)
+        if ($estado_apto === 'TODOS') {
+            // Todos los que tengan alguna verificación (excluye pendientes puros)
+            $where .= " AND EXISTS (SELECT 1 FROM verificacion_pre_cirugia v2 WHERE v2.id_orden = om.id_orden)";
+        } else {
+            // Buscar que LA ÚLTIMA verificación coincida con el estado solicitado
+            $where .= " AND (
+                SELECT ev.codigo
+                FROM verificacion_pre_cirugia v2
+                INNER JOIN estado ev ON ev.id_estado = v2.id_estado
+                WHERE v2.id_orden = om.id_orden
+                ORDER BY v2.fecha DESC NULLS LAST, v2.id_verificacion DESC
+                LIMIT 1
+            ) = :estado_apto";
+            $params[':estado_apto'] = $estado_apto;
+        }
+        
+        // Filtros de fecha sobre la última verificación (Apto Físico)
+        if ($fecha_desde !== '' && $fecha_hasta !== '') {
+            $where .= " AND (
+                SELECT DATE(v2.fecha)
+                FROM verificacion_pre_cirugia v2
+                WHERE v2.id_orden = om.id_orden
+                ORDER BY v2.fecha DESC NULLS LAST, v2.id_verificacion DESC
+                LIMIT 1
+            ) BETWEEN :fecha_desde AND :fecha_hasta";
+            $params[':fecha_desde'] = $fecha_desde;
+            $params[':fecha_hasta'] = $fecha_hasta;
+        }
+
+        $from = "
+            FROM orden_medica om
+            INNER JOIN persona_asiste pa ON pa.id_persona_asiste = om.id_persona_asiste
+            INNER JOIN persona p ON p.id_persona = pa.id_persona
+            LEFT JOIN catalogo_cirugia c ON c.id_cirugia_catalogo = om.id_cirugia_catalogo
+        ";
+
+        $sql = "
+            SELECT 
+                om.id_orden, 
+                pa.id_persona_asiste,
+                p.dni, p.nombre AS paciente_nombre, p.apellido AS paciente_apellido,
+                c.nombre AS cirugia_nombre,
+                c.id_cirugia_catalogo,
+                (
+                    SELECT v.fecha
+                    FROM verificacion_pre_cirugia v
+                    WHERE v.id_orden = om.id_orden
+                    ORDER BY v.fecha DESC NULLS LAST, v.id_verificacion DESC
+                    LIMIT 1
+                ) AS apto_desde,
+                (
+                    SELECT ev.codigo
+                    FROM verificacion_pre_cirugia v
+                    INNER JOIN estado ev ON ev.id_estado = v.id_estado
+                    WHERE v.id_orden = om.id_orden
+                    ORDER BY v.fecha DESC NULLS LAST, v.id_verificacion DESC
+                    LIMIT 1
+                ) AS estado_apto_codigo,
+                (
+                    SELECT t.fecha_hora
+                    FROM turno t
+                    INNER JOIN tipo_turno tt ON tt.id_tipo_turno = t.id_tipo_turno
+                    INNER JOIN estado et ON et.id_estado = t.id_estado
+                    WHERE t.id_orden = om.id_orden 
+                      AND LOWER(tt.codigo) = 'cir' 
+                      AND et.codigo IN ('PROG', 'CONF')
+                    ORDER BY t.fecha_hora ASC
+                    LIMIT 1
+                ) AS turno_programado_fecha
+            $from 
+            $where 
+            ORDER BY apto_desde ASC NULLS LAST
+        ";
+
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+        $stmt->execute();
+        
+        $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return [
+            'registros' => $registros,
+            'total'     => count($registros),
+        ];
+    }
+    public static function obtenerCirujanos(): array {
+        $pdo = conexionCircuitoQuirurgico();
+        // Obtener todos los profesionales registrados (podría filtrarse por especialidad quirúrgica si existiese)
+        $sql = "
+            SELECT prof.id_profesional, p.nombre, p.apellido
+            FROM profesional prof
+            INNER JOIN persona p ON p.id_persona = prof.id_persona
+            ORDER BY p.apellido ASC, p.nombre ASC
+        ";
+        $stmt = $pdo->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+}
+?>

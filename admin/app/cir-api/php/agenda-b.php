@@ -103,7 +103,7 @@ class ConsultasAgenda {
         if (!$id_estado_ina) $id_estado_ina = 0;
 
         // Busca la config más reciente cuya vigencia se superpone con el período visible
-        $sql = "SELECT cupos_total, hora_inicio, lunes, martes, miercoles, jueves, viernes
+        $sql = "SELECT cupos_total, hora_inicio, lunes, martes, miercoles, jueves, viernes, fecha_desde, fecha_hasta
                 FROM agenda_cupos
                 WHERE id_tipo_turno = :id_tipo_turno
                   AND id_estado != :id_estado_ina
@@ -135,6 +135,8 @@ class ConsultasAgenda {
             'dias_activos' => $diasActivos,
             'cupos_total'  => (int)$config['cupos_total'],
             'hora_inicio'  => $config['hora_inicio'],
+            'fecha_desde'  => $config['fecha_desde'],
+            'fecha_hasta'  => $config['fecha_hasta'],
         ];
     }
 
@@ -437,9 +439,12 @@ class ConsultasAgenda {
         }
 
         // Insertar turno
+        $observaciones = isset($datos['observaciones']) ? trim($datos['observaciones']) : null;
+        $id_profesional = (isset($datos['id_profesional']) && is_numeric($datos['id_profesional']) && $datos['id_profesional'] > 0) ? (int)$datos['id_profesional'] : null;
+        
         $sqlTurno = "
-            INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora, ausente)
-            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, false)
+            INSERT INTO turno (id_persona_asiste, id_tipo_turno, id_orden, id_estado, fecha_hora, ausente, observaciones, id_profesional)
+            VALUES (:id_persona_asiste, :id_tipo_turno, :id_orden, :id_estado, :fecha_hora, false, :observaciones, :id_profesional)
             RETURNING id_turno
         ";
         $stmt = $pdo->prepare($sqlTurno);
@@ -448,6 +453,8 @@ class ConsultasAgenda {
         $stmt->bindParam(':id_orden',          $datos['id_orden'],          PDO::PARAM_INT);
         $stmt->bindParam(':id_estado',         $id_estado,                  PDO::PARAM_INT);
         $stmt->bindParam(':fecha_hora',        $datos['fecha_hora']);
+        $stmt->bindParam(':observaciones',     $observaciones);
+        $stmt->bindValue(':id_profesional',    $id_profesional,             $id_profesional ? PDO::PARAM_INT : PDO::PARAM_NULL);
         $stmt->execute();
         $id_turno = $stmt->fetch(PDO::FETCH_ASSOC)['id_turno'];
 
@@ -710,6 +717,15 @@ try {
         if (!$id) {
             $id = $pdo->query("SELECT id_tipo_turno FROM tipo_turno ORDER BY id_tipo_turno LIMIT 1")->fetchColumn();
         }
+        return $id ?: null;
+    }
+
+    // ── Obtener tipo_turno cirugía ───────────────────────────────
+    public static function obtenerIdTipoTurnoCirugia() {
+        $pdo = conexionCircuitoQuirurgico();
+        $sql = "SELECT id_tipo_turno FROM tipo_turno WHERE LOWER(codigo) = 'cir' LIMIT 1";
+        $id = $pdo->query($sql)->fetchColumn();
+        // fallback: si no hay 'cir', buscar si hay otro o null
         return $id ?: null;
     }
 }

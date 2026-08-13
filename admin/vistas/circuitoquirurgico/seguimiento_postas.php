@@ -123,9 +123,23 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                 <span><i class="fa-solid fa-vial-circle-check me-2"></i>Estudios Requeridos</span>
                 <span class="badge bg-secondary" id="modal-contador-estudios">0/0</span>
             </h6>
-            <div class="list-group list-group-flush mt-3" id="modal-lista-estudios">
+            <div class="list-group list-group-flush mt-3 mb-3" id="modal-lista-estudios">
               <!-- Cargado via AJAX -->
             </div>
+
+            <?php if ($esAdminPostas): ?>
+            <div class="mt-2 p-3 bg-light border rounded shadow-sm">
+                <h6 class="small fw-bold text-dark mb-2"><i class="fa-solid fa-notes-medical me-1 text-primary"></i> Agregar Estudio Adicional</h6>
+                <div class="input-group input-group-sm">
+                    <select class="form-select" id="select-estudio-adicional">
+                        <option value="">Cargando estudios...</option>
+                    </select>
+                    <button class="btn btn-primary fw-bold" type="button" id="btn-agregar-estudio" onclick="agregarEstudioAdicional()">
+                        <i class="fa-solid fa-plus me-1"></i> Añadir
+                    </button>
+                </div>
+            </div>
+            <?php endif; ?>
           </div>
 
           <!-- Historia de auditoría -->
@@ -564,7 +578,11 @@ body.modo-oscuro .icono-alerta-critica {
             `);
         }
 
-        let myModal = new bootstrap.Modal(document.getElementById('expedienteModal'));
+        if (ES_ADMIN_POSTAS) {
+            cargarEstudiosDisponibles(id_orden);
+        }
+
+        let myModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('expedienteModal'));
         myModal.show();
     }
 
@@ -693,6 +711,94 @@ body.modo-oscuro .icono-alerta-critica {
         .catch(error => {
             console.error('Error:', error);
             alert('Ocurrió un error al registrar el apto.');
+        });
+    }
+
+    function cargarEstudiosDisponibles(id_orden) {
+        let $select = $('#select-estudio-adicional');
+        let $btn = $('#btn-agregar-estudio');
+        $select.html('<option value="">Cargando estudios...</option>').prop('disabled', true);
+        $btn.prop('disabled', true);
+
+        fetch(`app/cir-api/endpoints/seguimiento_postas-e.php?accion=listar_estudios_disponibles&id_orden=${id_orden}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (data.estudios && data.estudios.length > 0) {
+                    let options = '<option value="">Seleccione un estudio...</option>';
+                    data.estudios.forEach(e => {
+                        let cat = e.categoria ? ` (${e.categoria})` : '';
+                        options += `<option value="${e.id}">${e.nombre}${cat}</option>`;
+                    });
+                    $select.html(options).prop('disabled', false);
+                    $btn.prop('disabled', false);
+                } else {
+                    $select.html('<option value="">No hay más estudios disponibles</option>');
+                }
+            } else {
+                $select.html('<option value="">Error al cargar estudios</option>');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            $select.html('<option value="">Error de conexión</option>');
+        });
+    }
+
+    function agregarEstudioAdicional() {
+        let id_orden = $('#apto-id-orden').val();
+        let id_estudio = $('#select-estudio-adicional').val();
+        let $btn = $('#btn-agregar-estudio');
+        
+        if (!id_orden || !id_estudio) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Por favor seleccione un estudio.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+            } else {
+                alert('Por favor seleccione un estudio.');
+            }
+            return;
+        }
+
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin me-1"></i>');
+
+        fetch('app/cir-api/endpoints/seguimiento_postas-e.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                accion: 'agregar_estudio_adicional',
+                id_orden: id_orden,
+                id_estudio: id_estudio
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'success', title: 'Estudio agregado', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                }
+                $btn.prop('disabled', false).html('<i class="fa-solid fa-plus me-1"></i> Añadir');
+                $('#tabla-postas').DataTable().ajax.reload(function() {
+                    if ($('#expedienteModal').hasClass('show')) {
+                        abrirModalExpediente(id_orden);
+                    }
+                }, false);
+            } else {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'No se pudo agregar', text: data.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                } else {
+                    alert('Error: ' + data.message);
+                }
+                $btn.prop('disabled', false).html('<i class="fa-solid fa-plus me-1"></i> Añadir');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'Ocurrió un error al agregar el estudio.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            } else {
+                alert('Ocurrió un error al agregar el estudio.');
+            }
+            $btn.prop('disabled', false).html('<i class="fa-solid fa-plus me-1"></i> Añadir');
         });
     }
 </script>

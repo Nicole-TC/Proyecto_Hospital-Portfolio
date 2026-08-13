@@ -110,6 +110,43 @@ try {
             }
             break;
 
+        case 'listar_estudios_disponibles':
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(405); exit; }
+            $id_orden = (int)($_GET['id_orden'] ?? 0);
+            if (!$id_orden) {
+                echo json_encode(["status" => "error", "message" => "Falta id_orden."]);
+                exit;
+            }
+            $estudios = ConsultasSeguimiento::obtenerEstudiosDisponibles($id_orden);
+            echo json_encode(["status" => "success", "estudios" => $estudios]);
+            break;
+
+        case 'agregar_estudio_adicional':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+            
+            // SOLO EL ADMIN PUEDE AGREGAR ESTUDIOS ADICIONALES
+            if (!isset($_SESSION['admin']) || $_SESSION['admin'] != 1) {
+                http_response_code(403);
+                echo json_encode(["status" => "error", "message" => "Acceso restringido a administradores."]);
+                exit;
+            }
+
+            $id_orden = (int)($data['id_orden'] ?? 0);
+            $id_estudio = (int)($data['id_estudio'] ?? 0);
+
+            if (!$id_orden || !$id_estudio) {
+                echo json_encode(["status" => "error", "message" => "Faltan parámetros obligatorios."]);
+                exit;
+            }
+
+            $exito = ConsultasSeguimiento::agregarEstudioAdicional($id_orden, $id_estudio);
+            if ($exito) {
+                echo json_encode(["status" => "success", "message" => "Estudio adicional agregado correctamente."]);
+            } else {
+                echo json_encode(["status" => "error", "message" => "No se pudo agregar el estudio."]);
+            }
+            break;
+
         default:
             echo json_encode(["status" => "error", "message" => "Acción no válida."]);
             break;

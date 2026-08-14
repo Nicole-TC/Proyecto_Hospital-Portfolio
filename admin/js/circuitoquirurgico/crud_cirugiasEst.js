@@ -523,6 +523,12 @@ function renderTablaCombos(registros) {
                     <button class="btn btn-sm btn-link text-info me-1" title="Ver Detalles" onclick="verDetalleCombo('${gJsonStr}')">
                         <i class="bi bi-eye"></i>
                     </button>
+                    <button class="btn btn-sm btn-link blue me-1" title="Editar" onclick="abrirModalEditarCombo('${gJsonStr}')">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-sm btn-link danger" title="Eliminar" onclick="confirmarEliminarComboCompleto(${g.id_cirugia},'${escJsStr(g.cirugia)}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;
@@ -561,6 +567,187 @@ window.verDetalleCombo = function(gJsonStr) {
     `;
     
     var modal = new bootstrap.Modal(document.getElementById('modalDetalles'));
+    modal.show();
+};
+
+/* =========================================================
+   MODAL EDITAR COMBO
+   ========================================================= */
+var mecEstudiosDisponibles = [];
+var mecEstudiosSeleccionados = new Set();
+var mecIdCirugiaActual = null;
+var mecTimerBuscar = null;
+
+window.abrirModalEditarCombo = function(gJsonStr) {
+    var div = document.createElement('div');
+    div.innerHTML = gJsonStr;
+    var gData = JSON.parse(div.innerText || div.textContent);
+
+    mecIdCirugiaActual = gData.id_cirugia;
+    document.getElementById('mec-id-cirugia').value = gData.id_cirugia;
+    document.getElementById('mec-nombre').value = gData.cirugia;
+
+    document.getElementById('modalEditarComboLabel').textContent = 'Editar Combo';
+    document.getElementById('modal-editar-combo-subtitulo').textContent = 'Modificando: ' + gData.cirugia;
+    document.getElementById('mec-nombre-feedback').innerHTML = '';
+
+    // Set selected studies from combo data
+    mecEstudiosSeleccionados = new Set(gData.estudios.map(function(e) { return e.id_estudio; }));
+
+    // Load all available studies
+    var listaEl = document.getElementById('mec-lista-estudios');
+    listaEl.innerHTML = '<div class="text-center py-4 text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando estudios...</div>';
+
+    fetch('app/cir-api/endpoints/cirugias-e.php?accion=listar_estudios')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                mecEstudiosDisponibles = data.estudios || [];
+                renderizarEstudiosEdicion('');
+            } else {
+                listaEl.innerHTML = '<div class="text-center py-4 text-secondary">Error al cargar estudios.</div>';
+            }
+        })
+        .catch(function() {
+            listaEl.innerHTML = '<div class="text-center py-4 text-secondary">Error de red al cargar estudios.</div>';
+        });
+
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarCombo'));
+    modal.show();
+};
+
+function renderizarEstudiosEdicion(filtro) {
+    var contenedor = document.getElementById('mec-lista-estudios');
+    var filtroLow = (filtro || '').toLowerCase().trim();
+
+    var visibles = mecEstudiosDisponibles.filter(function(e) {
+        return e.nombre.toLowerCase().includes(filtroLow) ||
+               (e.descripcion && e.descripcion.toLowerCase().includes(filtroLow));
+    });
+
+    if (visibles.length === 0) {
+        contenedor.innerHTML = '<div class="text-center py-4 text-secondary"><i class="bi bi-search me-2"></i>No se encontraron estudios.</div>';
+        actualizarBadgeEdicion();
+        return;
+    }
+
+    var html = '';
+    for (var i = 0; i < visibles.length; i++) {
+        var est = visibles[i];
+        var checked = mecEstudiosSeleccionados.has(est.id) ? 'checked' : '';
+        html += `
+            <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom item-estudio-editar" style="cursor:pointer; transition:background 0.15s; ${checked ? 'background:#f0f9ff;' : ''}">
+                <input type="checkbox" class="mec-estudio-chk" data-id="${est.id}" id="mec-chk-${est.id}" ${checked}
+                       style="width:18px;height:18px;cursor:pointer;accent-color:#0984e3;flex-shrink:0;margin:0;">
+                <label for="mec-chk-${est.id}" style="cursor:pointer;flex:1;margin:0;font-size:0.9rem;${checked ? 'color:#0984e3;font-weight:600;' : ''}">
+                    ${esc(est.nombre)}
+                    ${est.descripcion ? '<br><small class="text-secondary">' + esc(est.descripcion) + '</small>' : ''}
+                </label>
+            </div>
+        `;
+    }
+
+    contenedor.innerHTML = html;
+
+    // Attach events
+    var checks = contenedor.querySelectorAll('.mec-estudio-chk');
+    for (var j = 0; j < checks.length; j++) {
+        checks[j].addEventListener('change', function() {
+            var id = parseInt(this.dataset.id);
+            var parentDiv = this.closest('.item-estudio-editar');
+            var label = parentDiv ? parentDiv.querySelector('label') : null;
+            if (this.checked) {
+                mecEstudiosSeleccionados.add(id);
+                if (parentDiv) parentDiv.style.background = '#f0f9ff';
+                if (label) { label.style.color = '#0984e3'; label.style.fontWeight = '600'; }
+            } else {
+                mecEstudiosSeleccionados.delete(id);
+                if (parentDiv) parentDiv.style.background = '';
+                if (label) { label.style.color = ''; label.style.fontWeight = ''; }
+            }
+            actualizarBadgeEdicion();
+        });
+    }
+
+    // Click en div
+    var items = contenedor.querySelectorAll('.item-estudio-editar');
+    for (var k = 0; k < items.length; k++) {
+        items[k].addEventListener('click', function(e) {
+            if (e.target.tagName === 'INPUT') return;
+            var chk = this.querySelector('.mec-estudio-chk');
+            if (chk) chk.checked = !chk.checked;
+            var evt = document.createEvent('HTMLEvents');
+            evt.initEvent('change', true, false);
+            if (chk) chk.dispatchEvent(evt);
+        });
+    }
+
+    actualizarBadgeEdicion();
+}
+
+function actualizarBadgeEdicion() {
+    var count = mecEstudiosSeleccionados.size;
+    var badge = document.getElementById('mec-badge-count');
+    var feedback = document.getElementById('mec-estudios-feedback');
+    if (badge) {
+        badge.style.display = count > 0 ? 'inline-block' : 'none';
+        badge.textContent = count + ' seleccionado' + (count !== 1 ? 's' : '');
+    }
+    if (feedback) {
+        if (count === 0) {
+            feedback.innerHTML = '<span style="color:#e17055;"><i class="bi bi-exclamation-circle me-1"></i>Debe seleccionar al menos un estudio.</span>';
+        } else {
+            feedback.innerHTML = '';
+        }
+    }
+}
+
+window.guardarComboEditado = function() {
+    var idCirugia = parseInt(document.getElementById('mec-id-cirugia').value);
+    var nombre = document.getElementById('mec-nombre').value.trim().toUpperCase();
+    var estudios = Array.from(mecEstudiosSeleccionados);
+
+    if (!nombre || nombre.length < 3) {
+        document.getElementById('mec-nombre-feedback').innerHTML = '<span style="color:#e17055;"><i class="bi bi-x-circle-fill me-1"></i>Nombre inválido. Mín. 3 caracteres.</span>';
+        return;
+    }
+    if (estudios.length === 0) {
+        document.getElementById('mec-estudios-feedback').innerHTML = '<span style="color:#e17055;"><i class="bi bi-exclamation-circle me-1"></i>Debe seleccionar al menos un estudio.</span>';
+        return;
+    }
+
+    var btn = document.getElementById('btn-guardar-editar-combo');
+    var orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Guardando...';
+
+    apiPost('editar_combo', {
+        id_cirugia: idCirugia,
+        nombre_cirugia: nombre,
+        estudios: estudios
+    })
+    .then(function(data) {
+        if (data.status === 'success') {
+            var modalEl = document.getElementById('modalEditarCombo');
+            var modalInst = bootstrap.Modal.getInstance(modalEl);
+            if (modalInst) modalInst.hide();
+            toastOk(data.message);
+            cargarCombos(paginaCombos);
+        } else {
+            document.getElementById('mec-nombre-feedback').innerHTML = '<span style="color:#e17055;"><i class="bi bi-x-circle-fill me-1"></i>' + esc(data.message) + '</span>';
+        }
+    })
+    .catch(function() { toastErr('Error de red al guardar combo.'); })
+    .finally(function() { btn.disabled = false; btn.innerHTML = orig; });
+};
+
+window.confirmarEliminarComboCompleto = function(idCirugia, nombreCirugia) {
+    document.getElementById('modal-elim-id').value = idCirugia;
+    document.getElementById('modal-elim-tipo').value = 'combo_completo';
+    document.getElementById('modal-elim-nombre').textContent = nombreCirugia;
+    document.getElementById('modal-elim-msg').textContent = '¿Está seguro de eliminar todo el combo de "' + nombreCirugia + '"? Se eliminarán todos los estudios vinculados.';
+    
+    var modal = new bootstrap.Modal(document.getElementById('modalEliminar'));
     modal.show();
 };
 
@@ -617,14 +804,18 @@ window.ejecutarEliminar = function() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Eliminando...';
 
     var cuerpo = {};
+    var action = 'eliminar_' + tipo;
     if (tipo === 'combo') {
         var partes = idRaw.split('|');
         cuerpo = { id_cirugia: parseInt(partes[0]), id_estudio: parseInt(partes[1]) };
+    } else if (tipo === 'combo_completo') {
+        cuerpo = { id_cirugia: parseInt(idRaw) };
+        action = 'eliminar_combo_completo';
     } else {
         cuerpo = { id: parseInt(idRaw) };
     }
 
-    apiPost('eliminar_' + tipo, cuerpo)
+    apiPost(action, cuerpo)
         .then(function(data) {
             var modalEl = document.getElementById('modalEliminar');
             var modalInst = bootstrap.Modal.getInstance(modalEl);
@@ -634,7 +825,7 @@ window.ejecutarEliminar = function() {
                 toastOk(data.message);
                 if (tipo === 'cirugia') cargarCirugias(paginaCirugias);
                 else if (tipo === 'estudio') cargarEstudios(paginaEstudios);
-                else if (tipo === 'combo') cargarCombos(paginaCombos);
+                else if (tipo === 'combo' || tipo === 'combo_completo') cargarCombos(paginaCombos);
             } else {
                 Swal.fire({ icon:'error', title:'No se puede eliminar', text: data.message,
                     confirmButtonColor:'#ff6b81', confirmButtonText:'Entendido' });
@@ -696,6 +887,15 @@ document.addEventListener('DOMContentLoaded', function() {
     var btnConfirmarElim = document.getElementById('btn-confirmar-eliminar');
     if (btnConfirmarElim) btnConfirmarElim.onclick = ejecutarEliminar;
 
+    var btnGuardarEditarCombo = document.getElementById('btn-guardar-editar-combo');
+    if (btnGuardarEditarCombo) btnGuardarEditarCombo.onclick = guardarComboEditado;
+
+    var mecBuscar = document.getElementById('mec-buscar-estudio');
+    if (mecBuscar) mecBuscar.onkeyup = function() {
+        clearTimeout(mecTimerBuscar);
+        mecTimerBuscar = setTimeout(function() { renderizarEstudiosEdicion(mecBuscar.value); }, 300);
+    };
+
     // Buscadores (Debounce manual para no saturar peticiones)
     var tbuscarCir, tbuscarEst, tbuscarCombo;
     
@@ -745,4 +945,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     var tabCombosBtn = document.getElementById('tab-combos-btn');
     if (tabCombosBtn) tabCombosBtn.addEventListener('shown.bs.tab', function() { if(window.combosListados) cargarCombos(1); poblarSelectCirugias(); });
+
+    // Limpiar búsqueda al cerrar modal editar combo
+    var modalEditarCombo = document.getElementById('modalEditarCombo');
+    if (modalEditarCombo) {
+        modalEditarCombo.addEventListener('hidden.bs.modal', function() {
+            var searchEl = document.getElementById('mec-buscar-estudio');
+            if (searchEl) searchEl.value = '';
+        });
+    }
 });

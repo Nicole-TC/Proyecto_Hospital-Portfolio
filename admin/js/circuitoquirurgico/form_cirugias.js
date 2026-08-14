@@ -21,6 +21,10 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
+function sinAcentos(str) {
+    return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function mostrarFeedback(idDiv, esValido, mensaje) {
     const el = document.getElementById(idDiv);
     if (!el) return;
@@ -371,8 +375,8 @@ function validarNuevoNombreEstudio() {
         mostrarFeedback('nuevo-nombre-feedback', false, 'Solo mayúsculas, números, acentos y Ñ. Mín. 3 caracteres.');
         return false;
     }
-    // Verificar duplicados
-    const existe = estudiosDisponibles.some(e => e.nombre.toLowerCase() === val.toLowerCase());
+    // Verificar duplicados (ignorando acentos y mayúsculas)
+    const existe = estudiosDisponibles.some(e => sinAcentos(e.nombre) === sinAcentos(val));
     if (existe) {
         mostrarFeedback('nuevo-nombre-feedback', false, 'Ya existe un estudio con ese nombre.');
         return false;

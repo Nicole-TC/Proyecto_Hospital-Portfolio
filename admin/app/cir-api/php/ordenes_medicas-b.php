@@ -382,13 +382,15 @@ class ConsultasOrdenesMedicas
     $sugerencias = [];
 
     if ($tipo === 'cirugia') {
+      $idActivo = id_estado('USUARIO', 'ACT');
       $stmt = $pdo->prepare(
         'SELECT nombre FROM catalogo_cirugia
-         WHERE nombre ILIKE :term
+         WHERE nombre ILIKE :term AND id_estado = :id_estado
          ORDER BY nombre
          LIMIT :limite'
       );
       $stmt->bindValue(':term', $like, PDO::PARAM_STR);
+      $stmt->bindValue(':id_estado', $idActivo, PDO::PARAM_INT);
       $stmt->bindValue(':limite', $limite, PDO::PARAM_INT);
       $stmt->execute();
       foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $nombre) {
@@ -728,10 +730,11 @@ class ConsultasOrdenesMedicas
     $pdo = conexionCircuitoQuirurgico();
     self::asegurarTablaModificacionesOrden($pdo);
 
+    $idActivo = id_estado('USUARIO', 'ACT');
     $stmtCirugia = $pdo->prepare(
-      'SELECT id_cirugia_catalogo FROM catalogo_cirugia WHERE nombre = :nombre LIMIT 1'
+      'SELECT id_cirugia_catalogo FROM catalogo_cirugia WHERE nombre = :nombre AND id_estado = :id_estado LIMIT 1'
     );
-    $stmtCirugia->execute([':nombre' => $nombreCirugia]);
+    $stmtCirugia->execute([':nombre' => $nombreCirugia, ':id_estado' => $idActivo]);
     $id_cirugia = $stmtCirugia->fetch(PDO::FETCH_COLUMN);
     if (!$id_cirugia) {
       throw new Exception('No se encontró la cirugía seleccionada en el catálogo.');

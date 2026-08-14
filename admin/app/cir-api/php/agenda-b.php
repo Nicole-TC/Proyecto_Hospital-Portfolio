@@ -563,6 +563,7 @@ try {
                 ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
             JOIN combo_cirugia c
                 ON c.id_cirugia_catalogo = cc.id_cirugia_catalogo
+                AND c.id_estado = (SELECT id_estado FROM estado WHERE entidad = 'USUARIO' AND codigo = 'ACT' LIMIT 1)
             JOIN estudio e
                 ON e.id_estudio = c.id_estudio
             WHERE om.id_orden = :id_orden

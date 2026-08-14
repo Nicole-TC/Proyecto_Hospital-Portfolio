@@ -80,19 +80,24 @@ class ConsultasAdmision {
 
     public static function obtenerCatalogoCirugias() {
         $pdo = conexionCircuitoQuirurgico();
-        $sql = "SELECT nombre FROM catalogo_cirugia ORDER BY nombre";
-        $stmt = $pdo->query($sql);
+        $idActivo = id_estado('USUARIO', 'ACT');
+        $sql = "SELECT nombre FROM catalogo_cirugia WHERE id_estado = :id_estado ORDER BY nombre";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':id_estado' => $idActivo]);
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
     public static function obtenerEstudiosPorCirugia() {
         $pdo = conexionCircuitoQuirurgico();
+        $idActivo = id_estado('USUARIO', 'ACT');
         $sql = "SELECT cc.nombre AS cirugia, e.id_estudio, e.nombre AS estudio, e.observacion
                 FROM catalogo_cirugia cc
                 JOIN combo_cirugia co ON co.id_cirugia_catalogo = cc.id_cirugia_catalogo
                 JOIN estudio e ON e.id_estudio = co.id_estudio
+                WHERE co.id_estado = :id_estado
                 ORDER BY cc.nombre, e.nombre";
-        $stmt = $pdo->query($sql);
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([':id_estado' => $idActivo]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $estudiosPorCirugia = [];
@@ -198,8 +203,9 @@ class ConsultasAdmision {
             }
 
             // 5. Obtener id_cirugia_catalogo
-            $stmtCirugia = $pdo->prepare("SELECT id_cirugia_catalogo FROM catalogo_cirugia WHERE nombre = :nombre");
-            $stmtCirugia->execute([':nombre' => $datos['tipoCirugia']]);
+            $idActivoCirugia = id_estado('USUARIO', 'ACT');
+            $stmtCirugia = $pdo->prepare("SELECT id_cirugia_catalogo FROM catalogo_cirugia WHERE nombre = :nombre AND id_estado = :id_estado");
+            $stmtCirugia->execute([':nombre' => $datos['tipoCirugia'], ':id_estado' => $idActivoCirugia]);
             $id_cirugia = $stmtCirugia->fetch(PDO::FETCH_COLUMN);
             if (!$id_cirugia) {
                 throw new Exception("No se encontró la cirugía en el catálogo.");

@@ -89,6 +89,74 @@ switch ($action) {
         }
         break;
 
+    // ============================================================
+    //  VER TURNOS DEL PACIENTE
+    // ============================================================
+
+    case 'ver_turnos':
+        $dni = preg_replace('/\D/', '', trim($_GET['dni'] ?? ''));
+        if (strlen($dni) < 5 || strlen($dni) > 8) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);
+        }
+
+        try {
+            $pdo = conexionCircuitoQuirurgico();
+
+            $stmtRol = $pdo->prepare("SELECT id_rol FROM rol WHERE LOWER(nombre) = 'paciente' LIMIT 1");
+            $stmtRol->execute();
+            $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+            $idRol = $idRol ? (int)$idRol : 4;
+
+            $stmtPersona = $pdo->prepare("SELECT id_persona FROM persona WHERE dni = :dni AND id_rol = :id_rol LIMIT 1");
+            $stmtPersona->execute([':dni' => $dni, ':id_rol' => $idRol]);
+            $idPersona = $stmtPersona->fetch(PDO::FETCH_COLUMN);
+
+            if (!$idPersona) {
+                botTL_responder(200, [
+                    'status'  => 'success',
+                    'dni'     => $dni,
+                    'turnos'  => [],
+                ]);
+            }
+
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.id_turno,
+                    TO_CHAR(t.fecha_hora, 'DD/MM/YYYY HH24:MI') AS fecha_hora,
+                    tt.descripcion  AS tipo_turno,
+                    cc.nombre       AS cirugia,
+                    pr.apellido     AS medico_apellido,
+                    pr.nombre       AS medico_nombre,
+                    e.descripcion   AS estado
+                FROM turno t
+                JOIN persona_asiste pa   ON pa.id_persona_asiste = t.id_persona_asiste
+                JOIN tipo_turno tt       ON tt.id_tipo_turno     = t.id_tipo_turno
+                JOIN estado e            ON e.id_estado          = t.id_estado
+                LEFT JOIN persona p      ON p.id_persona         = pa.id_persona
+                LEFT JOIN orden_medica om ON om.id_orden         = t.id_orden
+                LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
+                LEFT JOIN profesional prf ON prf.id_profesional   = om.id_profesional
+                LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
+                WHERE p.id_persona = :id_persona
+                  AND e.codigo = 'PROG'
+                  AND e.entidad = 'TURNO'
+                  AND t.fecha_hora >= NOW()
+                ORDER BY t.fecha_hora ASC
+            ");
+            $stmt->execute([':id_persona' => $idPersona]);
+            $turnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            botTL_responder(200, [
+                'status' => 'success',
+                'dni'    => $dni,
+                'turnos' => $turnos,
+            ]);
+        } catch (Exception $e) {
+            error_log("bot-tl-e.php ver_turnos: " . $e->getMessage());
+            botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
+        }
+        break;
+
     default:
         botTL_responder(400, ['status' => 'error', 'message' => 'Acción no válida.']);
 }

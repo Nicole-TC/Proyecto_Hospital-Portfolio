@@ -14,6 +14,7 @@ if (empty(getenv('CQ_API_TOKEN')) && file_exists($envPath)) {
 }
 
 require_once __DIR__ . '/../../../model/cir_conexion.php';
+require_once __DIR__ . '/../php/funciones.php';
 
 function botTL_autenticar(): bool
 {
@@ -153,6 +154,122 @@ switch ($action) {
             ]);
         } catch (Exception $e) {
             error_log("bot-tl-e.php ver_turnos: " . $e->getMessage());
+            botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
+        }
+        break;
+
+    // ============================================================
+    //  CANCELAR TURNO DEL PACIENTE
+    // ============================================================
+
+    case 'cancelar_turno':
+        $dni     = preg_replace('/\D/', '', trim($_GET['dni'] ?? ''));
+        $idTurno = filter_input(INPUT_GET, 'id_turno', FILTER_VALIDATE_INT);
+        $motivo  = trim($_GET['motivo'] ?? '');
+
+        if (strlen($dni) < 5 || strlen($dni) > 8) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);
+        }
+        if (!$idTurno) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'ID de turno inválido.']);
+        }
+
+        try {
+            $pdo = conexionCircuitoQuirurgico();
+
+            $stmtRol = $pdo->prepare("SELECT id_rol FROM rol WHERE LOWER(nombre) = 'paciente' LIMIT 1");
+            $stmtRol->execute();
+            $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+            $idRol = $idRol ? (int)$idRol : 4;
+
+            $stmtPersona = $pdo->prepare("SELECT id_persona FROM persona WHERE dni = :dni AND id_rol = :id_rol LIMIT 1");
+            $stmtPersona->execute([':dni' => $dni, ':id_rol' => $idRol]);
+            $idPersona = $stmtPersona->fetch(PDO::FETCH_COLUMN);
+
+            if (!$idPersona) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'Paciente no encontrado.']);
+            }
+
+            $stmtPA = $pdo->prepare("SELECT id_persona_asiste FROM persona_asiste WHERE id_persona = :id_persona LIMIT 1");
+            $stmtPA->execute([':id_persona' => $idPersona]);
+            $idPersonaAsiste = $stmtPA->fetch(PDO::FETCH_COLUMN);
+
+            if (!$idPersonaAsiste) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'El paciente no tiene admisión registrada.']);
+            }
+
+            $stmtTurno = $pdo->prepare("
+                SELECT t.id_turno, t.id_orden, e.codigo AS estado_codigo
+                FROM turno t
+                JOIN estado e ON e.id_estado = t.id_estado
+                WHERE t.id_turno = :id_turno
+                  AND t.id_persona_asiste = :id_persona_asiste
+                LIMIT 1
+            ");
+            $stmtTurno->execute([':id_turno' => $idTurno, ':id_persona_asiste' => $idPersonaAsiste]);
+            $turno = $stmtTurno->fetch(PDO::FETCH_ASSOC);
+
+            if (!$turno) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'Turno no encontrado o no pertenece a este paciente.']);
+            }
+
+            if (!in_array($turno['estado_codigo'], ['PROG', 'CONF'])) {
+                botTL_responder(400, ['status' => 'error', 'message' => 'El turno no se puede cancelar porque su estado actual es: ' . $turno['estado_codigo'] . '.']);
+            }
+
+            $idEstadoCanc = id_estado('TURNO', 'CANC');
+            if (!$idEstadoCanc) {
+                botTL_responder(500, ['status' => 'error', 'message' => 'Error interno: estado CANC no encontrado.']);
+            }
+
+            $pdo->beginTransaction();
+
+            $motivoDb = $motivo !== '' ? $motivo : null;
+            $stmtUpd = $pdo->prepare("
+                UPDATE turno
+                SET id_estado = :id_estado,
+                    cancelado = true,
+                    fecha_cancelacion = NOW(),
+                    motivo_cancelacion = :motivo,
+                    ausente = false
+                WHERE id_turno = :id_turno
+            ");
+            $stmtUpd->execute([
+                ':id_estado' => $idEstadoCanc,
+                ':motivo'    => $motivoDb,
+                ':id_turno'  => $idTurno,
+            ]);
+
+            $descEvento = 'Turno cancelado desde bot';
+            if ($motivoDb) {
+                $descEvento .= ': ' . $motivoDb;
+            }
+
+            $stmtEv = $pdo->prepare("
+                INSERT INTO evento_clinico (id_tipo_evento, id_turno, id_orden, fecha_evento, descripcion)
+                VALUES (
+                    (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'cambio de estado' LIMIT 1),
+                    :id_turno, :id_orden, NOW(), :descripcion
+                )
+            ");
+            $stmtEv->execute([
+                ':id_turno'    => $idTurno,
+                ':id_orden'    => $turno['id_orden'],
+                ':descripcion' => $descEvento,
+            ]);
+
+            $pdo->commit();
+
+            botTL_responder(200, [
+                'status'  => 'success',
+                'message' => 'Turno cancelado correctamente.',
+                'id_turno' => $idTurno,
+            ]);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("bot-tl-e.php cancelar_turno: " . $e->getMessage());
             botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
         }
         break;

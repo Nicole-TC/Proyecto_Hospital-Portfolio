@@ -3,6 +3,7 @@
 // Todas las URLs de este grupo serán de la forma: index.php?modulo=menu_circuitoquirurgico&accion=lo_que_sea
 
 $modal = FALSE; // Por defecto no mostramos el botón de ayuda modal en el menú superior
+$back_url = "index.php?modulo=menu_circuitoquirurgico"; // Por defecto volver al menú del módulo
 
 switch (@$_GET["accion"]) {
     case 'gestion_usuarios':
@@ -101,6 +102,25 @@ switch (@$_GET["accion"]) {
         // Si no hay acción, o la acción no existe, mostramos el menú principal del grupo
         $menu = 'Menú Circuito Quirúrgico';
         $require = "vistas/circuitoquirurgico/menu_circuitoquirurgico.php";
+        $back_url = "index.php"; // Volver al index principal
         break;
 }
 ?>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Corregir la flechita de volver solo para el módulo circuitoquirurgico
+    let backArrow = document.querySelector('.card-navegacion .bi-arrow-left-circle');
+    if (backArrow) {
+        let backLink = backArrow.closest('a');
+        if (backLink) {
+            <?php if(empty($_GET['accion'])): ?>
+                // Si estamos en el menú principal del circuito, volver al inicio global
+                backLink.href = 'index.php'; 
+            <?php else: ?>
+                // Si estamos dentro de alguna acción (agenda, dashboard, etc.), volver al menú del circuito
+                backLink.href = 'index.php?modulo=menu_circuitoquirurgico';
+            <?php endif; ?>
+        }
+    }
+});
+</script>

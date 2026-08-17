@@ -41,6 +41,7 @@
                                     <th class="text-secondary small text-uppercase fw-semibold">Cirugía</th>
                                     <th class="text-secondary small text-uppercase fw-semibold">Apto Desde</th>
                                     <th class="text-secondary small text-uppercase fw-semibold">Estado</th>
+                                    <th class="text-secondary small text-uppercase fw-semibold text-center">Fecha Asignada</th>
                                     <th class="text-secondary small text-uppercase fw-semibold text-center">Acciones</th>
                                 </tr>
                             </thead>
@@ -143,6 +144,7 @@ function inicializarTabla() {
             { data: 'cirugia_nombre' },
             { data: 'apto_desde', render: function (data) { if (!data) return '-'; const parts = data.split(' ')[0].split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`; } },
             { data: 'estado_apto_codigo', render: function (data) { let badgeClass = 'bg-secondary'; let text = 'Pendiente'; if (data === 'OK') { badgeClass = 'bg-success'; text = 'Aprobado'; } else if (data === 'OBS') { badgeClass = 'bg-danger'; text = 'Observado'; } return `<span class="badge ${badgeClass}">${text}</span>`; } },
+            { data: 'turno_programado_fecha', className: 'text-center fw-bold', render: function (data) { if (!data) return '<span class="text-muted">-</span>'; const datePart = data.split(' ')[0]; const timePart = data.split(' ')[1] ? data.split(' ')[1].substring(0,5) : ''; const parts = datePart.split('-'); return `<span class="text-primary"><i class="bi bi-calendar-check me-1"></i>${parts[2]}/${parts[1]}/${parts[0]} ${timePart}</span>`; } },
             { data: null, orderable: false, className: 'text-center', render: function (data) { if (data.turno_programado_fecha) { const parts = data.turno_programado_fecha.split(' ')[0].split('-'); return `<button type="button" class="btn btn-sm btn-outline-success fw-bold" style="border-radius: 0.5rem;" disabled>Turno Asignado</button>`; } if (data.estado_apto_codigo === 'OK') { return `<button type="button" class="btn btn-sm btn-primary fw-bold" style="border-radius: 0.5rem;" onclick="abrirModalProgramar(${data.id_orden}, ${data.id_persona_asiste}, '${data.paciente_apellido.replace(/'/g, "\\'")}, ${data.paciente_nombre.replace(/'/g, "\\'")}')"><i class="bi bi-calendar-plus me-1"></i> Programar</button>`; } return `<button type="button" class="btn btn-sm btn-outline-secondary fw-bold" style="border-radius: 0.5rem;" disabled>No Apto</button>`; } }
         ],
         language: {

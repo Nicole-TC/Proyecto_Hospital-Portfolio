@@ -337,6 +337,49 @@ try {
                 : json_encode(["status" => "error",   "message" => "No se pudo eliminar la vinculación."]);
             break;
 
+        /* ---------- EDITAR COMBO ---------- */
+        case 'editar_combo':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+            $idCirugia = (int)($data['id_cirugia'] ?? 0);
+            $nombreCirugia = trim($data['nombre_cirugia'] ?? '');
+            $estudios = $data['estudios'] ?? [];
+
+            if (!$idCirugia) { echo json_encode(["status" => "error", "message" => "ID de cirugía inválido."]); exit; }
+            if (empty($nombreCirugia)) { echo json_encode(["status" => "error", "message" => "El nombre de la cirugía es obligatorio."]); exit; }
+            if (empty($estudios)) { echo json_encode(["status" => "error", "message" => "Debe seleccionar al menos un estudio."]); exit; }
+
+            $err = validarNombreCampo($nombreCirugia, 3, 150, 'nombre de la cirugía');
+            if ($err) { echo json_encode(["status" => "error", "message" => $err]); exit; }
+
+            if (ConsultasCirugias::existeNombreCirugia($nombreCirugia, $idCirugia)) {
+                echo json_encode(["status" => "error", "message" => "Ya existe otra cirugía con ese nombre."]);
+                exit;
+            }
+
+            $ok = ConsultasCirugias::actualizarComboCompleto($idCirugia, $nombreCirugia, $estudios);
+            echo $ok
+                ? json_encode(["status" => "success", "message" => "Combo actualizado correctamente."])
+                : json_encode(["status" => "error",   "message" => "No se pudo actualizar el combo."]);
+            break;
+
+        /* ---------- ELIMINAR COMBO COMPLETO (por cirugía) ---------- */
+        case 'eliminar_combo_completo':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+            $idCirugia = (int)($data['id_cirugia'] ?? 0);
+            if (!$idCirugia) { echo json_encode(["status" => "error", "message" => "ID de cirugía inválido."]); exit; }
+
+            if (ConsultasCirugias::cirugiaEnUsoOrdenesActivas($idCirugia)) {
+                echo json_encode(["status" => "error",
+                    "message" => "No se puede eliminar el combo porque la cirugía tiene órdenes médicas activas."]);
+                exit;
+            }
+
+            $ok = ConsultasCirugias::eliminarCombosPorCirugia($idCirugia);
+            echo $ok
+                ? json_encode(["status" => "success", "message" => "Combo eliminado correctamente."])
+                : json_encode(["status" => "error",   "message" => "No se pudo eliminar el combo."]);
+            break;
+
         default:
             echo json_encode(["status" => "error", "message" => "Acción no válida."]);
             break;

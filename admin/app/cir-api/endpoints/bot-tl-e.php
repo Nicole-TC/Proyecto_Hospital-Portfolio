@@ -274,6 +274,110 @@ switch ($action) {
         }
         break;
 
+    // ============================================================
+    //  CONFIRMAR TURNO DEL PACIENTE
+    // ============================================================
+
+    case 'confirmar_turno':
+        $dni     = preg_replace('/\D/', '', trim($_GET['dni'] ?? ''));
+        $idTurno = filter_input(INPUT_GET, 'id_turno', FILTER_VALIDATE_INT);
+
+        if (strlen($dni) < 5 || strlen($dni) > 8) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);
+        }
+        if (!$idTurno) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'ID de turno inválido.']);
+        }
+
+        try {
+            $pdo = conexionCircuitoQuirurgico();
+
+            $stmtRol = $pdo->prepare("SELECT id_rol FROM rol WHERE LOWER(nombre) = 'paciente' LIMIT 1");
+            $stmtRol->execute();
+            $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+            $idRol = $idRol ? (int)$idRol : 4;
+
+            $stmtPersona = $pdo->prepare("SELECT id_persona FROM persona WHERE dni = :dni AND id_rol = :id_rol LIMIT 1");
+            $stmtPersona->execute([':dni' => $dni, ':id_rol' => $idRol]);
+            $idPersona = $stmtPersona->fetch(PDO::FETCH_COLUMN);
+
+            if (!$idPersona) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'Paciente no encontrado.']);
+            }
+
+            $stmtPA = $pdo->prepare("SELECT id_persona_asiste FROM persona_asiste WHERE id_persona = :id_persona LIMIT 1");
+            $stmtPA->execute([':id_persona' => $idPersona]);
+            $idPersonaAsiste = $stmtPA->fetch(PDO::FETCH_COLUMN);
+
+            if (!$idPersonaAsiste) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'El paciente no tiene admisión registrada.']);
+            }
+
+            $stmtTurno = $pdo->prepare("
+                SELECT t.id_turno, t.id_orden, e.codigo AS estado_codigo
+                FROM turno t
+                JOIN estado e ON e.id_estado = t.id_estado
+                WHERE t.id_turno = :id_turno
+                  AND t.id_persona_asiste = :id_persona_asiste
+                LIMIT 1
+            ");
+            $stmtTurno->execute([':id_turno' => $idTurno, ':id_persona_asiste' => $idPersonaAsiste]);
+            $turno = $stmtTurno->fetch(PDO::FETCH_ASSOC);
+
+            if (!$turno) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'Turno no encontrado o no pertenece a este paciente.']);
+            }
+
+            if (!in_array($turno['estado_codigo'], ['PROG', 'CONF'])) {
+                botTL_responder(400, ['status' => 'error', 'message' => 'El turno no se puede confirmar porque su estado actual es: ' . $turno['estado_codigo'] . '.']);
+            }
+
+            $idEstadoConf = id_estado('TURNO', 'CONF');
+            if (!$idEstadoConf) {
+                botTL_responder(500, ['status' => 'error', 'message' => 'Error interno: estado CONF no encontrado.']);
+            }
+
+            $pdo->beginTransaction();
+
+            $stmtUpd = $pdo->prepare("
+                UPDATE turno
+                SET id_estado = :id_estado,
+                    ausente = false
+                WHERE id_turno = :id_turno
+            ");
+            $stmtUpd->execute([
+                ':id_estado' => $idEstadoConf,
+                ':id_turno'  => $idTurno,
+            ]);
+
+            $stmtEv = $pdo->prepare("
+                INSERT INTO evento_clinico (id_tipo_evento, id_turno, id_orden, fecha_evento, descripcion)
+                VALUES (
+                    (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'cambio de estado' LIMIT 1),
+                    :id_turno, :id_orden, NOW(), 'Paciente confirmó asistencia al turno desde bot'
+                )
+            ");
+            $stmtEv->execute([
+                ':id_turno' => $idTurno,
+                ':id_orden' => $turno['id_orden'],
+            ]);
+
+            $pdo->commit();
+
+            botTL_responder(200, [
+                'status'  => 'success',
+                'message' => 'Turno confirmado correctamente.',
+                'id_turno' => $idTurno,
+            ]);
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("bot-tl-e.php confirmar_turno: " . $e->getMessage());
+            botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
+        }
+        break;
+
     default:
         botTL_responder(400, ['status' => 'error', 'message' => 'Acción no válida.']);
 }

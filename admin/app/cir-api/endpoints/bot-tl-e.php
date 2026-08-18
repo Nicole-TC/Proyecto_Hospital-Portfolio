@@ -75,14 +75,24 @@ switch ($action) {
             $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
             $idRol = $idRol ? (int)$idRol : 4;
 
-            $stmt = $pdo->prepare("SELECT 1 FROM persona WHERE dni = :dni AND id_rol = :id_rol LIMIT 1");
+            $stmt = $pdo->prepare("
+                SELECT p.id_persona, p.nombre, p.apellido, pa.id_persona_asiste
+                FROM persona p
+                LEFT JOIN persona_asiste pa ON pa.id_persona = p.id_persona
+                WHERE p.dni = :dni AND p.id_rol = :id_rol
+                LIMIT 1
+            ");
             $stmt->execute([':dni' => $dni, ':id_rol' => $idRol]);
-            $encontrado = (bool)$stmt->fetch(PDO::FETCH_COLUMN);
+            $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
 
             botTL_responder(200, [
-                'status'     => 'success',
-                'dni'        => $dni,
-                'encontrado' => $encontrado,
+                'status'            => 'success',
+                'dni'               => $dni,
+                'encontrado'        => (bool)$paciente,
+                'id_persona'        => $paciente ? (int)$paciente['id_persona'] : null,
+                'nombre'            => $paciente ? $paciente['nombre'] : null,
+                'apellido'          => $paciente ? $paciente['apellido'] : null,
+                'id_persona_asiste' => $paciente && $paciente['id_persona_asiste'] ? (int)$paciente['id_persona_asiste'] : null,
             ]);
         } catch (Exception $e) {
             error_log("bot-tl-e.php: " . $e->getMessage());

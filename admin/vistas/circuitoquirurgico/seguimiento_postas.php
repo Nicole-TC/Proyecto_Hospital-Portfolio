@@ -320,12 +320,24 @@ body.modo-oscuro .icono-alerta-critica {
     }
 
     // (corrección) fecha de hoy en formato YYYY-MM-DD, usada como
-    // tope máximo para "Admisión hasta" (input y validación previa a buscar).
+    // tope máximo de los dos extremos del rango (input y validación previa a buscar).
     function fechaHoyISO() {
         let hoy = new Date();
         let mes = String(hoy.getMonth() + 1).padStart(2, '0');
         let dia = String(hoy.getDate()).padStart(2, '0');
         return `${hoy.getFullYear()}-${mes}-${dia}`;
+    }
+
+    // suma días a una fecha YYYY-MM-DD y devuelve el resultado en el mismo formato.
+    // Se parsea a mano y no con new Date(iso) porque JS interpreta ese formato como
+    // UTC y en Argentina (UTC-3) devolvería el día anterior.
+    function sumarDiasISO(fechaISO, dias) {
+        let partes = String(fechaISO).split('-');
+        let fecha = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+        fecha.setDate(fecha.getDate() + dias);
+        let mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        let dia = String(fecha.getDate()).padStart(2, '0');
+        return `${fecha.getFullYear()}-${mes}-${dia}`;
     }
 
     // (corrección): normaliza texto sacando tildes y pasando a minúsculas.
@@ -348,7 +360,26 @@ body.modo-oscuro .icono-alerta-critica {
     });
 
     $(document).ready(function() {
-        $('#filtro-fecha-hasta').attr('max', fechaHoyISO());
+        // los dos extremos del rango quedan topeados en el día de hoy.
+        $('#filtro-fecha-desde, #filtro-fecha-hasta').attr('max', fechaHoyISO());
+
+        // el rango de búsqueda es siempre de 90 días. Al elegir una de las dos
+        // puntas se recalcula la otra, así el usuario puede correr la ventana
+        // hacia atrás o hacia adelante, pero nunca ampliarla.
+        $('#filtro-fecha-desde').on('change', function() {
+            let desde = $(this).val();
+            if (!desde) return;
+            let hasta = sumarDiasISO(desde, 90);
+            let hoy = fechaHoyISO();
+            if (hasta > hoy) hasta = hoy;
+            $('#filtro-fecha-hasta').val(hasta);
+        });
+
+        $('#filtro-fecha-hasta').on('change', function() {
+            let hasta = $(this).val();
+            if (!hasta) return;
+            $('#filtro-fecha-desde').val(sumarDiasISO(hasta, -90));
+        });
 
         let tablaPostas = $('#tabla-postas').DataTable({
             'ajax': function(data, callback) {

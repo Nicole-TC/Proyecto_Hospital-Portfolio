@@ -46,7 +46,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             <!-- (corrección de alerta): oculto por defecto. Solo se muestra si se aprieta "Buscar" sin completar los filtros. -->
             <div id="postas-sin-filtro" class="alert alert-warning mx-1 py-2 small d-none">
                 <i class="fa-solid fa-circle-info me-1"></i>
-                Seleccioná el estado de Apto Físico y el rango de fechas de admisión, y presioná "Buscar" para ver los registros.
+                <span id="postas-sin-filtro-texto"></span>
             </div>
 
             <div class="table-responsive">
@@ -489,7 +489,13 @@ body.modo-oscuro .icono-alerta-critica {
         });
     });
     $('#btn-filtrar-postas').on('click', function() {
+        // el aviso se arma con lo que realmente falta y se muestra recién acá,
+        // al presionar "Buscar" — nunca antes.
         if (!filtrosPostasCompletos()) {
+            let faltantes = [];
+            if (!$('#filtro-fecha-desde').val() || !$('#filtro-fecha-hasta').val()) faltantes.push('el rango de fechas');
+            if (!$('#filtro-estado-apto').val()) faltantes.push('el estado de Apto Físico');
+            $('#postas-sin-filtro-texto').text('Seleccioná ' + faltantes.join(' y ') + ' para ver los registros.');
             $('#postas-sin-filtro').removeClass('d-none');
             return;
         }

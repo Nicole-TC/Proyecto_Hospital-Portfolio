@@ -340,6 +340,27 @@ body.modo-oscuro .icono-alerta-critica {
         return `${fecha.getFullYear()}-${mes}-${dia}`;
     }
 
+    // escapa el texto que viene de la base antes de meterlo en el HTML de la celda.
+    function escaparHtml(texto) {
+        return String(texto == null ? '' : texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // arma una línea de aviso de la columna "Observaciones": ícono + texto
+    // recortado + "Ver más". Se usa tanto para la solicitud del profesional como para
+    // la observación clínica del Apto Físico.
+    function lineaAvisoObservacion(idOrden, texto, tipo, claseIcono, claseTexto, titulo) {
+        let corto = texto.length > 15 ? texto.substring(0, 15) + '...' : texto;
+        return `<div class="d-flex align-items-center justify-content-center gap-1">
+                    <i class="${claseIcono}" title="${escaparHtml(titulo)}"></i>
+                    <span class="small ${claseTexto} fst-italic text-truncate" style="max-width: 100px;">"${escaparHtml(corto)}"</span>
+                    <a href="javascript:void(0)" class="small text-danger fw-bold" style="text-decoration: underline;" onclick="verObservacion(${idOrden}, '${tipo}')">Ver más</a>
+                </div>`;
+    }
+
     // (corrección): normaliza texto sacando tildes y pasando a minúsculas.
     function normalizarTexto(texto) {
         return String(texto || '')
@@ -440,17 +461,26 @@ body.modo-oscuro .icono-alerta-critica {
                     }
                     return '<span class="badge bg-secondary">Pendiente</span>';
                 }},
-                { 'data': null, 'render': function(data, type, row) {
+                    { 'data': null, 'render': function(data, type, row) {
                     seguimientosMap[row.id_orden] = row;
-                    let obsApto = (row.apto_fisico && row.apto_fisico.checklist) ? row.apto_fisico.checklist : '';
-                    if (!obsApto) return '<div class="text-center text-muted">-</div>';
-                    let textoCorto = obsApto.length > 15 ? obsApto.substring(0, 15) + '...' : obsApto;
-                    return `<div class="d-flex align-items-center justify-content-center gap-1">
-                                <i class="fa-solid fa-triangle-exclamation icono-alerta-critica" title="Observación Clínica"></i>
-                                <span class="small text-muted fst-italic text-truncate" style="max-width: 100px;">"${textoCorto}"</span>
-                                <a href="javascript:void(0)" class="small text-danger fw-bold" style="text-decoration: underline;" onclick="verObservacion(${row.id_orden})">Ver más</a>
-                            </div>`;
+                    // (CIR-760) la solicitud del profesional se veía solo dentro del modal.
+                    // Ahora se avisa en la propia fila, sin tener que abrir el detalle.
+                    let solicitud = (row.observaciones || '').trim();
+                    let obsApto = ((row.apto_fisico && row.apto_fisico.checklist) || '').trim();
+                    if (!solicitud && !obsApto) return '<div class="text-center text-muted">-</div>';
+
+                    let avisos = '';
+                    if (solicitud) {
+                        avisos += lineaAvisoObservacion(row.id_orden, solicitud, 'solicitud',
+                            'fa-solid fa-comment-medical text-danger', 'text-danger', 'Solicitud del profesional');
+                    }
+                    if (obsApto) {
+                        avisos += lineaAvisoObservacion(row.id_orden, obsApto, 'apto',
+                            'fa-solid fa-triangle-exclamation icono-alerta-critica', 'text-muted', 'Observación Clínica');
+                    }
+                    return avisos;
                 }},
+
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     seguimientosMap[data.id_orden] = data; // Almacenamos para el modal
                     return `<a class="text-info" href="javascript:void(0)" onclick="abrirModalExpediente(${data.id_orden})" title="Ver Detalle">
@@ -507,21 +537,29 @@ body.modo-oscuro .icono-alerta-critica {
         $('#postas-sin-filtro').addClass('d-none');
         $('#tabla-postas').DataTable().ajax.reload();
     });
-
-    function verObservacion(id_orden) {
+    
+    // (CIR-760) muestra el detalle completo del aviso de la fila. `tipo` distingue entre
+    // la solicitud del profesional y la observación clínica del Apto Físico.
+    function verObservacion(id_orden, tipo) {
         let data = seguimientosMap[id_orden];
-        let obsApto = (data && data.apto_fisico && data.apto_fisico.checklist) ? data.apto_fisico.checklist : '';
-        if (obsApto) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Observación Clínica',
-                    text: obsApto,
-                    confirmButtonColor: '#0056b3'
-                });
-            } else {
-                alert("Observación Clínica:\n\n" + obsApto);
-            }
+        if (!data) return;
+
+        let esSolicitud = (tipo === 'solicitud');
+        let texto = esSolicitud
+            ? (data.observaciones || '').trim()
+            : ((data.apto_fisico && data.apto_fisico.checklist) || '').trim();
+        if (!texto) return;
+
+        let titulo = esSolicitud ? 'Solicitud importante del profesional' : 'Observación Clínica';
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: titulo,
+                text: texto,
+                confirmButtonColor: '#0056b3'
+            });
+        } else {
+            alert(titulo + ":\n\n" + texto);
         }
     }
 

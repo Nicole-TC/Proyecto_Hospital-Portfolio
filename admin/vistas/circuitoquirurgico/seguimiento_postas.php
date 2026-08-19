@@ -43,10 +43,30 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     </button>
                 </div>
             </div>
+
+            <!-- segunda fila de acciones, con el mismo formato que el botón de
+                 listado completo de Gestión de Órdenes. -->
+            <div class="row g-3 mx-1 mb-2">
+                <div class="col-md-3 offset-md-9">
+                    <button type="button" class="btn btn-outline-secondary w-100 fw-bold" id="btn-listado-completo"
+                            style="border-radius: 0.5rem; height: 42px;">
+                        <i class="bi bi-list-ul me-2"></i> Ver listado completo
+                    </button>
+                </div>
+            </div>
+
             <!-- (corrección de alerta): oculto por defecto. Solo se muestra si se aprieta "Buscar" sin completar los filtros. -->
             <div id="postas-sin-filtro" class="alert alert-warning mx-1 py-2 small d-none">
                 <i class="fa-solid fa-circle-info me-1"></i>
                 <span id="postas-sin-filtro-texto"></span>
+            </div>
+
+            <!-- aviso del listado completo: la búsqueda está acotada a 90 días y el
+                 listado entero lo tiene que generar un administrador. -->
+            <div id="postas-listado-completo" class="alert alert-info mx-1 py-2 small d-none">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo,
+                solicitalo a un administrador.
             </div>
 
             <div class="table-responsive">
@@ -571,7 +591,15 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
             return;
         }
         $('#postas-sin-filtro').addClass('d-none');
+        $('#postas-listado-completo').addClass('d-none');
         $('#tabla-postas').DataTable().ajax.reload();
+    });
+
+    // el listado completo no se resuelve desde la vista: se avisa que hay que
+    // pedírselo a un administrador y no se dispara ninguna consulta.
+    $('#btn-listado-completo').on('click', function() {
+        $('#postas-sin-filtro').addClass('d-none');
+        $('#postas-listado-completo').removeClass('d-none');
     });
     
     // (CIR-760) muestra el detalle completo del aviso de la fila. `tipo` distingue entre

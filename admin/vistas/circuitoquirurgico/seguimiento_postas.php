@@ -166,17 +166,17 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
         <div class="d-flex align-items-center flex-grow-1 me-4">
             <input type="hidden" id="apto-id-orden">
-            <select class="form-select w-auto me-2" id="apto-estado">
+             <select class="form-select w-auto me-2" id="apto-estado" style="border-radius: 0.5rem; height: 45px;">
                 <option value="OK">Aprobar Apto Físico</option>
                 <option value="RECH">Observar / Rechazar</option>
             </select>
-            <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica...">
-            <button type="button" class="btn btn-primary text-nowrap" id="btn-guardar-apto" onclick="guardarApto()">
+            <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica..." style="border-radius: 0.5rem; height: 45px;">
+            <button type="button" class="btn btn-primary fw-bold text-nowrap" id="btn-guardar-apto" onclick="guardarApto()" style="border-radius: 0.5rem; height: 45px;">
                 <i class="fa-solid fa-save me-1"></i> Registrar
             </button>
         </div>
 
-        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal" style="border-radius: 0.5rem; height: 45px;">Cerrar</button>
       </div>
     </div>
   </div>
@@ -289,7 +289,41 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
 body.modo-oscuro .icono-alerta-critica {
     color: #ff6b6b;
 }
+
+/* botones de la columna "Acciones": mismo formato, tamaño y color
+   que los de Gestión de Órdenes. */
+.acciones-orden {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.btn-accion-orden {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+}
+.btn-accion-orden i { font-size: 0.9rem; line-height: 1; }
+.btn-accion-orden:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-accion-orden:active:not(:disabled) { transform: translateY(0); }
+.btn-accion-orden--ver { background: rgba(0,206,201,0.14); color: #00948f; }
+.btn-accion-orden--ver:hover:not(:disabled) { background: #00cec9; color: #fff; box-shadow: 0 3px 10px rgba(0,206,201,0.35); }
+.btn-accion-orden:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+body.modo-oscuro .btn-accion-orden--ver { background: rgba(0,206,201,0.18); color: #00cec9; }
+body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00cec9; color: #fff; }
 </style>
+
 
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.js"></script>
@@ -480,13 +514,15 @@ body.modo-oscuro .icono-alerta-critica {
                     }
                     return avisos;
                 }},
-
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     seguimientosMap[data.id_orden] = data; // Almacenamos para el modal
-                    return `<a class="text-info" href="javascript:void(0)" onclick="abrirModalExpediente(${data.id_orden})" title="Ver Detalle">
-                                <i class="bi bi-eye fs-5"></i>
-                            </a>`;
+                    return `<div class="acciones-orden">
+                                <button type="button" class="btn-accion-orden btn-accion-orden--ver" title="Ver detalle del expediente" aria-label="Ver detalle del expediente" onclick="abrirModalExpediente(${data.id_orden})">
+                                    <i class="bi bi-eye"></i><span>Ver</span>
+                                </button>
+                            </div>`;
                 }}
+
             ],
             'language': {
                 'lengthMenu': "Mostrar " +

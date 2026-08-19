@@ -9,3 +9,9 @@ services:
       - ./admin/uploads/digitalizar:/var/www/html/admin/uploads/digitalizar/
     restart: always
     env_file: .env
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true

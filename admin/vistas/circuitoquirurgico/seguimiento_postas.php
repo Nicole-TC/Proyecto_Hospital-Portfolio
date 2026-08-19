@@ -12,12 +12,19 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
             <!-- Filtros obligatorios: sin completarlos no se muestran registros -->
             <div class="row g-3 align-items-end mb-4 mt-2 mx-1">
-                <div class="col-md-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">ADMISIÓN DESDE <span class="text-danger">*</span></label>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-tipo-fecha">BUSCAR POR <span class="text-danger">*</span></label>
+                    <select class="form-select border-0 bg-light" id="filtro-tipo-fecha" style="border-radius: 0.5rem; height: 45px;">
+                        <option value="ADM">Fecha de admisión</option>
+                        <option value="TUR">Fecha de turno</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">FECHA DESDE <span class="text-danger">*</span></label>
                     <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-desde" style="border-radius: 0.5rem; height: 45px;">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">ADMISIÓN HASTA <span class="text-danger">*</span></label>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">FECHA HASTA <span class="text-danger">*</span></label>
                     <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-hasta" max="" style="border-radius: 0.5rem; height: 45px;">
                 </div>
                 <div class="col-md-3">
@@ -358,7 +365,9 @@ body.modo-oscuro .icono-alerta-critica {
                         'accion': 'listar_seguimiento',
                         'fecha_desde': $('#filtro-fecha-desde').val(),
                         'fecha_hasta': $('#filtro-fecha-hasta').val(),
-                        'estado_apto': $('#filtro-estado-apto').val()
+                        'estado_apto': $('#filtro-estado-apto').val(),
+                        // ADM = fecha de admisión, TUR = fecha del turno prequirúrgico.
+                        'tipo_fecha': $('#filtro-tipo-fecha').val()
                     },
                     'dataType': 'json',
                     'success': function(json) {

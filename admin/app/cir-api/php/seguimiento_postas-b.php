@@ -23,10 +23,13 @@ class ConsultasSeguimiento {
 
     // fecha_desde, fecha_hasta y estado_apto son OBLIGATORIOS.
     // Sin los 3 completos, no se devuelve ningún registro.
-    public static function listarSeguimiento(string $fecha_desde, string $fecha_hasta, string $estado_apto, string $buscar = ''): array {
+    // $tipo_fecha define sobre qué campo se aplica el rango:
+    // ADM = fecha de admisión (om.fecha_orden), TUR = fecha del turno prequirúrgico.
+    public static function listarSeguimiento(string $fecha_desde, string $fecha_hasta, string $estado_apto, string $buscar = '', string $tipo_fecha = 'ADM'): array {
         $pdo = conexionCircuitoQuirurgico();
 
         $estado_apto = mb_strtoupper(trim($estado_apto), 'UTF-8');
+        $tipo_fecha  = mb_strtoupper(trim($tipo_fecha), 'UTF-8');
 
         if ($fecha_desde === '' || $fecha_hasta === '' || $estado_apto === '') {
             return ['registros' => [], 'total' => 0];
@@ -34,6 +37,10 @@ class ConsultasSeguimiento {
 
         if (!in_array($estado_apto, ['PEND', 'OK', 'RECH', 'TODOS'])) {
             throw new Exception("Estado de Apto Físico inválido.");
+        }
+
+        if (!in_array($tipo_fecha, ['ADM', 'TUR'])) {
+            throw new Exception("Tipo de fecha inválido. Debe ser ADM o TUR.");
         }
 
         // (corrección) no permitir fecha futura en "Admisión hasta",
@@ -60,8 +67,23 @@ class ConsultasSeguimiento {
         $params[':id_rech'] = $idRech ?: 0;
         $params[':id_canc'] = $idCanc ?: 0;
 
-        // rango de fechas de admisión (obligatorio)
-        $where .= " AND om.fecha_orden::date BETWEEN :fecha_desde AND :fecha_hasta";
+        // rango de fechas (obligatorio). Según el select "BUSCAR POR" de la vista,
+        // se aplica sobre la fecha de admisión o sobre la del turno prequirúrgico.
+        // Se excluyen los turnos cancelados para no traer una orden por un turno caído.
+        if ($tipo_fecha === 'TUR') {
+            $where .= " AND EXISTS (
+                SELECT 1
+                FROM turno t
+                INNER JOIN tipo_turno tt ON tt.id_tipo_turno = t.id_tipo_turno
+                INNER JOIN estado et ON et.id_estado = t.id_estado
+                WHERE t.id_orden = om.id_orden
+                  AND LOWER(tt.codigo) = 'pre'
+                  AND et.codigo <> 'CANC'
+                  AND t.fecha_hora::date BETWEEN :fecha_desde AND :fecha_hasta
+            )";
+        } else {
+            $where .= " AND om.fecha_orden::date BETWEEN :fecha_desde AND :fecha_hasta";
+        }
         $params[':fecha_desde'] = $fecha_desde;
         $params[':fecha_hasta'] = $fecha_hasta;
 

@@ -34,8 +34,10 @@ try {
             $fecha_hasta = trim($_GET['fecha_hasta'] ?? '');
             $estado_apto = trim($_GET['estado_apto'] ?? '');
             $buscar      = trim($_GET['buscar'] ?? '');
+            // ADM = fecha de admisión (om.fecha_orden), TUR = fecha del turno prequirúrgico.
+            $tipo_fecha  = trim($_GET['tipo_fecha'] ?? 'ADM');
 
-            $resultado = ConsultasSeguimiento::listarSeguimiento($fecha_desde, $fecha_hasta, $estado_apto, $buscar);
+            $resultado = ConsultasSeguimiento::listarSeguimiento($fecha_desde, $fecha_hasta, $estado_apto, $buscar, $tipo_fecha);
             echo json_encode(["status" => "success"] + $resultado);
             break;
 

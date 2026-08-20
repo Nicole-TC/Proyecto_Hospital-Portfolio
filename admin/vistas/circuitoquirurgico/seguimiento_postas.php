@@ -12,12 +12,19 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
             <!-- Filtros obligatorios: sin completarlos no se muestran registros -->
             <div class="row g-3 align-items-end mb-4 mt-2 mx-1">
-                <div class="col-md-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">ADMISIÓN DESDE <span class="text-danger">*</span></label>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-tipo-fecha">BUSCAR POR <span class="text-danger">*</span></label>
+                    <select class="form-select border-0 bg-light" id="filtro-tipo-fecha" style="border-radius: 0.5rem; height: 45px;">
+                        <option value="ADM">Fecha de admisión</option>
+                        <option value="TUR">Fecha de turno</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">FECHA DESDE <span class="text-danger">*</span></label>
                     <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-desde" style="border-radius: 0.5rem; height: 45px;">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">ADMISIÓN HASTA <span class="text-danger">*</span></label>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">FECHA HASTA <span class="text-danger">*</span></label>
                     <input type="date" class="form-control border-0 bg-light" id="filtro-fecha-hasta" max="" style="border-radius: 0.5rem; height: 45px;">
                 </div>
                 <div class="col-md-3">
@@ -36,10 +43,30 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     </button>
                 </div>
             </div>
+
+            <!-- segunda fila de acciones, con el mismo formato que el botón de
+                 listado completo de Gestión de Órdenes. -->
+            <div class="row g-3 mx-1 mb-2">
+                <div class="col-md-3 offset-md-9">
+                    <button type="button" class="btn btn-outline-secondary w-100 fw-bold" id="btn-listado-completo"
+                            style="border-radius: 0.5rem; height: 42px;">
+                        <i class="bi bi-list-ul me-2"></i> Ver listado completo
+                    </button>
+                </div>
+            </div>
+
             <!-- (corrección de alerta): oculto por defecto. Solo se muestra si se aprieta "Buscar" sin completar los filtros. -->
             <div id="postas-sin-filtro" class="alert alert-warning mx-1 py-2 small d-none">
                 <i class="fa-solid fa-circle-info me-1"></i>
-                Seleccioná el estado de Apto Físico y el rango de fechas de admisión, y presioná "Buscar" para ver los registros.
+                <span id="postas-sin-filtro-texto"></span>
+            </div>
+
+            <!-- aviso del listado completo: la búsqueda está acotada a 90 días y el
+                 listado entero lo tiene que generar un administrador. -->
+            <div id="postas-listado-completo" class="alert alert-info mx-1 py-2 small d-none">
+                <i class="fa-solid fa-circle-info me-1"></i>
+                La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo,
+                solicitalo a un administrador.
             </div>
 
             <div class="table-responsive">
@@ -159,17 +186,17 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
         <div class="d-flex align-items-center flex-grow-1 me-4">
             <input type="hidden" id="apto-id-orden">
-            <select class="form-select w-auto me-2" id="apto-estado">
+             <select class="form-select w-auto me-2" id="apto-estado" style="border-radius: 0.5rem; height: 45px;">
                 <option value="OK">Aprobar Apto Físico</option>
                 <option value="RECH">Observar / Rechazar</option>
             </select>
-            <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica...">
-            <button type="button" class="btn btn-primary text-nowrap" id="btn-guardar-apto" onclick="guardarApto()">
+            <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica..." style="border-radius: 0.5rem; height: 45px;">
+            <button type="button" class="btn btn-primary fw-bold text-nowrap" id="btn-guardar-apto" onclick="guardarApto()" style="border-radius: 0.5rem; height: 45px;">
                 <i class="fa-solid fa-save me-1"></i> Registrar
             </button>
         </div>
 
-        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal" style="border-radius: 0.5rem; height: 45px;">Cerrar</button>
       </div>
     </div>
   </div>
@@ -282,7 +309,41 @@ body.modo-oscuro .dataTables_wrapper .dataTables_filter label {
 body.modo-oscuro .icono-alerta-critica {
     color: #ff6b6b;
 }
+
+/* botones de la columna "Acciones": mismo formato, tamaño y color
+   que los de Gestión de Órdenes. */
+.acciones-orden {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.btn-accion-orden {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+}
+.btn-accion-orden i { font-size: 0.9rem; line-height: 1; }
+.btn-accion-orden:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-accion-orden:active:not(:disabled) { transform: translateY(0); }
+.btn-accion-orden--ver { background: rgba(0,206,201,0.14); color: #00948f; }
+.btn-accion-orden--ver:hover:not(:disabled) { background: #00cec9; color: #fff; box-shadow: 0 3px 10px rgba(0,206,201,0.35); }
+.btn-accion-orden:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+body.modo-oscuro .btn-accion-orden--ver { background: rgba(0,206,201,0.18); color: #00cec9; }
+body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00cec9; color: #fff; }
 </style>
+
 
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.js"></script>
@@ -313,12 +374,45 @@ body.modo-oscuro .icono-alerta-critica {
     }
 
     // (corrección) fecha de hoy en formato YYYY-MM-DD, usada como
-    // tope máximo para "Admisión hasta" (input y validación previa a buscar).
+    // tope máximo de los dos extremos del rango (input y validación previa a buscar).
     function fechaHoyISO() {
         let hoy = new Date();
         let mes = String(hoy.getMonth() + 1).padStart(2, '0');
         let dia = String(hoy.getDate()).padStart(2, '0');
         return `${hoy.getFullYear()}-${mes}-${dia}`;
+    }
+
+    // suma días a una fecha YYYY-MM-DD y devuelve el resultado en el mismo formato.
+    // Se parsea a mano y no con new Date(iso) porque JS interpreta ese formato como
+    // UTC y en Argentina (UTC-3) devolvería el día anterior.
+    function sumarDiasISO(fechaISO, dias) {
+        let partes = String(fechaISO).split('-');
+        let fecha = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+        fecha.setDate(fecha.getDate() + dias);
+        let mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        let dia = String(fecha.getDate()).padStart(2, '0');
+        return `${fecha.getFullYear()}-${mes}-${dia}`;
+    }
+
+    // escapa el texto que viene de la base antes de meterlo en el HTML de la celda.
+    function escaparHtml(texto) {
+        return String(texto == null ? '' : texto)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // arma una línea de aviso de la columna "Observaciones": ícono + texto
+    // recortado + "Ver más". Se usa tanto para la solicitud del profesional como para
+    // la observación clínica del Apto Físico.
+    function lineaAvisoObservacion(idOrden, texto, tipo, claseIcono, claseTexto, titulo) {
+        let corto = texto.length > 15 ? texto.substring(0, 15) + '...' : texto;
+        return `<div class="d-flex align-items-center justify-content-center gap-1">
+                    <i class="${claseIcono}" title="${escaparHtml(titulo)}"></i>
+                    <span class="small ${claseTexto} fst-italic text-truncate" style="max-width: 100px;">"${escaparHtml(corto)}"</span>
+                    <a href="javascript:void(0)" class="small text-danger fw-bold" style="text-decoration: underline;" onclick="verObservacion(${idOrden}, '${tipo}')">Ver más</a>
+                </div>`;
     }
 
     // (corrección): normaliza texto sacando tildes y pasando a minúsculas.
@@ -341,7 +435,26 @@ body.modo-oscuro .icono-alerta-critica {
     });
 
     $(document).ready(function() {
-        $('#filtro-fecha-hasta').attr('max', fechaHoyISO());
+        // los dos extremos del rango quedan topeados en el día de hoy.
+        $('#filtro-fecha-desde, #filtro-fecha-hasta').attr('max', fechaHoyISO());
+
+        // el rango de búsqueda es siempre de 90 días. Al elegir una de las dos
+        // puntas se recalcula la otra, así el usuario puede correr la ventana
+        // hacia atrás o hacia adelante, pero nunca ampliarla.
+        $('#filtro-fecha-desde').on('change', function() {
+            let desde = $(this).val();
+            if (!desde) return;
+            let hasta = sumarDiasISO(desde, 90);
+            let hoy = fechaHoyISO();
+            if (hasta > hoy) hasta = hoy;
+            $('#filtro-fecha-hasta').val(hasta);
+        });
+
+        $('#filtro-fecha-hasta').on('change', function() {
+            let hasta = $(this).val();
+            if (!hasta) return;
+            $('#filtro-fecha-desde').val(sumarDiasISO(hasta, -90));
+        });
 
         let tablaPostas = $('#tabla-postas').DataTable({
             'ajax': function(data, callback) {
@@ -358,7 +471,9 @@ body.modo-oscuro .icono-alerta-critica {
                         'accion': 'listar_seguimiento',
                         'fecha_desde': $('#filtro-fecha-desde').val(),
                         'fecha_hasta': $('#filtro-fecha-hasta').val(),
-                        'estado_apto': $('#filtro-estado-apto').val()
+                        'estado_apto': $('#filtro-estado-apto').val(),
+                        // ADM = fecha de admisión, TUR = fecha del turno prequirúrgico.
+                        'tipo_fecha': $('#filtro-tipo-fecha').val()
                     },
                     'dataType': 'json',
                     'success': function(json) {
@@ -400,23 +515,34 @@ body.modo-oscuro .icono-alerta-critica {
                     }
                     return '<span class="badge bg-secondary">Pendiente</span>';
                 }},
-                { 'data': null, 'render': function(data, type, row) {
+                    { 'data': null, 'render': function(data, type, row) {
                     seguimientosMap[row.id_orden] = row;
-                    let obsApto = (row.apto_fisico && row.apto_fisico.checklist) ? row.apto_fisico.checklist : '';
-                    if (!obsApto) return '<div class="text-center text-muted">-</div>';
-                    let textoCorto = obsApto.length > 15 ? obsApto.substring(0, 15) + '...' : obsApto;
-                    return `<div class="d-flex align-items-center justify-content-center gap-1">
-                                <i class="fa-solid fa-triangle-exclamation icono-alerta-critica" title="Observación Clínica"></i>
-                                <span class="small text-muted fst-italic text-truncate" style="max-width: 100px;">"${textoCorto}"</span>
-                                <a href="javascript:void(0)" class="small text-danger fw-bold" style="text-decoration: underline;" onclick="verObservacion(${row.id_orden})">Ver más</a>
-                            </div>`;
+                    // (CIR-760) la solicitud del profesional se veía solo dentro del modal.
+                    // Ahora se avisa en la propia fila, sin tener que abrir el detalle.
+                    let solicitud = (row.observaciones || '').trim();
+                    let obsApto = ((row.apto_fisico && row.apto_fisico.checklist) || '').trim();
+                    if (!solicitud && !obsApto) return '<div class="text-center text-muted">-</div>';
+
+                    let avisos = '';
+                    if (solicitud) {
+                        avisos += lineaAvisoObservacion(row.id_orden, solicitud, 'solicitud',
+                            'fa-solid fa-comment-medical text-danger', 'text-danger', 'Solicitud del profesional');
+                    }
+                    if (obsApto) {
+                        avisos += lineaAvisoObservacion(row.id_orden, obsApto, 'apto',
+                            'fa-solid fa-triangle-exclamation icono-alerta-critica', 'text-muted', 'Observación Clínica');
+                    }
+                    return avisos;
                 }},
                 { 'data': null, 'className': 'text-center', 'render': function(data) {
                     seguimientosMap[data.id_orden] = data; // Almacenamos para el modal
-                    return `<a class="text-info" href="javascript:void(0)" onclick="abrirModalExpediente(${data.id_orden})" title="Ver Detalle">
-                                <i class="bi bi-eye fs-5"></i>
-                            </a>`;
+                    return `<div class="acciones-orden">
+                                <button type="button" class="btn-accion-orden btn-accion-orden--ver" title="Ver detalle del expediente" aria-label="Ver detalle del expediente" onclick="abrirModalExpediente(${data.id_orden})">
+                                    <i class="bi bi-eye"></i><span>Ver</span>
+                                </button>
+                            </div>`;
                 }}
+
             ],
             'language': {
                 'lengthMenu': "Mostrar " +
@@ -449,7 +575,13 @@ body.modo-oscuro .icono-alerta-critica {
         });
     });
     $('#btn-filtrar-postas').on('click', function() {
+        // el aviso se arma con lo que realmente falta y se muestra recién acá,
+        // al presionar "Buscar" — nunca antes.
         if (!filtrosPostasCompletos()) {
+            let faltantes = [];
+            if (!$('#filtro-fecha-desde').val() || !$('#filtro-fecha-hasta').val()) faltantes.push('el rango de fechas');
+            if (!$('#filtro-estado-apto').val()) faltantes.push('el estado de Apto Físico');
+            $('#postas-sin-filtro-texto').text('Seleccioná ' + faltantes.join(' y ') + ' para ver los registros.');
             $('#postas-sin-filtro').removeClass('d-none');
             return;
         }
@@ -459,23 +591,39 @@ body.modo-oscuro .icono-alerta-critica {
             return;
         }
         $('#postas-sin-filtro').addClass('d-none');
+        $('#postas-listado-completo').addClass('d-none');
         $('#tabla-postas').DataTable().ajax.reload();
     });
 
-    function verObservacion(id_orden) {
+    // el listado completo no se resuelve desde la vista: se avisa que hay que
+    // pedírselo a un administrador y no se dispara ninguna consulta.
+    $('#btn-listado-completo').on('click', function() {
+        $('#postas-sin-filtro').addClass('d-none');
+        $('#postas-listado-completo').removeClass('d-none');
+    });
+    
+    // (CIR-760) muestra el detalle completo del aviso de la fila. `tipo` distingue entre
+    // la solicitud del profesional y la observación clínica del Apto Físico.
+    function verObservacion(id_orden, tipo) {
         let data = seguimientosMap[id_orden];
-        let obsApto = (data && data.apto_fisico && data.apto_fisico.checklist) ? data.apto_fisico.checklist : '';
-        if (obsApto) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Observación Clínica',
-                    text: obsApto,
-                    confirmButtonColor: '#0056b3'
-                });
-            } else {
-                alert("Observación Clínica:\n\n" + obsApto);
-            }
+        if (!data) return;
+
+        let esSolicitud = (tipo === 'solicitud');
+        let texto = esSolicitud
+            ? (data.observaciones || '').trim()
+            : ((data.apto_fisico && data.apto_fisico.checklist) || '').trim();
+        if (!texto) return;
+
+        let titulo = esSolicitud ? 'Solicitud importante del profesional' : 'Observación Clínica';
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: titulo,
+                text: texto,
+                confirmButtonColor: '#0056b3'
+            });
+        } else {
+            alert(titulo + ":\n\n" + texto);
         }
     }
 

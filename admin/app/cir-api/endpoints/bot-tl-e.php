@@ -101,6 +101,50 @@ switch ($action) {
         break;
 
     // ============================================================
+    //  VERIFICAR TELÉFONO DEL PACIENTE
+    // ============================================================
+
+    case 'verificar_telefono':
+        $telefono = trim($_GET['telefono'] ?? '');
+        if ($telefono === '' || !preg_match('/^[\d\s\-\(\)\+]{7,20}$/', $telefono)) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'Teléfono inválido. Debe tener entre 7 y 20 caracteres.']);
+        }
+
+        try {
+            $pdo = conexionCircuitoQuirurgico();
+
+            $stmtRol = $pdo->prepare("SELECT id_rol FROM rol WHERE LOWER(nombre) = 'paciente' LIMIT 1");
+            $stmtRol->execute();
+            $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
+            $idRol = $idRol ? (int)$idRol : 4;
+
+            $stmt = $pdo->prepare("
+                SELECT p.id_persona, p.dni, p.nombre, p.apellido, pa.id_persona_asiste
+                FROM persona p
+                LEFT JOIN persona_asiste pa ON pa.id_persona = p.id_persona
+                WHERE p.telefono = :telefono AND p.id_rol = :id_rol
+                LIMIT 1
+            ");
+            $stmt->execute([':telefono' => $telefono, ':id_rol' => $idRol]);
+            $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            botTL_responder(200, [
+                'status'            => 'success',
+                'telefono'          => $telefono,
+                'encontrado'        => (bool)$paciente,
+                'id_persona'        => $paciente ? (int)$paciente['id_persona'] : null,
+                'dni'               => $paciente ? $paciente['dni'] : null,
+                'nombre'            => $paciente ? $paciente['nombre'] : null,
+                'apellido'          => $paciente ? $paciente['apellido'] : null,
+                'id_persona_asiste' => $paciente && $paciente['id_persona_asiste'] ? (int)$paciente['id_persona_asiste'] : null,
+            ]);
+        } catch (Exception $e) {
+            error_log("bot-tl-e.php verificar_telefono: " . $e->getMessage());
+            botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
+        }
+        break;
+
+    // ============================================================
     //  VER TURNOS DEL PACIENTE
     // ============================================================
 

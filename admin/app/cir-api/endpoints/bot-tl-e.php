@@ -123,20 +123,36 @@ switch ($action) {
                 FROM persona p
                 LEFT JOIN persona_asiste pa ON pa.id_persona = p.id_persona
                 WHERE p.telefono = :telefono AND p.id_rol = :id_rol
-                LIMIT 1
+                ORDER BY p.apellido, p.nombre
             ");
             $stmt->execute([':telefono' => $telefono, ':id_rol' => $idRol]);
-            $paciente = $stmt->fetch(PDO::FETCH_ASSOC);
+            $coincidencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $cantidad = count($coincidencias);
+            $unico = $cantidad === 1 ? $coincidencias[0] : null;
+
+            $pacientes = array_map(static function (array $fila): array {
+                return [
+                    'id_persona'        => (int)$fila['id_persona'],
+                    'dni'               => $fila['dni'],
+                    'nombre'            => $fila['nombre'],
+                    'apellido'          => $fila['apellido'],
+                    'id_persona_asiste' => $fila['id_persona_asiste'] ? (int)$fila['id_persona_asiste'] : null,
+                ];
+            }, $coincidencias);
 
             botTL_responder(200, [
-                'status'            => 'success',
-                'telefono'          => $telefono,
-                'encontrado'        => (bool)$paciente,
-                'id_persona'        => $paciente ? (int)$paciente['id_persona'] : null,
-                'dni'               => $paciente ? $paciente['dni'] : null,
-                'nombre'            => $paciente ? $paciente['nombre'] : null,
-                'apellido'          => $paciente ? $paciente['apellido'] : null,
-                'id_persona_asiste' => $paciente && $paciente['id_persona_asiste'] ? (int)$paciente['id_persona_asiste'] : null,
+                'status'     => 'success',
+                'telefono'   => $telefono,
+                'encontrado' => $cantidad > 0,
+                'cantidad'   => $cantidad,
+                'pacientes'  => $pacientes,
+
+                'id_persona'        => $unico ? (int)$unico['id_persona'] : null,
+                'dni'               => $unico ? $unico['dni'] : null,
+                'nombre'            => $unico ? $unico['nombre'] : null,
+                'apellido'          => $unico ? $unico['apellido'] : null,
+                'id_persona_asiste' => $unico && $unico['id_persona_asiste'] ? (int)$unico['id_persona_asiste'] : null,
             ]);
         } catch (Exception $e) {
             error_log("bot-tl-e.php verificar_telefono: " . $e->getMessage());

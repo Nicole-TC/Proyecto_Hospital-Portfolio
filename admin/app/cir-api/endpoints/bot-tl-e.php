@@ -448,6 +448,160 @@ switch ($action) {
         }
         break;
 
+    // ============================================================
+    //  RECORDATORIOS PENDIENTES (CRON BOT TL - AVISO 48 HS ANTES)
+    //  Devuelve los turnos PROG dentro de las próximas 48 hs sin
+    //  recordar y los marca atómicamente para evitar duplicados.
+    //  Cron sugerido en el proyecto del bot (cada 30 minutos):
+    //  */30 * * * * curl -s -H "Authorization: Bearer $CQ_API_TOKEN" \
+    //    "https://<host>/admin/app/cir-api/endpoints/bot-tl-e.php?action=recordatorios_pendientes"
+    // ============================================================
+
+    case 'recordatorios_pendientes':
+        $pdo = null;
+        try {
+            $pdo = conexionCircuitoQuirurgico();
+
+            $stmt = $pdo->prepare("
+                SELECT
+                    t.id_turno,
+                    TO_CHAR(t.fecha_hora, 'DD/MM/YYYY HH24:MI') AS fecha_hora,
+                    tt.descripcion  AS tipo_turno,
+                    cc.nombre       AS cirugia,
+                    pr.apellido     AS medico_apellido,
+                    pr.nombre       AS medico_nombre,
+                    p.dni           AS paciente_dni,
+                    p.nombre        AS paciente_nombre,
+                    p.apellido      AS paciente_apellido,
+                    p.telefono      AS paciente_telefono
+                FROM turno t
+                JOIN estado e            ON e.id_estado          = t.id_estado
+                JOIN persona_asiste pa   ON pa.id_persona_asiste = t.id_persona_asiste
+                JOIN persona p           ON p.id_persona         = pa.id_persona
+                JOIN tipo_turno tt       ON tt.id_tipo_turno     = t.id_tipo_turno
+                LEFT JOIN orden_medica om     ON om.id_orden            = t.id_orden
+                LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
+                LEFT JOIN profesional prf     ON prf.id_profesional     = om.id_profesional
+                LEFT JOIN persona pr          ON pr.id_persona          = prf.id_persona
+                WHERE e.entidad = 'TURNO'
+                  AND e.codigo = 'PROG'
+                  AND t.recordatorio_enviado = false
+                  AND t.fecha_hora > NOW()
+                  AND t.fecha_hora <= NOW() + INTERVAL '48 hours'
+                ORDER BY t.fecha_hora ASC
+            ");
+            $stmt->execute();
+            $pendientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($pendientes)) {
+                botTL_responder(200, [
+                    'status'        => 'success',
+                    'cantidad'      => 0,
+                    'recordatorios' => [],
+                ]);
+            }
+
+            $idsTurnos    = array_map(static function (array $fila): int {
+                return (int)$fila['id_turno'];
+            }, $pendientes);
+            $placeholders = implode(', ', array_fill(0, count($idsTurnos), '?'));
+
+            $pdo->beginTransaction();
+
+            $stmtUpd = $pdo->prepare("
+                UPDATE turno
+                SET recordatorio_enviado = true,
+                    fecha_recordatorio_enviado = NOW()
+                WHERE id_turno IN ($placeholders)
+                  AND recordatorio_enviado = false
+                RETURNING id_turno
+            ");
+            $stmtUpd->execute($idsTurnos);
+            $idsMarcados = array_map('intval', $stmtUpd->fetchAll(PDO::FETCH_COLUMN));
+
+            $pdo->commit();
+
+            $recordatorios = [];
+            foreach ($pendientes as $fila) {
+                if (!in_array((int)$fila['id_turno'], $idsMarcados, true)) {
+                    continue;
+                }
+
+                $medico = trim(trim((string)$fila['medico_apellido']) . ', ' . trim((string)$fila['medico_nombre']));
+
+                $recordatorios[] = [
+                    'id_turno'   => (int)$fila['id_turno'],
+                    'dni'        => $fila['paciente_dni'],
+                    'nombre'     => $fila['paciente_nombre'],
+                    'apellido'   => $fila['paciente_apellido'],
+                    'telefono'   => $fila['paciente_telefono'],
+                    'fecha_hora' => $fila['fecha_hora'],
+                    'tipo_turno' => $fila['tipo_turno'],
+                    'cirugia'    => $fila['cirugia'],
+                    'medico'     => $medico !== ', ' ? $medico : null,
+                ];
+            }
+
+            botTL_responder(200, [
+                'status'        => 'success',
+                'cantidad'      => count($recordatorios),
+                'recordatorios' => $recordatorios,
+            ]);
+        } catch (Exception $e) {
+            if ($pdo !== null && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log("bot-tl-e.php recordatorios_pendientes: " . $e->getMessage());
+            botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
+        }
+        break;
+
+    // ============================================================
+    //  MARCAR / DESMARCAR RECORDATORIO DE UN TURNO (SOPORTE)
+    // ============================================================
+
+    case 'marcar_recordatorio':
+        $idTurno      = filter_input(INPUT_GET, 'id_turno', FILTER_VALIDATE_INT);
+        $enviadoParam = $_GET['enviado'] ?? '1';
+
+        if (!$idTurno) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'ID de turno inválido.']);
+        }
+        if (!in_array($enviadoParam, ['0', '1'], true)) {
+            botTL_responder(400, ['status' => 'error', 'message' => 'Parámetro enviado inválido. Debe ser 0 o 1.']);
+        }
+        $enviado = $enviadoParam === '1';
+
+        try {
+            $pdo = conexionCircuitoQuirurgico();
+
+            $stmtUpd = $pdo->prepare("
+                UPDATE turno
+                SET recordatorio_enviado = :enviado,
+                    fecha_recordatorio_enviado = :fecha
+                WHERE id_turno = :id_turno
+            ");
+            $stmtUpd->execute([
+                ':enviado' => $enviado,
+                ':fecha'   => $enviado ? date('Y-m-d H:i:s') : null,
+                ':id_turno'=> $idTurno,
+            ]);
+
+            if ($stmtUpd->rowCount() === 0) {
+                botTL_responder(404, ['status' => 'error', 'message' => 'Turno no encontrado.']);
+            }
+
+            botTL_responder(200, [
+                'status'   => 'success',
+                'message'  => $enviado ? 'Recordatorio marcado como enviado.' : 'Recordatorio desmarcado.',
+                'id_turno' => $idTurno,
+            ]);
+        } catch (Exception $e) {
+            error_log("bot-tl-e.php marcar_recordatorio: " . $e->getMessage());
+            botTL_responder(500, ['status' => 'error', 'message' => 'Error interno del servidor.']);
+        }
+        break;
+
     default:
         botTL_responder(400, ['status' => 'error', 'message' => 'Acción no válida.']);
 }

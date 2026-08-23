@@ -50,6 +50,15 @@ function botTL_responder(int $codigo, array $datos): void
     exit;
 }
 
+function botTL_medico(?array $fila): ?string
+{
+    if (!$fila) {
+        return null;
+    }
+    $medico = trim(trim((string)($fila['medico_apellido'] ?? '')) . ', ' . trim((string)($fila['medico_nombre'] ?? '')));
+    return $medico !== ', ' ? $medico : null;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     botTL_responder(405, ['status' => 'error', 'message' => 'Método no permitido.']);
 }
@@ -269,9 +278,22 @@ switch ($action) {
             }
 
             $stmtTurno = $pdo->prepare("
-                SELECT t.id_turno, t.id_orden, e.codigo AS estado_codigo
+                SELECT
+                    t.id_turno,
+                    t.id_orden,
+                    e.codigo AS estado_codigo,
+                    TO_CHAR(t.fecha_hora, 'DD/MM/YYYY HH24:MI') AS fecha_hora,
+                    tt.descripcion AS tipo_turno,
+                    cc.nombre      AS cirugia,
+                    pr.apellido    AS medico_apellido,
+                    pr.nombre      AS medico_nombre
                 FROM turno t
                 JOIN estado e ON e.id_estado = t.id_estado
+                JOIN tipo_turno tt ON tt.id_tipo_turno = t.id_tipo_turno
+                LEFT JOIN orden_medica om ON om.id_orden = t.id_orden
+                LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
+                LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
+                LEFT JOIN persona pr ON pr.id_persona = prf.id_persona
                 WHERE t.id_turno = :id_turno
                   AND t.id_persona_asiste = :id_persona_asiste
                 LIMIT 1
@@ -331,9 +353,14 @@ switch ($action) {
             $pdo->commit();
 
             botTL_responder(200, [
-                'status'  => 'success',
-                'message' => 'Turno cancelado correctamente.',
-                'id_turno' => $idTurno,
+                'status'     => 'success',
+                'message'    => 'Turno cancelado correctamente.',
+                'id_turno'   => $idTurno,
+                'estado'     => 'CANC',
+                'fecha_hora' => $turno['fecha_hora'],
+                'tipo_turno' => $turno['tipo_turno'],
+                'cirugia'    => $turno['cirugia'],
+                'medico'     => botTL_medico($turno),
             ]);
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {
@@ -384,9 +411,22 @@ switch ($action) {
             }
 
             $stmtTurno = $pdo->prepare("
-                SELECT t.id_turno, t.id_orden, e.codigo AS estado_codigo
+                SELECT
+                    t.id_turno,
+                    t.id_orden,
+                    e.codigo AS estado_codigo,
+                    TO_CHAR(t.fecha_hora, 'DD/MM/YYYY HH24:MI') AS fecha_hora,
+                    tt.descripcion AS tipo_turno,
+                    cc.nombre      AS cirugia,
+                    pr.apellido    AS medico_apellido,
+                    pr.nombre      AS medico_nombre
                 FROM turno t
                 JOIN estado e ON e.id_estado = t.id_estado
+                JOIN tipo_turno tt ON tt.id_tipo_turno = t.id_tipo_turno
+                LEFT JOIN orden_medica om ON om.id_orden = t.id_orden
+                LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
+                LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
+                LEFT JOIN persona pr ON pr.id_persona = prf.id_persona
                 WHERE t.id_turno = :id_turno
                   AND t.id_persona_asiste = :id_persona_asiste
                 LIMIT 1
@@ -435,9 +475,14 @@ switch ($action) {
             $pdo->commit();
 
             botTL_responder(200, [
-                'status'  => 'success',
-                'message' => 'Turno confirmado correctamente.',
-                'id_turno' => $idTurno,
+                'status'     => 'success',
+                'message'    => 'Turno confirmado correctamente.',
+                'id_turno'   => $idTurno,
+                'estado'     => 'CONF',
+                'fecha_hora' => $turno['fecha_hora'],
+                'tipo_turno' => $turno['tipo_turno'],
+                'cirugia'    => $turno['cirugia'],
+                'medico'     => botTL_medico($turno),
             ]);
         } catch (Exception $e) {
             if ($pdo->inTransaction()) {

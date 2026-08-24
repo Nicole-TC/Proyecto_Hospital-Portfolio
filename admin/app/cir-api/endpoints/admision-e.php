@@ -2,6 +2,13 @@
 header('Content-Type: application/json');
 error_reporting(E_ALL);
 
+// Inicia la sesion antes de abrir la conexion para que cir_conexion.php pueda
+// propagar a PostgreSQL quien ejecuta la accion. No restringe el acceso: si no
+// hay sesion, la auditoria registra el movimiento como SISTEMA.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../php/admision-b.php';
 
 $method = $_SERVER['REQUEST_METHOD'];

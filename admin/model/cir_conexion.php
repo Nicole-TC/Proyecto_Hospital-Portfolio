@@ -49,5 +49,23 @@ function conexionCircuitoQuirurgico(): PDO
     // Opcional: fija zona horaria de sesion
     $pdo->exec("SET TIME ZONE 'America/Argentina/Buenos_Aires'");
 
+    // Propaga la identidad del usuario logueado a la sesion de PostgreSQL para que
+    // los triggers de auditoria sepan quien ejecuto la accion. Mismo patron que ya
+    // usa conexion_dig.php con myapp.ip_origen.
+    // Si no hay sesion activa (tarea de sistema, CLI) quedan vacios y la auditoria
+    // registra el movimiento como disparado por el sistema.
+    $idUsuario     = isset($_SESSION['id']) ? (string) $_SESSION['id'] : '';
+    $nombreUsuario = trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+    if ($nombreUsuario === '') {
+        $nombreUsuario = (string) ($_SESSION['user'] ?? '');
+    }
+    $ipOrigen = $_SERVER['REMOTE_ADDR'] ?? '';
+
+    $pdo->exec(
+        "SELECT set_config('myapp.id_usuario', "     . $pdo->quote($idUsuario)     . ", false), "
+      .        "set_config('myapp.nombre_usuario', " . $pdo->quote($nombreUsuario) . ", false), "
+      .        "set_config('myapp.ip_origen', "      . $pdo->quote($ipOrigen)      . ", false)"
+    );
+
     return $pdo;
 }

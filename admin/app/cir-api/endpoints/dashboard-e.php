@@ -3,6 +3,13 @@ ini_set('display_errors', 0);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
 
+// Inicia la sesion antes de abrir la conexion para que cir_conexion.php pueda
+// propagar a PostgreSQL quien ejecuta la accion. No restringe el acceso: si no
+// hay sesion, la auditoria registra el movimiento como SISTEMA.
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../php/dashboard-b.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {

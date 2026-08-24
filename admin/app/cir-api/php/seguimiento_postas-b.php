@@ -182,7 +182,7 @@ class ConsultasSeguimiento {
         ];
     }
 
-    public static function registrarAptoFisico(int $id_orden, int $id_profesional, string $observaciones, string $codigo_estado): bool {
+    public static function registrarAptoFisico(int $id_orden, int $id_profesional, string $observaciones, string $codigo_estado, ?string $codigo_prioridad = null): bool {
         $pdo = conexionCircuitoQuirurgico();
 
         // el Apto Físico se carga UNA sola vez por orden. Si ya
@@ -211,16 +211,31 @@ class ConsultasSeguimiento {
             throw new Exception("El estado '$codigo_estado' no existe para Apto Físico.");
         }
 
+        // La prioridad solo aplica cuando el Apto Físico es aprobado (OK).
+        // Se almacena como una referencia a estado (entidad LISTA: ROJO/AMARILLO/VERDE).
+        $idEstadoPrioridad = null;
+        if ($codigo_estado === 'OK' && $codigo_prioridad !== null) {
+            $codigo_prioridad = mb_strtoupper(trim($codigo_prioridad), 'UTF-8');
+            if (!in_array($codigo_prioridad, ['ROJO', 'AMARILLO', 'VERDE'], true)) {
+                throw new Exception("El código de prioridad '$codigo_prioridad' no es válido. Debe ser ROJO, AMARILLO o VERDE.");
+            }
+            $idEstadoPrioridad = id_estado('LISTA', $codigo_prioridad);
+            if (!$idEstadoPrioridad) {
+                throw new Exception("El estado de prioridad '$codigo_prioridad' no existe en la tabla estado.");
+            }
+        }
+
         $stmt = $pdo->prepare("
-            INSERT INTO verificacion_pre_cirugia (id_orden, id_profesional, checklist, id_estado, fecha) 
-            VALUES (:id_orden, :id_profesional, :checklist, :id_estado, NOW())
+            INSERT INTO verificacion_pre_cirugia (id_orden, id_profesional, checklist, id_estado, id_estado_prioridad, fecha) 
+            VALUES (:id_orden, :id_profesional, :checklist, :id_estado, :id_estado_prioridad, NOW())
         ");
         
         return $stmt->execute([
-            ':id_orden'       => $id_orden,
-            ':id_profesional' => $id_profesional,
-            ':checklist'      => $observaciones,
-            ':id_estado'      => $idEstado
+            ':id_orden'             => $id_orden,
+            ':id_profesional'       => $id_profesional,
+            ':checklist'            => $observaciones,
+            ':id_estado'            => $idEstado,
+            ':id_estado_prioridad'  => $idEstadoPrioridad
         ]);
     }
 

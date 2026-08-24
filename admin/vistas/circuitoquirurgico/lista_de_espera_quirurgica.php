@@ -41,6 +41,7 @@
                                     <th class="text-secondary small text-uppercase fw-semibold">Cirugía</th>
                                     <th class="text-secondary small text-uppercase fw-semibold">Apto Desde</th>
                                     <th class="text-secondary small text-uppercase fw-semibold">Estado</th>
+                                    <th class="text-secondary small text-uppercase fw-semibold text-center">Prioridad</th>
                                     <th class="text-secondary small text-uppercase fw-semibold text-center">Fecha Asignada</th>
                                     <th class="text-secondary small text-uppercase fw-semibold text-center">Acciones</th>
                                 </tr>
@@ -59,7 +60,7 @@
 <div class="modal fade" id="modal-programar-cirugia" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content" style="border-radius: 1rem; border: none;">
-      <div class="modal-header bg-primary text-white" style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+      <div class="modal-header bg-primary text-white" id="prog-modal-header" style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
         <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Programar Cirugía</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -87,7 +88,7 @@
                 <textarea class="form-control" id="prog-observaciones" name="observaciones" rows="2" placeholder="Ej: Material especial requerido, lateralidad..."></textarea>
             </div>
         </div>
-        <div class="modal-footer bg-light" style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem;">
+        <div class="modal-footer bg-light" id="prog-modal-footer" style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem;">
             <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal" style="border-radius: 0.5rem; height: 45px;">Cancelar</button>
             <button type="submit" class="btn btn-primary fw-bold" style="border-radius: 0.5rem; height: 45px;">Confirmar Turno</button>
         </div>
@@ -121,6 +122,8 @@ function inicializarTabla() {
     }
 
     tablaListaEspera = $('#tabla-lista-espera').DataTable({
+        // Orden por defecto: 1) Prioridad (Rojo→Amarillo→Verde) 2) Apto Desde
+        order: [[5, 'asc'], [3, 'asc']],
         ajax: function(data, callback) {
             $.ajax({
                 url: 'app/cir-api/endpoints/lista_espera-e.php',
@@ -131,9 +134,15 @@ function inicializarTabla() {
                 },
                 dataType: 'json',
                 success: function(json) {
+                    if (json && json.status === 'error') {
+                        Swal.fire('Error', json.message || 'Error al cargar la lista de espera.', 'error');
+                        callback({ data: [] });
+                        return;
+                    }
                     callback({ data: json.registros || [] });
                 },
                 error: function() {
+                    Swal.fire('Error', 'No se pudo comunicar con el servidor al cargar la lista.', 'error');
                     callback({ data: [] });
                 }
             });
@@ -143,9 +152,37 @@ function inicializarTabla() {
             { data: null, render: function (data) { return data.paciente_apellido + ', ' + data.paciente_nombre; } },
             { data: 'cirugia_nombre' },
             { data: 'apto_desde', render: function (data) { if (!data) return '-'; const parts = data.split(' ')[0].split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`; } },
-            { data: 'estado_apto_codigo', render: function (data) { let badgeClass = 'bg-secondary'; let text = 'Pendiente'; if (data === 'OK') { badgeClass = 'bg-success'; text = 'Aprobado'; } else if (data === 'OBS') { badgeClass = 'bg-danger'; text = 'Observado'; } return `<span class="badge ${badgeClass}">${text}</span>`; } },
+            { data: 'estado_apto_codigo', render: function (data, type, row) {
+                if (data === 'OK') {
+                    let p = row.prioridad_codigo;
+                    let badgeClass = 'bg-success', badgeStyle = '', text = 'Aprobado';
+                    if (p === 'ROJO') { badgeClass = 'bg-danger'; text = 'Aprobado'; }
+                    else if (p === 'AMARILLO') { badgeClass = ''; badgeStyle = 'background-color:#ffd400;color:#fff;'; text = 'Aprobado'; }
+                    else if (p === 'VERDE') { badgeClass = 'bg-success'; text = 'Aprobado'; }
+                    return `<span class="badge ${badgeClass}" style="${badgeStyle}">${text}</span>`;
+                } else if (data === 'OBS') {
+                    return `<span class="badge bg-danger">Observado</span>`;
+                }
+                return `<span class="badge bg-secondary">Pendiente</span>`;
+            } },
+            { data: 'prioridad_codigo', className: 'text-center', render: function (data, type) {
+                if (type === 'sort' || type === 'type') {
+                    if (data === 'ROJO') return 1;
+                    if (data === 'AMARILLO') return 2;
+                    if (data === 'VERDE') return 3;
+                    return 4;
+                }
+                if (!data) return '<span class="text-muted">-</span>';
+                let map = {
+                    'ROJO':     ['bg-danger', 'Urgente', ''],
+                    'AMARILLO': ['', 'Media', 'background-color:#ffd400;color:#fff;'],
+                    'VERDE':    ['bg-success', 'Baja', '']
+                };
+                    let info = map[data] || ['bg-secondary', data, ''];
+                    return `<span class="badge ${info[0]}" style="${info[2]}">${info[1]}</span>`;
+            } },
             { data: 'turno_programado_fecha', className: 'text-center fw-bold', render: function (data) { if (!data) return '<span class="text-muted">-</span>'; const datePart = data.split(' ')[0]; const timePart = data.split(' ')[1] ? data.split(' ')[1].substring(0,5) : ''; const parts = datePart.split('-'); return `<span class="text-primary"><i class="bi bi-calendar-check me-1"></i>${parts[2]}/${parts[1]}/${parts[0]} ${timePart}</span>`; } },
-            { data: null, orderable: false, className: 'text-center', render: function (data) { if (data.turno_programado_fecha) { const parts = data.turno_programado_fecha.split(' ')[0].split('-'); return `<button type="button" class="btn btn-sm btn-outline-success fw-bold" style="border-radius: 0.5rem;" disabled>Turno Asignado</button>`; } if (data.estado_apto_codigo === 'OK') { return `<button type="button" class="btn btn-sm btn-primary fw-bold" style="border-radius: 0.5rem;" onclick="abrirModalProgramar(${data.id_orden}, ${data.id_persona_asiste}, '${data.paciente_apellido.replace(/'/g, "\\'")}, ${data.paciente_nombre.replace(/'/g, "\\'")}')"><i class="bi bi-calendar-plus me-1"></i> Programar</button>`; } return `<button type="button" class="btn btn-sm btn-outline-secondary fw-bold" style="border-radius: 0.5rem;" disabled>No Apto</button>`; } }
+            { data: null, orderable: false, className: 'text-center', render: function (data) { if (data.turno_programado_fecha) { const parts = data.turno_programado_fecha.split(' ')[0].split('-'); return `<button type="button" class="btn btn-sm btn-outline-success fw-bold" style="border-radius: 0.5rem;" disabled>Turno Asignado</button>`; } if (data.estado_apto_codigo === 'OK') { return `<button type="button" class="btn btn-sm btn-primary fw-bold" style="border-radius: 0.5rem;" onclick="abrirModalProgramar(${data.id_orden}, ${data.id_persona_asiste}, '${data.paciente_apellido.replace(/'/g, "\\'")}, ${data.paciente_nombre.replace(/'/g, "\\'")}', '${data.prioridad_codigo || ''}')"><i class="bi bi-calendar-plus me-1"></i> Programar</button>`; } return `<button type="button" class="btn btn-sm btn-outline-secondary fw-bold" style="border-radius: 0.5rem;" disabled>No Apto</button>`; } }
         ],
         language: {
             lengthMenu: "Mostrar _MENU_ registros",
@@ -208,7 +245,24 @@ $('#filtro-estado-apto').on('change', function() {
 
 let diasActivosAgenda = [];
 
-function abrirModalProgramar(id_orden, id_persona_asiste, paciente) {
+function abrirModalProgramar(id_orden, id_persona_asiste, paciente, prioridad) {
+    // Tintar cabecera y pie del modal según la prioridad del paciente.
+    let headerBg = '#0d6efd', headerText = '#fff';
+    let footerBg = '#f8f9fa', footerText = '';
+    if (prioridad === 'ROJO') {
+        headerBg = '#dc3545'; footerBg = '#dc3545'; footerText = '#fff';
+    } else if (prioridad === 'AMARILLO') {
+        headerBg = '#ffd400'; headerText = '#000'; footerBg = '#ffd400'; footerText = '#000';
+    } else if (prioridad === 'VERDE') {
+        headerBg = '#198754'; footerBg = '#198754'; footerText = '#fff';
+    }
+    $('#prog-modal-header').get(0).style.setProperty('background-color', headerBg, 'important');
+    $('#prog-modal-header').get(0).style.setProperty('color', headerText, 'important');
+    $('#prog-modal-footer').get(0).style.setProperty('background-color', footerBg, 'important');
+    $('#prog-modal-footer').get(0).style.setProperty('color', footerText, 'important');
+    // Asegurar que el botón de cerrar del header contraste con el fondo de la prioridad.
+    $('#prog-modal-header .btn-close').toggleClass('btn-close-white', headerText === '#fff');
+
     // Verificar si hay agenda activa para CIRUGIA
     $.ajax({
         url: 'app/cir-api/endpoints/lista_espera-e.php?accion=config_agenda_cirugia',

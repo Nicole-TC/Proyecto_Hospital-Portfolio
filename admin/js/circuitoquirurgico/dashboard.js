@@ -1,7 +1,7 @@
 const BASE_URL = document.querySelector('meta[name="base-url"]')?.content ?? '';
 
 const campos = {
-    'pacientes-circuito': { key: 'pacientes_circuito', fallback: '—' },
+    'pacientes-circuito': { key: 'total_pacientes', fallback: '—' },
     'aptos-operar': { key: 'aptos_operar', fallback: '—' },
     'alertas-demora': { key: 'alertas_demora', fallback: '—' },
 };

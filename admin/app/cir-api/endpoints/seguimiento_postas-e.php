@@ -48,6 +48,10 @@ try {
             $id_profesional = (int)($data['id_profesional'] ?? 0); // Este debe venir del frontend o ser el usuario logueado si es un profesional
             $observaciones  = trim($data['observaciones'] ?? '');
             $codigo_estado  = mb_strtoupper(trim($data['codigo_estado'] ?? ''), 'UTF-8'); // Ej: 'OK' o 'RECH'
+            $codigo_prioridad = isset($data['prioridad']) ? mb_strtoupper(trim($data['prioridad']), 'UTF-8') : null;
+            if ($codigo_prioridad === '') {
+                $codigo_prioridad = null;
+            }
 
             if (!$id_orden || !$id_profesional) {
                 echo json_encode(["status" => "error", "message" => "Faltan parámetros obligatorios (id_orden o id_profesional)."]);
@@ -60,7 +64,7 @@ try {
             }
 
             try {
-                $exito = ConsultasSeguimiento::registrarAptoFisico($id_orden, $id_profesional, $observaciones, $codigo_estado);
+                $exito = ConsultasSeguimiento::registrarAptoFisico($id_orden, $id_profesional, $observaciones, $codigo_estado, $codigo_prioridad);
             } catch (AptoDuplicadoException $e) {
                 echo json_encode([
                     "status"          => "error",

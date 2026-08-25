@@ -11,7 +11,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             <div class="col-12 mt-1 mb-1">
 
             <!-- Filtros obligatorios: sin completarlos no se muestran registros -->
-            <div class="row g-3 align-items-end mb-4 mt-2 mx-1">
+            <div class="row g-3 align-items-end mb-4 mt-2 mx-1 filtros-postas-row">
                 <div class="col-md-2">
                     <label class="form-label text-secondary small fw-bold" for="filtro-tipo-fecha">BUSCAR POR <span class="text-danger">*</span></label>
                     <select class="form-select border-0 bg-light" id="filtro-tipo-fecha" style="border-radius: 0.5rem; height: 45px;">
@@ -37,20 +37,13 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                         <option value="TODOS">Todos</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex">
-                    <button type="button" class="btn btn-primary w-100 fw-bold" id="btn-filtrar-postas" style="border-radius: 0.5rem; height: 45px; border: none;">
+                <div class="col-md-2 d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-primary fw-bold flex-fill" id="btn-filtrar-postas" style="border-radius: 0.5rem; height: 45px; border: none;">
                         <i class="bi bi-search me-1"></i> BUSCAR
                     </button>
-                </div>
-            </div>
-
-            <!-- segunda fila de acciones, con el mismo formato que el botón de
-                 listado completo de Gestión de Órdenes. -->
-            <div class="row g-3 mx-1 mb-2">
-                <div class="col-md-3 offset-md-9">
-                    <button type="button" class="btn btn-outline-secondary w-100 fw-bold" id="btn-listado-completo"
-                            style="border-radius: 0.5rem; height: 42px;">
-                        <i class="bi bi-list-ul me-2"></i> Ver listado completo
+                    <button type="button" class="btn d-flex align-items-center justify-content-center flex-shrink-0" id="btn-aviso-busqueda"
+                            style="border-radius: 50%; width: 45px; height: 45px; font-size: 1.25rem; background-color:#cff4fc; box-shadow: 0 0 0 3px rgba(13,202,240,0.45);" title="Aviso">
+                        <i class="fa-solid fa-exclamation" style="color:#055160;"></i>
                     </button>
                 </div>
             </div>
@@ -59,14 +52,6 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             <div id="postas-sin-filtro" class="alert alert-warning mx-1 py-2 small d-none">
                 <i class="fa-solid fa-circle-info me-1"></i>
                 <span id="postas-sin-filtro-texto"></span>
-            </div>
-
-            <!-- aviso del listado completo: la búsqueda está acotada a 90 días y el
-                 listado entero lo tiene que generar un administrador. -->
-            <div id="postas-listado-completo" class="alert alert-info mx-1 py-2 small d-none">
-                <i class="fa-solid fa-circle-info me-1"></i>
-                La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo,
-                solicitalo a un administrador.
             </div>
 
             <div class="table-responsive">
@@ -202,7 +187,48 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
   </div>
 </div>
 
+<!-- Modal Selección de Prioridad (Lista de Espera) -->
+<div class="modal fade" id="modalPrioridad" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 1rem;">
+      <div class="modal-header bg-primary text-white border-0 py-3">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Prioridad en Lista de Espera</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-secondary mb-3">Seleccioná la prioridad con la que el paciente ingresará a la Lista de Espera Quirúrgica:</p>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-rojo-prio fw-bold py-2 d-flex align-items-center justify-content-center gap-2" style="background-color:#dc3545;color:#fff;" onclick="confirmarPrioridad('ROJO')">
+            Rojo — Urgente
+          </button>
+          <button type="button" class="btn btn-amarillo-prio fw-bold py-2 d-flex align-items-center justify-content-center gap-2" style="background-color:#ffd400;color:#fff;" onclick="confirmarPrioridad('AMARILLO')">
+            Amarillo — Media
+          </button>
+          <button type="button" class="btn btn-success fw-bold py-2 d-flex align-items-center justify-content-center gap-2" onclick="confirmarPrioridad('VERDE')">
+            Verde — Baja
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
+/* Alinea los campos de filtro: reserva el alto de dos líneas en las etiquetas
+   para que el campo quede al mismo nivel aunque alguna etiqueta se wrappee. */
+.filtros-postas-row .form-label { min-height: 2.8em; margin-bottom: .25rem; }
+/* Hover de los botones de prioridad (usan estilo inline para fijar el color) */
+.btn-amarillo-prio, .btn-rojo-prio {
+    cursor: pointer;
+}
+.btn-amarillo-prio:hover {
+    background-color: #e6bf00 !important;
+    color: #fff !important;
+}
+.btn-rojo-prio:hover {
+    background-color: #c82333 !important;
+    color: #fff !important;
+}
 /* Dark Mode - Seguimiento de Postas */
 body.modo-oscuro .card {
     background-color: #2a2a2a !important;
@@ -591,17 +617,24 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
             return;
         }
         $('#postas-sin-filtro').addClass('d-none');
-        $('#postas-listado-completo').addClass('d-none');
         $('#tabla-postas').DataTable().ajax.reload();
     });
 
-    // el listado completo no se resuelve desde la vista: se avisa que hay que
-    // pedírselo a un administrador y no se dispara ninguna consulta.
-    $('#btn-listado-completo').on('click', function() {
-        $('#postas-sin-filtro').addClass('d-none');
-        $('#postas-listado-completo').removeClass('d-none');
+    // aviso de la búsqueda acotada a 90 días: se muestra al tocar el signo de
+    // admiración junto a "BUSCAR". El listado completo lo genera un administrador.
+    $('#btn-aviso-busqueda').on('click', function() {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Búsqueda acotada',
+                text: 'La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo, solicitalo a un administrador.',
+                confirmButtonColor: '#0056b3'
+            });
+        } else {
+            alert('La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo, solicitalo a un administrador.');
+        }
     });
-    
+
     // (CIR-760) muestra el detalle completo del aviso de la fila. `tipo` distingue entre
     // la solicitud del profesional y la observación clínica del Apto Físico.
     function verObservacion(id_orden, tipo) {
@@ -836,6 +869,8 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
         .finally(() => $chk.prop('disabled', false));
     });
 
+    let datosAptoPendiente = null;
+
     function guardarApto() {
         let id_orden = $('#apto-id-orden').val();
         let estado = $('#apto-estado').val();
@@ -844,8 +879,38 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
         if (!id_orden) return;
 
         // Por ahora hardcodeamos el ID del profesional logueado como 1. (En la vida real vendría de la sesión)
-        let id_profesional = 1; 
+        let id_profesional = 1;
 
+        // Al aprobar (OK) se exige elegir prioridad para la Lista de Espera.
+        // Al observar (RECH) la prioridad no aplica.
+        if (estado === 'OK') {
+            datosAptoPendiente = {
+                id_orden: id_orden,
+                id_profesional: id_profesional,
+                observaciones: obs,
+                codigo_estado: estado
+            };
+            $('#modalPrioridad').modal('show');
+            return;
+        }
+
+        enviarApto({
+            id_orden: id_orden,
+            id_profesional: id_profesional,
+            observaciones: obs,
+            codigo_estado: estado,
+            prioridad: null
+        });
+    }
+
+    function confirmarPrioridad(codigo) {
+        if (!datosAptoPendiente) return;
+        let payload = Object.assign({}, datosAptoPendiente, { prioridad: codigo });
+        $('#modalPrioridad').modal('hide');
+        enviarApto(payload);
+    }
+
+    function enviarApto(payload) {
         fetch('app/cir-api/endpoints/seguimiento_postas-e.php', {
             method: 'POST',
             headers: {
@@ -853,10 +918,11 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
             },
             body: JSON.stringify({
                 accion: 'registrar_apto',
-                id_orden: id_orden,
-                id_profesional: id_profesional,
-                observaciones: obs,
-                codigo_estado: estado
+                id_orden: payload.id_orden,
+                id_profesional: payload.id_profesional,
+                observaciones: payload.observaciones,
+                codigo_estado: payload.codigo_estado,
+                prioridad: payload.prioridad
             })
         })
         .then(response => response.json())

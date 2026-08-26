@@ -219,7 +219,7 @@ switch ($action) {
                 LEFT JOIN profesional prf ON prf.id_profesional   = om.id_profesional
                 LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
                 WHERE p.id_persona = :id_persona
-                  AND e.codigo IN ('PROG', 'CONF')
+                  AND e.codigo IN ('PROG', 'CONF', 'CANC')
                   AND e.entidad = 'TURNO'
                   AND t.fecha_hora >= NOW()
                 ORDER BY t.fecha_hora ASC
@@ -227,6 +227,7 @@ switch ($action) {
             $stmt->execute([':id_persona' => $idPersona]);
             $turnos = array_map(static function (array $fila): array {
                 $fila['confirmado'] = ($fila['estado_codigo'] === 'CONF');
+                $fila['cancelado']  = ($fila['estado_codigo'] === 'CANC');
                 return $fila;
             }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 

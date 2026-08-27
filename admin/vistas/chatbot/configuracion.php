@@ -92,10 +92,10 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
 
                         <!-- Footer de las tarjetas (Estado de conexión y botón de guardar) -->
                         <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
-                            <!-- Estado de conexión (A la izquierda wifi verde + texto) -->
-                            <div class="d-flex align-items-center text-success">
-                                <i class="fa-solid fa-wifi me-2 fa-pulse"></i>
-                                <span class="fw-semibold small">Estado: Conectado con el servicio de Backend</span>
+                            <!-- Estado del bot (izquierda: indicador vivo/muerto) -->
+                            <div class="d-flex align-items-center" id="estado-bot">
+                                <i class="fa-solid fa-wifi me-2" id="estado-bot-icono"></i>
+                                <span class="fw-semibold small" id="estado-bot-texto">Verificando estado del bot...</span>
                             </div>
 
                             <!-- Botón Guardar (A la derecha botón verde agua con icono de disquete) -->
@@ -183,6 +183,49 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+
+    // --- Estado vivo/muerto del bot desde el backend ---
+    const API_URL = 'app/cir-api/endpoints/bot-panel-e.php';
+
+    async function cargarEstadoBot() {
+        const contenedor = document.getElementById("estado-bot");
+        const icono = document.getElementById("estado-bot-icono");
+        const texto = document.getElementById("estado-bot-texto");
+        if (!contenedor) return;
+
+        try {
+            const res = await fetch(API_URL + '?action=estado');
+            const json = await res.json();
+            if (json.status !== 'success') throw new Error(json.message || 'Error');
+
+            const vivo = !!(json.bot && json.servidor);
+
+            contenedor.classList.remove('text-success', 'text-danger', 'text-warning');
+            contenedor.classList.add(vivo ? 'text-success' : 'text-danger');
+            icono.classList.remove('fa-pulse');
+
+            if (vivo) {
+                texto.innerText = 'Estado: Bot en línea';
+                icono.className = 'fa-solid fa-wifi me-2 fa-pulse';
+            } else {
+                const partes = [];
+                if (!json.servidor && !json.db) partes.push('backend caído');
+                if (!json.bot) partes.push('bot sin inicializar');
+                if (!json.polling) partes.push('polling inactivo');
+                if (!json.db) partes.push('base de datos caída');
+                texto.innerText = 'Estado: Bot caído (' + (partes.join(', ') || 'sin detalle') + ')';
+                icono.className = 'fa-solid fa-wifi me-2';
+            }
+        } catch (error) {
+            console.error("Error consultando estado del bot:", error);
+            contenedor.classList.remove('text-success');
+            contenedor.classList.add('text-danger');
+            icono.className = 'fa-solid fa-wifi me-2';
+            texto.innerText = 'Estado: Bot caído (backend inaccesible)';
+        }
+    }
+
+    cargarEstadoBot();
 });
 </script>
 

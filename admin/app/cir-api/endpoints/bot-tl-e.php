@@ -127,14 +127,29 @@ switch ($action) {
             $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
             $idRol = $idRol ? (int)$idRol : 4;
 
+            // WhatsApp entrega el numero como wa_id con prefijo de pais y el 9
+            // argentino (5493814567890), mientras que persona.telefono suele estar
+            // cargado en formato local y con separadores (381-456-7890). Comparar
+            // con "=" no encontraria nunca al paciente, asi que se normalizan ambos
+            // lados a solo digitos y se comparan los ultimos 8 (el numero local sin
+            // caracteristica ni prefijos), que es la parte que siempre coincide.
+            $telefonoDigitos = preg_replace('/\D/', '', $telefono);
+            if (strlen($telefonoDigitos) < 8) {
+                botTL_responder(400, ['status' => 'error', 'message' => 'Teléfono inválido. Debe tener al menos 8 dígitos.']);
+            }
+            $sufijoTelefono = substr($telefonoDigitos, -8);
+
             $stmt = $pdo->prepare("
                 SELECT p.id_persona, p.dni, p.nombre, p.apellido, pa.id_persona_asiste
                 FROM persona p
                 LEFT JOIN persona_asiste pa ON pa.id_persona = p.id_persona
-                WHERE p.telefono = :telefono AND p.id_rol = :id_rol
+                WHERE p.id_rol = :id_rol
+                  AND p.telefono IS NOT NULL
+                  AND length(regexp_replace(p.telefono, '\\D', '', 'g')) >= 8
+                  AND RIGHT(regexp_replace(p.telefono, '\\D', '', 'g'), 8) = :telefono
                 ORDER BY p.apellido, p.nombre
             ");
-            $stmt->execute([':telefono' => $telefono, ':id_rol' => $idRol]);
+            $stmt->execute([':telefono' => $sufijoTelefono, ':id_rol' => $idRol]);
             $coincidencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $cantidad = count($coincidencias);

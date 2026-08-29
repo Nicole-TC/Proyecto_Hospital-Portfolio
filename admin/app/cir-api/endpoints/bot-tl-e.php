@@ -289,11 +289,13 @@ switch ($action) {
                 botTL_responder(404, ['status' => 'error', 'message' => 'Paciente no encontrado.']);
             }
 
-            $stmtPA = $pdo->prepare("SELECT id_persona_asiste FROM persona_asiste WHERE id_persona = :id_persona LIMIT 1");
+            // El paciente puede tener mas de una admision: aca solo se verifica que
+            // tenga alguna, el turno se valida contra todas ellas en la consulta de abajo.
+            $stmtPA = $pdo->prepare("SELECT 1 FROM persona_asiste WHERE id_persona = :id_persona LIMIT 1");
             $stmtPA->execute([':id_persona' => $idPersona]);
-            $idPersonaAsiste = $stmtPA->fetch(PDO::FETCH_COLUMN);
+            $tieneAdmision = (bool)$stmtPA->fetch(PDO::FETCH_COLUMN);
 
-            if (!$idPersonaAsiste) {
+            if (!$tieneAdmision) {
                 botTL_responder(404, ['status' => 'error', 'message' => 'El paciente no tiene admisión registrada.']);
             }
 
@@ -310,15 +312,16 @@ switch ($action) {
                 FROM turno t
                 JOIN estado e ON e.id_estado = t.id_estado
                 JOIN tipo_turno tt ON tt.id_tipo_turno = t.id_tipo_turno
+                JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
                 LEFT JOIN orden_medica om ON om.id_orden = t.id_orden
                 LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
                 LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
                 LEFT JOIN persona pr ON pr.id_persona = prf.id_persona
                 WHERE t.id_turno = :id_turno
-                  AND t.id_persona_asiste = :id_persona_asiste
+                  AND pa.id_persona = :id_persona
                 LIMIT 1
             ");
-            $stmtTurno->execute([':id_turno' => $idTurno, ':id_persona_asiste' => $idPersonaAsiste]);
+            $stmtTurno->execute([':id_turno' => $idTurno, ':id_persona' => $idPersona]);
             $turno = $stmtTurno->fetch(PDO::FETCH_ASSOC);
 
             if (!$turno) {
@@ -422,11 +425,13 @@ switch ($action) {
                 botTL_responder(404, ['status' => 'error', 'message' => 'Paciente no encontrado.']);
             }
 
-            $stmtPA = $pdo->prepare("SELECT id_persona_asiste FROM persona_asiste WHERE id_persona = :id_persona LIMIT 1");
+            // El paciente puede tener mas de una admision: aca solo se verifica que
+            // tenga alguna, el turno se valida contra todas ellas en la consulta de abajo.
+            $stmtPA = $pdo->prepare("SELECT 1 FROM persona_asiste WHERE id_persona = :id_persona LIMIT 1");
             $stmtPA->execute([':id_persona' => $idPersona]);
-            $idPersonaAsiste = $stmtPA->fetch(PDO::FETCH_COLUMN);
+            $tieneAdmision = (bool)$stmtPA->fetch(PDO::FETCH_COLUMN);
 
-            if (!$idPersonaAsiste) {
+            if (!$tieneAdmision) {
                 botTL_responder(404, ['status' => 'error', 'message' => 'El paciente no tiene admisión registrada.']);
             }
 
@@ -443,15 +448,16 @@ switch ($action) {
                 FROM turno t
                 JOIN estado e ON e.id_estado = t.id_estado
                 JOIN tipo_turno tt ON tt.id_tipo_turno = t.id_tipo_turno
+                JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
                 LEFT JOIN orden_medica om ON om.id_orden = t.id_orden
                 LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
                 LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
                 LEFT JOIN persona pr ON pr.id_persona = prf.id_persona
                 WHERE t.id_turno = :id_turno
-                  AND t.id_persona_asiste = :id_persona_asiste
+                  AND pa.id_persona = :id_persona
                 LIMIT 1
             ");
-            $stmtTurno->execute([':id_turno' => $idTurno, ':id_persona_asiste' => $idPersonaAsiste]);
+            $stmtTurno->execute([':id_turno' => $idTurno, ':id_persona' => $idPersona]);
             $turno = $stmtTurno->fetch(PDO::FETCH_ASSOC);
 
             if (!$turno) {

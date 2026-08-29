@@ -207,6 +207,7 @@ switch ($action) {
                     cc.nombre       AS cirugia,
                     pr.apellido     AS medico_apellido,
                     pr.nombre       AS medico_nombre,
+                    e.codigo        AS estado_codigo,
                     e.descripcion   AS estado
                 FROM turno t
                 JOIN persona_asiste pa   ON pa.id_persona_asiste = t.id_persona_asiste
@@ -218,13 +219,17 @@ switch ($action) {
                 LEFT JOIN profesional prf ON prf.id_profesional   = om.id_profesional
                 LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
                 WHERE p.id_persona = :id_persona
-                  AND e.codigo = 'PROG'
+                  AND e.codigo IN ('PROG', 'CONF', 'CANC')
                   AND e.entidad = 'TURNO'
                   AND t.fecha_hora >= NOW()
                 ORDER BY t.fecha_hora ASC
             ");
             $stmt->execute([':id_persona' => $idPersona]);
-            $turnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $turnos = array_map(static function (array $fila): array {
+                $fila['confirmado'] = ($fila['estado_codigo'] === 'CONF');
+                $fila['cancelado']  = ($fila['estado_codigo'] === 'CANC');
+                return $fila;
+            }, $stmt->fetchAll(PDO::FETCH_ASSOC));
 
             botTL_responder(200, [
                 'status' => 'success',
@@ -440,6 +445,20 @@ switch ($action) {
 
             if (!in_array($turno['estado_codigo'], ['PROG', 'CONF'])) {
                 botTL_responder(400, ['status' => 'error', 'message' => 'El turno no se puede confirmar porque su estado actual es: ' . $turno['estado_codigo'] . '.']);
+            }
+
+            if ($turno['estado_codigo'] === 'CONF') {
+                botTL_responder(200, [
+                    'status'     => 'success',
+                    'ya_confirmado' => true,
+                    'message'    => 'Ya habías confirmado este turno anteriormente.',
+                    'id_turno'   => (int)$turno['id_turno'],
+                    'estado'     => 'CONF',
+                    'fecha_hora' => $turno['fecha_hora'],
+                    'tipo_turno' => $turno['tipo_turno'],
+                    'cirugia'    => $turno['cirugia'],
+                    'medico'     => botTL_medico($turno),
+                ]);
             }
 
             $idEstadoConf = id_estado('TURNO', 'CONF');

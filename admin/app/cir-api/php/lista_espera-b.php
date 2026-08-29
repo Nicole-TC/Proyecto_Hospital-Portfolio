@@ -110,6 +110,41 @@ class ConsultasListasEspera {
         
         $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Prioridad se resuelve en PHP para no acoplarla al SQL principal.
+        // Se toma la prioridad de la ÚLTIMA verificación de cada orden.
+        $ids = array_column($registros, 'id_orden');
+        $prioPorOrden = [];
+        if (!empty($ids)) {
+            $inPlaceholders = implode(',', array_fill(0, count($ids), '?'));
+            $sqlPrio = "
+                SELECT DISTINCT ON (v.id_orden) v.id_orden, ep.codigo AS prioridad_codigo
+                FROM verificacion_pre_cirugia v
+                LEFT JOIN estado ep ON ep.id_estado = v.id_estado_prioridad
+                WHERE v.id_orden IN ($inPlaceholders)
+                ORDER BY v.id_orden, v.fecha DESC NULLS LAST, v.id_verificacion DESC
+            ";
+            $stmtPrio = $pdo->prepare($sqlPrio);
+            $stmtPrio->execute($ids);
+            foreach ($stmtPrio->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $prioPorOrden[$r['id_orden']] = $r['prioridad_codigo'];
+            }
+        }
+
+        $pesoPrioridad = ['ROJO' => 1, 'AMARILLO' => 2, 'VERDE' => 3];
+        foreach ($registros as &$reg) {
+            $reg['prioridad_codigo'] = $prioPorOrden[$reg['id_orden']] ?? null;
+        }
+        unset($reg);
+
+        usort($registros, function ($a, $b) use ($pesoPrioridad) {
+            $pa = $pesoPrioridad[$a['prioridad_codigo']] ?? 4;
+            $pb = $pesoPrioridad[$b['prioridad_codigo']] ?? 4;
+            if ($pa !== $pb) {
+                return $pa <=> $pb;
+            }
+            return strcmp((string)($a['apto_desde'] ?? ''), (string)($b['apto_desde'] ?? ''));
+        });
+
         return [
             'registros' => $registros,
             'total'     => count($registros),

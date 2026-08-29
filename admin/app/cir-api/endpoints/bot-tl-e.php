@@ -59,15 +59,24 @@ function botTL_medico(?array $fila): ?string
     return $medico !== ', ' ? $medico : null;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    botTL_responder(405, ['status' => 'error', 'message' => 'Método no permitido.']);
-}
-
 if (!botTL_autenticar()) {
     botTL_responder(401, ['status' => 'error', 'message' => 'No autorizado. Token inválido o ausente.']);
 }
 
-$action = $_GET['action'] ?? '';
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+
+// Las acciones que cambian el estado de un turno solo se aceptan por POST. Por
+// GET alcanzaba con que el cliente reintentara la misma URL (o que algo la
+// precargara) para cancelar o confirmar un turno que nadie volvio a pedir.
+$accionesQueEscriben = ['confirmar_turno', 'cancelar_turno'];
+
+if (in_array($action, $accionesQueEscriben, true)) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        botTL_responder(405, ['status' => 'error', 'message' => 'Método no permitido. La acción ' . $action . ' requiere POST.']);
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    botTL_responder(405, ['status' => 'error', 'message' => 'Método no permitido.']);
+}
 
 switch ($action) {
     case 'verificar_dni':
@@ -262,9 +271,9 @@ switch ($action) {
     // ============================================================
 
     case 'cancelar_turno':
-        $dni     = preg_replace('/\D/', '', trim($_GET['dni'] ?? ''));
-        $idTurno = filter_input(INPUT_GET, 'id_turno', FILTER_VALIDATE_INT);
-        $motivo  = trim($_GET['motivo'] ?? '');
+        $dni     = preg_replace('/\D/', '', trim($_POST['dni'] ?? ''));
+        $idTurno = filter_input(INPUT_POST, 'id_turno', FILTER_VALIDATE_INT);
+        $motivo  = trim($_POST['motivo'] ?? '');
 
         if (strlen($dni) < 5 || strlen($dni) > 8) {
             botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);
@@ -399,8 +408,8 @@ switch ($action) {
     // ============================================================
 
     case 'confirmar_turno':
-        $dni     = preg_replace('/\D/', '', trim($_GET['dni'] ?? ''));
-        $idTurno = filter_input(INPUT_GET, 'id_turno', FILTER_VALIDATE_INT);
+        $dni     = preg_replace('/\D/', '', trim($_POST['dni'] ?? ''));
+        $idTurno = filter_input(INPUT_POST, 'id_turno', FILTER_VALIDATE_INT);
 
         if (strlen($dni) < 5 || strlen($dni) > 8) {
             botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);

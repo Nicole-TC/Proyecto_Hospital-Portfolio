@@ -47,7 +47,7 @@ try {
             $id_orden       = (int)($data['id_orden'] ?? 0);
             $id_profesional = (int)($data['id_profesional'] ?? 0); // Este debe venir del frontend o ser el usuario logueado si es un profesional
             $observaciones  = trim($data['observaciones'] ?? '');
-            $codigo_estado  = mb_strtoupper(trim($data['codigo_estado'] ?? ''), 'UTF-8'); // Ej: 'OK' o 'RECH'
+            $codigo_estado  = mb_strtoupper(trim($data['codigo_estado'] ?? ''), 'UTF-8'); // Ej: 'OK' u 'OBS'
             $codigo_prioridad = isset($data['prioridad']) ? mb_strtoupper(trim($data['prioridad']), 'UTF-8') : null;
             if ($codigo_prioridad === '') {
                 $codigo_prioridad = null;
@@ -58,8 +58,8 @@ try {
                 exit;
             }
 
-            if (!in_array($codigo_estado, ['OK', 'RECH'])) {
-                echo json_encode(["status" => "error", "message" => "Código de estado inválido. Debe ser OK o RECH."]);
+            if (!in_array($codigo_estado, ['OK', 'OBS'])) {
+                echo json_encode(["status" => "error", "message" => "Código de estado inválido. Debe ser OK u OBS."]);
                 exit;
             }
 

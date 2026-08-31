@@ -34,7 +34,50 @@
         '.btn-link.blue:hover { color: #076bba; }' +
         '.btn-link.danger { color: #ff6b81; text-decoration: none; }' +
         '.btn-link.danger:hover { color: #e04d65; }' +
-        '.cursor-pointer { cursor: pointer; }';
+        '.cursor-pointer { cursor: pointer; }' +
+        /* Cards catálogos */
+        '.catalogos-cq .catalogo-card { box-shadow: 0 0.35rem 1rem rgba(15, 23, 42, 0.1) !important; border: 1px solid rgba(0, 0, 0, 0.05) !important; }' +
+        'body.modo-oscuro .catalogos-cq .catalogo-card { box-shadow: 0 0.35rem 1rem rgba(0, 0, 0, 0.35) !important; border-color: rgba(255, 255, 255, 0.06) !important; }' +
+        /* Tablas catálogos */
+        '.catalogos-cq .card-tabla { border-radius: 0.75rem; }' +
+        '.catalogos-cq .catalogo-control { border-radius: 0.5rem; min-height: 2.75rem; padding-top: 0.55rem; padding-bottom: 0.55rem; }' +
+        '.catalogos-cq .catalogo-filtros-acciones { width: 100%; }' +
+        '.catalogos-cq .catalogo-filtros-btn { min-width: 6.5rem; white-space: nowrap; border-radius: 0.5rem; min-height: 2.75rem; }' +
+        '.catalogos-cq .catalogo-page-header { row-gap: 0.75rem; }' +
+        '.catalogos-cq #tabsCatalogos.nav-fill { width: 100%; }' +
+        '.catalogos-cq #tabsCatalogos.nav-fill > .nav-item { flex: 1 1 0; min-width: 0; margin: 0; }' +
+        '.catalogos-cq #tabsCatalogos.nav-fill .nav-link { width: 100%; text-align: center; margin-right: 0; }' +
+        '.catalogos-cq .catalogo-tabla-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; }' +
+        '.catalogos-cq .catalogo-paginacion { margin-left: auto; flex-shrink: 0; }' +
+        '.catalogos-cq .catalogo-paginacion .pagination { flex-wrap: wrap; justify-content: flex-end; gap: 0.35rem; margin-bottom: 0; }' +
+        '.catalogos-cq .catalogo-paginacion .pagination .page-link { padding: 0.5rem 0.9rem; font-size: 0.9rem; font-weight: 600; line-height: 1.2; border-radius: 0.5rem; color: #0984e3; border: 1px solid #dee2e6; min-width: 2.5rem; text-align: center; }' +
+        '.catalogos-cq .catalogo-paginacion .pagination .page-item.active .page-link { background-color: #0984e3; border-color: #0984e3; color: #fff; }' +
+        '.catalogos-cq .catalogo-paginacion .pagination .page-item.disabled .page-link { color: #adb5bd; background-color: #f8f9fa; }' +
+        '.catalogos-cq .catalogo-paginacion .pagination .page-link:hover { background-color: #eaf4ff; color: #076bba; }' +
+        '.catalogos-cq .catalogo-paginacion .pagination .page-item.active .page-link:hover { background-color: #0984e3; color: #fff; }' +
+        'body.modo-oscuro .catalogos-cq .catalogo-paginacion .pagination .page-link { background-color: #1f1f1f; color: #ccc; border-color: #444; }' +
+        'body.modo-oscuro .catalogos-cq .catalogo-paginacion .pagination .page-item.active .page-link { background-color: #375a7f; border-color: #375a7f; color: #fff; }' +
+        'body.modo-oscuro .catalogos-cq .catalogo-paginacion .pagination .page-item.disabled .page-link { color: #666; background-color: #1a1a1a; }' +
+        'body.modo-oscuro .catalogos-cq .catalogo-paginacion .pagination .page-link:hover { background-color: #333; color: #fff; }' +
+        '.catalogos-cq .table-catalogo { width: 100%; border-collapse: collapse; }' +
+        '.catalogos-cq .table-catalogo thead th.catalogo-th, .catalogos-cq .table-catalogo tbody td { padding: 0.85rem 1rem; vertical-align: middle; box-sizing: border-box; }' +
+        '.catalogos-cq .table-catalogo thead th.col-nombre, .catalogos-cq .table-catalogo tbody td.col-nombre { width: 28%; padding-left: 1.25rem; text-align: left; }' +
+        '.catalogos-cq .table-catalogo thead th.col-texto, .catalogos-cq .table-catalogo tbody td.col-texto { text-align: left; }' +
+        '.catalogos-cq .table-catalogo thead th.col-acciones, .catalogos-cq .table-catalogo tbody td.col-acciones { width: 1%; white-space: nowrap; text-align: center; padding-right: 1.25rem; }' +
+        '.catalogos-cq .table-catalogo thead th.catalogo-th { font-size: 0.9rem; font-weight: 700; color: #343a40 !important; border-bottom: 2px solid #dee2e6 !important; border-top: none; }' +
+        '.catalogos-cq .table-catalogo tbody td { font-size: 0.9rem; line-height: 1.45; border-color: #eef1f4; word-break: break-word; }' +
+        '.catalogos-cq .table-catalogo tbody td.col-nombre { font-weight: 600; color: #2d3436; }' +
+        '.catalogos-cq .table-catalogo tbody td.col-texto { color: #636e72; font-weight: 400; }' +
+        '.catalogos-cq .table-catalogo tbody tr:last-child td { border-bottom: none; }' +
+        '.catalogos-cq .table-catalogo .catalogo-empty { padding: 2.5rem 1rem !important; font-size: 0.95rem; }' +
+        '.catalogos-cq .acciones-tabla { flex-wrap: nowrap; justify-content: center; align-items: center; gap: 0.5rem; }' +
+        '.catalogos-cq .acciones-tabla .btn-link { padding: 0.4rem 0.5rem; font-size: 1.1rem; line-height: 1; border-radius: 0.5rem; flex-shrink: 0; }' +
+        '.catalogos-cq .acciones-tabla .btn-link:hover { background: rgba(0, 0, 0, 0.05); }' +
+        'body.modo-oscuro .catalogos-cq .table-catalogo thead th.catalogo-th { color: #e0e0e0 !important; border-bottom-color: #444 !important; }' +
+        'body.modo-oscuro .catalogos-cq .table-catalogo tbody td { border-color: #333 !important; }' +
+        'body.modo-oscuro .catalogos-cq .table-catalogo tbody td.col-nombre { color: #f1f1f1; }' +
+        'body.modo-oscuro .catalogos-cq .table-catalogo tbody td.col-texto { color: #bbb; }' +
+        'body.modo-oscuro .catalogos-cq .acciones-tabla .btn-link:hover { background: rgba(255, 255, 255, 0.08); }';
 
     var style = document.createElement('style');
     style.type = 'text/css';
@@ -183,14 +226,14 @@ window.cargarCirugias = function(pagina) {
     var orden = document.getElementById('orden-cirugia') ? document.getElementById('orden-cirugia').value : 'nombre_asc';
 
     if (buscar === '' && !window.cirugiasListadas) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-secondary"><i class="bi bi-search fs-3 d-block mb-2"></i>Ingrese un criterio de búsqueda o haga clic en "TODOS"</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="catalogo-empty text-center text-secondary"><i class="bi bi-search me-2"></i>Ingrese un criterio de búsqueda o haga clic en "TODOS" para listar los registros.</td></tr>';
         return;
     }
 
     window.cirugiasListadas = true;
     
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="catalogo-empty text-center text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
     }
 
     apiGet({ accion: 'listar_cirugias', buscar: buscar, orden: orden, pagina: paginaCirugias, limite: 10 })
@@ -209,18 +252,20 @@ function renderTablaCirugias(registros) {
     var tbody = document.getElementById('tabla-cirugias-body');
     if (!tbody) return;
     if (!registros || registros.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-secondary"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No se encontraron cirugías.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="catalogo-empty text-center text-secondary"><i class="bi bi-inbox me-2"></i>No se encontraron cirugías.</td></tr>';
         return;
     }
     
     tbody.innerHTML = registros.map(c => `
         <tr>
-            <td class="fw-semibold text-center" style="font-size:0.92rem;">${esc(c.nombre)}</td>
-            <td class="text-secondary text-center" style="font-size:0.88rem;">${truncar(c.descripcion, 60)}</td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-link text-info me-2" title="Ver Detalles" onclick="verDetalleCirugia('${escJsStr(c.nombre)}','${escJsStr(c.descripcion)}')"><i class="bi bi-eye"></i></button>
-                <button class="btn btn-sm btn-link blue me-2" title="Editar" onclick="abrirModalEditarCirugia(${c.id},'${escJsStr(c.nombre)}','${escJsStr(c.descripcion)}')"><i class="bi bi-pencil-square"></i></button>
-                <button class="btn btn-sm btn-link danger" title="Eliminar" onclick="confirmarEliminar('cirugia',${c.id},'${escJsStr(c.nombre)}')"><i class="bi bi-trash"></i></button>
+            <td class="col-nombre">${truncar(c.nombre, 50)}</td>
+            <td class="col-texto">${truncar(c.descripcion, 70)}</td>
+            <td class="col-acciones">
+                <div class="d-inline-flex acciones-tabla">
+                    <button class="btn btn-link text-info" title="Ver Detalles" onclick="verDetalleCirugia('${escJsStr(c.nombre)}','${escJsStr(c.descripcion)}')"><i class="bi bi-eye"></i></button>
+                    <button class="btn btn-link blue" title="Editar" onclick="abrirModalEditarCirugia(${c.id},'${escJsStr(c.nombre)}','${escJsStr(c.descripcion)}')"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-link danger" title="Eliminar" onclick="confirmarEliminar('cirugia',${c.id},'${escJsStr(c.nombre)}')"><i class="bi bi-trash"></i></button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -318,14 +363,14 @@ window.cargarEstudios = function(pagina) {
     var orden = document.getElementById('orden-estudio') ? document.getElementById('orden-estudio').value : 'nombre_asc';
     
     if (buscar === '' && !window.estudiosListados) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-secondary"><i class="bi bi-search fs-3 d-block mb-2"></i>Ingrese un criterio de búsqueda o haga clic en "TODOS"</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="catalogo-empty text-center text-secondary"><i class="bi bi-search me-2"></i>Ingrese un criterio de búsqueda o haga clic en "TODOS" para listar los registros.</td></tr>';
         return;
     }
 
     window.estudiosListados = true;
     
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="catalogo-empty text-center text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
     }
 
     apiGet({ accion: 'listar_estudios', buscar: buscar, orden: orden, pagina: paginaEstudios, limite: 10 })
@@ -341,19 +386,21 @@ function renderTablaEstudios(registros) {
     var tbody = document.getElementById('tabla-estudios-body');
     if (!tbody) return;
     if (!registros || registros.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-secondary"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No se encontraron estudios.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="catalogo-empty text-center text-secondary"><i class="bi bi-inbox me-2"></i>No se encontraron estudios.</td></tr>';
         return;
     }
     
     tbody.innerHTML = registros.map(e => `
         <tr>
-            <td class="fw-semibold text-center" style="font-size:0.92rem;">${esc(e.nombre)}</td>
-            <td class="text-secondary text-center" style="font-size:0.88rem;">${truncar(e.descripcion, 60)}</td>
-            <td class="text-secondary text-center" style="font-size:0.88rem;">${truncar(e.observacion, 60)}</td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-link text-info me-2" title="Ver Detalles" onclick="verDetalleEstudio('${escJsStr(e.nombre)}','${escJsStr(e.descripcion)}','${escJsStr(e.observacion)}')"><i class="bi bi-eye"></i></button>
-                <button class="btn btn-sm btn-link blue me-2" title="Editar" onclick="abrirModalEditarEstudio(${e.id},'${escJsStr(e.nombre)}','${escJsStr(e.descripcion)}','${escJsStr(e.observacion)}')"><i class="bi bi-pencil-square"></i></button>
-                <button class="btn btn-sm btn-link danger" title="Eliminar" onclick="confirmarEliminar('estudio',${e.id},'${escJsStr(e.nombre)}')"><i class="bi bi-trash"></i></button>
+            <td class="col-nombre">${truncar(e.nombre, 45)}</td>
+            <td class="col-texto">${truncar(e.descripcion, 55)}</td>
+            <td class="col-texto">${truncar(e.observacion, 55)}</td>
+            <td class="col-acciones">
+                <div class="d-inline-flex acciones-tabla">
+                    <button class="btn btn-link text-info" title="Ver Detalles" onclick="verDetalleEstudio('${escJsStr(e.nombre)}','${escJsStr(e.descripcion)}','${escJsStr(e.observacion)}')"><i class="bi bi-eye"></i></button>
+                    <button class="btn btn-link blue" title="Editar" onclick="abrirModalEditarEstudio(${e.id},'${escJsStr(e.nombre)}','${escJsStr(e.descripcion)}','${escJsStr(e.observacion)}')"><i class="bi bi-pencil-square"></i></button>
+                    <button class="btn btn-link danger" title="Eliminar" onclick="confirmarEliminar('estudio',${e.id},'${escJsStr(e.nombre)}')"><i class="bi bi-trash"></i></button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -441,6 +488,20 @@ window.guardarEstudio = function() {
         .finally(function() { btn.disabled = false; btn.innerHTML = orig; });
 };
 
+function cargarTodosEstudiosParaCombo() {
+    var acumulado = [];
+    function pagina(p) {
+        return apiGet({ accion: 'listar_estudios', buscar: '', orden: 'nombre_asc', pagina: p })
+            .then(function(data) {
+                if (data.status !== 'success') throw new Error(data.message || 'Error al cargar estudios.');
+                acumulado = acumulado.concat(data.registros || []);
+                if (acumulado.length < data.total) return pagina(p + 1);
+                return acumulado;
+            });
+    }
+    return pagina(1);
+}
+
 /* =========================================================
    TAB COMBOS
    ========================================================= */
@@ -463,14 +524,14 @@ window.cargarCombos = function(pagina) {
     var tbody = document.getElementById('tabla-combos-body');
     
     if (buscar === '' && !idCirugia && !window.combosListados) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-secondary"><i class="bi bi-search fs-3 d-block mb-2"></i>Ingrese un criterio de búsqueda o haga clic en "TODOS"</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="catalogo-empty text-center text-secondary"><i class="bi bi-search me-2"></i>Ingrese un criterio de búsqueda o haga clic en "TODOS" para listar los registros.</td></tr>';
         return;
     }
 
     window.combosListados = true;
     
     if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="catalogo-empty text-center text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando...</td></tr>';
     }
 
     var params = { accion: 'listar_combos', buscar: buscar, pagina: paginaCombos, limite: 10 };
@@ -489,7 +550,7 @@ function renderTablaCombos(registros) {
     var tbody = document.getElementById('tabla-combos-body');
     if (!tbody) return;
     if (!registros || registros.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-secondary"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No se encontraron combinaciones.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="catalogo-empty text-center text-secondary"><i class="bi bi-inbox me-2"></i>No se encontraron combinaciones.</td></tr>';
         return;
     }
     
@@ -508,7 +569,7 @@ function renderTablaCombos(registros) {
 
     tbody.innerHTML = grouped.map(g => {
         var badgesHtml = g.estudios.map(est => `
-            <span class="badge bg-secondary text-white me-2 mb-1 px-2 py-1 align-items-center d-inline-flex" style="font-size: 0.82rem; font-weight: 500;">
+            <span class="badge bg-secondary text-white me-1 mb-1 px-2 py-1 align-items-center d-inline-flex" style="font-size: 0.8rem; font-weight: 500;">
                 ${esc(est.nombre)}
             </span>
         `).join('');
@@ -517,18 +578,20 @@ function renderTablaCombos(registros) {
 
         return `
             <tr>
-                <td class="fw-semibold text-center" style="font-size:0.92rem; width: 40%;">${esc(g.cirugia)}</td>
-                <td class="text-center" style="width: 45%;">${badgesHtml}</td>
-                <td class="text-center" style="width: 15%;">
-                    <button class="btn btn-sm btn-link text-info me-1" title="Ver Detalles" onclick="verDetalleCombo('${gJsonStr}')">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-link blue me-1" title="Editar" onclick="abrirModalEditarCombo('${gJsonStr}')">
-                        <i class="bi bi-pencil-square"></i>
-                    </button>
-                    <button class="btn btn-sm btn-link danger" title="Eliminar" onclick="confirmarEliminarComboCompleto(${g.id_cirugia},'${escJsStr(g.cirugia)}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                <td class="col-nombre">${truncar(g.cirugia, 50)}</td>
+                <td class="col-texto">${badgesHtml || '<span class="text-secondary">—</span>'}</td>
+                <td class="col-acciones">
+                    <div class="d-inline-flex acciones-tabla">
+                        <button class="btn btn-link text-info" title="Ver Detalles" onclick="verDetalleCombo('${gJsonStr}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-link blue" title="Editar" onclick="abrirModalEditarCombo('${gJsonStr}')">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        <button class="btn btn-link danger" title="Eliminar" onclick="confirmarEliminarComboCompleto(${g.id_cirugia},'${escJsStr(g.cirugia)}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -598,18 +661,13 @@ window.abrirModalEditarCombo = function(gJsonStr) {
     var listaEl = document.getElementById('mec-lista-estudios');
     listaEl.innerHTML = '<div class="text-center py-4 text-secondary"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>Cargando estudios...</div>';
 
-    fetch('app/cir-api/endpoints/cirugias-e.php?accion=listar_estudios')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.status === 'success') {
-                mecEstudiosDisponibles = data.estudios || [];
-                renderizarEstudiosEdicion('');
-            } else {
-                listaEl.innerHTML = '<div class="text-center py-4 text-secondary">Error al cargar estudios.</div>';
-            }
+    cargarTodosEstudiosParaCombo()
+        .then(function(estudios) {
+            mecEstudiosDisponibles = estudios || [];
+            renderizarEstudiosEdicion('');
         })
         .catch(function() {
-            listaEl.innerHTML = '<div class="text-center py-4 text-secondary">Error de red al cargar estudios.</div>';
+            listaEl.innerHTML = '<div class="text-center py-4 text-secondary">Error al cargar estudios.</div>';
         });
 
     var modal = new bootstrap.Modal(document.getElementById('modalEditarCombo'));

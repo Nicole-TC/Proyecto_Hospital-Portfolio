@@ -1,9 +1,9 @@
-<div class="col-12 mb-5 px-md-4 px-3 mt-4">
+<div class="col-12 mb-5 px-md-4 px-3 mt-4 catalogos-cq">
 
     <!-- ========== TABS DE NAVEGACIÓN ========== -->
     <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
-        <div class="card-body p-2 bg-light d-flex justify-content-between align-items-center" style="border-radius: 0.75rem;">
-            <ul class="nav nav-pills gap-1" id="tabsCatalogos" role="tablist">
+        <div class="card-body p-2 bg-light" style="border-radius: 0.75rem;">
+            <ul class="nav nav-pills nav-fill gap-2 w-100" id="tabsCatalogos" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active fw-bold px-4 py-2" id="tab-cirugias-btn" data-bs-toggle="tab"
                             data-bs-target="#tab-cirugias" type="button" role="tab" style="border-radius: 0.5rem;">
@@ -23,9 +23,6 @@
                     </button>
                 </li>
             </ul>
-            <div class="px-3 text-secondary small d-none d-md-block">
-                <i class="bi bi-shield-lock me-1"></i> Administración de Catálogos
-            </div>
         </div>
     </div>
 
@@ -35,68 +32,67 @@
         <div class="tab-pane fade show active" id="tab-cirugias" role="tabpanel">
 
             <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-                <div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 catalogo-page-header">
+                <div class="flex-grow-1 min-w-0">
                     <h2 class="blue fw-bold mb-1">Catálogo de Cirugías</h2>
                     <p class="text-secondary mb-0">Gestione las cirugías registradas en el sistema</p>
                 </div>
-                <button class="btn btn-success" id="btn-nueva-cirugia">
+                <button class="btn btn-success flex-shrink-0" id="btn-nueva-cirugia">
                     <i class="bi bi-plus-circle fa-bounce white fs-5"></i>
                     <span class="fs-6 text-white ms-1">Nueva Cirugía</span>
                 </button>
             </div>
 
             <!-- Search / Filter Section -->
-            <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
+            <div class="card catalogo-card border-0 mb-4" style="border-radius: 0.75rem;">
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label text-secondary small fw-bold">NOMBRE O DESCRIPCIÓN A BUSCAR</label>
-                            <input type="text" class="form-control border-0 bg-light" id="buscar-cirugia"
+                            <input type="text" class="form-control border-0 bg-light catalogo-control" id="buscar-cirugia"
                                    placeholder="Ingrese nombre o descripción de la cirugía..."
-                                   style="border-radius: 0.5rem; height: 45px;"
                                    autocomplete="off"
                                    onkeyup="if(event.key === 'Enter') cargarCirugias(1)">
                         </div>
-                        <div class="col-md-3 d-flex gap-2">
-                            <button class="btn btn-primary w-100 fw-bold" onclick="cargarCirugias(1)"
-                                    style="border-radius: 0.5rem; height: 45px; border: none;">
-                                <i class="bi bi-search me-1"></i> BUSCAR
-                            </button>
-                            <button class="btn btn-outline-secondary w-100 fw-bold" onclick="listarTodosCirugias()"
-                                    style="border-radius: 0.5rem; height: 45px;">
-                                <i class="bi bi-list-ul me-1"></i> TODOS
-                            </button>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-md-3">
                             <label class="form-label text-secondary small fw-bold">ORDENAR POR</label>
-                            <select id="orden-cirugia" class="form-select border-0 bg-light"
-                                    style="border-radius: 0.5rem; height: 45px;"
+                            <select id="orden-cirugia" class="form-select border-0 bg-light catalogo-control"
                                     onchange="if(window.cirugiasListadas) cargarCirugias(1)">
                                 <option value="nombre_asc" selected>Nombre (A - Z)</option>
                                 <option value="nombre_desc">Nombre (Z - A)</option>
                                 <option value="id_desc">Últimos agregados</option>
                             </select>
                         </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label text-secondary small fw-bold d-none d-md-block">&nbsp;</label>
+                            <div class="d-flex gap-2 catalogo-filtros-acciones">
+                                <button class="btn btn-primary flex-fill catalogo-filtros-btn fw-bold" onclick="cargarCirugias(1)">
+                                    <i class="bi bi-search me-1"></i> BUSCAR
+                                </button>
+                                <button class="btn btn-outline-secondary flex-fill catalogo-filtros-btn fw-bold" onclick="listarTodosCirugias()">
+                                    <i class="bi bi-list-ul me-1"></i> TODOS
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="card shadow-sm border-0" style="border-radius: 0.75rem;">
+            <div class="card catalogo-card border-0 card-tabla overflow-hidden" style="border-radius: 0.75rem;">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
+                        <table class="table table-hover table-catalogo mb-0 align-middle">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width:35%;">Nombre</th>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width:50%;">Descripción</th>
-                                    <th class="py-3 pe-4 border-0 text-secondary text-center" style="width:15%;">Acciones</th>
+                                    <th class="catalogo-th col-nombre border-0">Nombre</th>
+                                    <th class="catalogo-th col-texto border-0">Descripción</th>
+                                    <th class="catalogo-th col-acciones border-0">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-cirugias-body">
                                 <tr>
-                                    <td colspan="3" class="text-center py-5 text-secondary">
+                                    <td colspan="3" class="catalogo-empty text-center text-secondary">
                                         <i class="bi bi-search me-2"></i>
                                         Ingrese un criterio de búsqueda o haga clic en "TODOS" para listar los registros.
                                     </td>
@@ -105,10 +101,10 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="card-footer bg-white border-0 py-3 px-4 catalogo-tabla-footer">
                     <div class="text-secondary small" id="pag-info-cirugias">Mostrando 0 de 0 registros</div>
-                    <nav aria-label="Paginación cirugías">
-                        <ul class="pagination pagination-sm mb-0" id="pag-cirugias"></ul>
+                    <nav aria-label="Paginación cirugías" class="catalogo-paginacion ms-auto">
+                        <ul class="pagination mb-0" id="pag-cirugias"></ul>
                     </nav>
                 </div>
             </div>
@@ -118,69 +114,68 @@
         <div class="tab-pane fade" id="tab-estudios" role="tabpanel">
 
             <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-                <div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 catalogo-page-header">
+                <div class="flex-grow-1 min-w-0">
                     <h2 class="blue fw-bold mb-1">Estudios Prequirúrgicos</h2>
                     <p class="text-secondary mb-0">Gestione los estudios complementarios registrados en el sistema</p>
                 </div>
-                <button class="btn btn-success" id="btn-nuevo-estudio">
+                <button class="btn btn-success flex-shrink-0" id="btn-nuevo-estudio">
                     <i class="bi bi-plus-circle fa-bounce white fs-5"></i>
                     <span class="fs-6 text-white ms-1">Nuevo Estudio</span>
                 </button>
             </div>
 
             <!-- Search / Filter Section -->
-            <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
+            <div class="card catalogo-card border-0 mb-4" style="border-radius: 0.75rem;">
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-6">
+                        <div class="col-12 col-md-6">
                             <label class="form-label text-secondary small fw-bold">NOMBRE O DESCRIPCIÓN A BUSCAR</label>
-                            <input type="text" class="form-control border-0 bg-light" id="buscar-estudio"
+                            <input type="text" class="form-control border-0 bg-light catalogo-control" id="buscar-estudio"
                                    placeholder="Ingrese nombre, descripción u observaciones..."
-                                   style="border-radius: 0.5rem; height: 45px;"
                                    autocomplete="off"
                                    onkeyup="if(event.key === 'Enter') cargarEstudios(1)">
                         </div>
-                        <div class="col-md-3 d-flex gap-2">
-                            <button class="btn btn-primary w-100 fw-bold" onclick="cargarEstudios(1)"
-                                    style="border-radius: 0.5rem; height: 45px; border: none;">
-                                <i class="bi bi-search me-1"></i> BUSCAR
-                            </button>
-                            <button class="btn btn-outline-secondary w-100 fw-bold" onclick="listarTodosEstudios()"
-                                    style="border-radius: 0.5rem; height: 45px;">
-                                <i class="bi bi-list-ul me-1"></i> TODOS
-                            </button>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-6 col-md-3">
                             <label class="form-label text-secondary small fw-bold">ORDENAR POR</label>
-                            <select id="orden-estudio" class="form-select border-0 bg-light"
-                                    style="border-radius: 0.5rem; height: 45px;"
+                            <select id="orden-estudio" class="form-select border-0 bg-light catalogo-control"
                                     onchange="if(window.estudiosListados) cargarEstudios(1)">
                                 <option value="nombre_asc" selected>Nombre (A - Z)</option>
                                 <option value="nombre_desc">Nombre (Z - A)</option>
                                 <option value="id_desc">Últimos agregados</option>
                             </select>
                         </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label text-secondary small fw-bold d-none d-md-block">&nbsp;</label>
+                            <div class="d-flex gap-2 catalogo-filtros-acciones">
+                                <button class="btn btn-primary flex-fill catalogo-filtros-btn fw-bold" onclick="cargarEstudios(1)">
+                                    <i class="bi bi-search me-1"></i> BUSCAR
+                                </button>
+                                <button class="btn btn-outline-secondary flex-fill catalogo-filtros-btn fw-bold" onclick="listarTodosEstudios()">
+                                    <i class="bi bi-list-ul me-1"></i> TODOS
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="card shadow-sm border-0" style="border-radius: 0.75rem;">
+            <div class="card catalogo-card border-0 card-tabla overflow-hidden" style="border-radius: 0.75rem;">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
+                        <table class="table table-hover table-catalogo mb-0 align-middle">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width:25%;">Nombre</th>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width:30%;">Descripción</th>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width:30%;">Observaciones</th>
-                                    <th class="py-3 pe-4 border-0 text-secondary text-center" style="width:15%;">Acciones</th>
+                                    <th class="catalogo-th col-nombre border-0">Nombre</th>
+                                    <th class="catalogo-th col-texto border-0">Descripción</th>
+                                    <th class="catalogo-th col-texto border-0">Observaciones</th>
+                                    <th class="catalogo-th col-acciones border-0">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-estudios-body">
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-secondary">
+                                    <td colspan="4" class="catalogo-empty text-center text-secondary">
                                         <i class="bi bi-search me-2"></i>
                                         Ingrese un criterio de búsqueda o haga clic en "TODOS" para listar los registros.
                                     </td>
@@ -189,10 +184,10 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="card-footer bg-white border-0 py-3 px-4 catalogo-tabla-footer">
                     <div class="text-secondary small" id="pag-info-estudios">Mostrando 0 de 0 registros</div>
-                    <nav aria-label="Paginación estudios">
-                        <ul class="pagination pagination-sm mb-0" id="pag-estudios"></ul>
+                    <nav aria-label="Paginación estudios" class="catalogo-paginacion ms-auto">
+                        <ul class="pagination mb-0" id="pag-estudios"></ul>
                     </nav>
                 </div>
             </div>
@@ -202,67 +197,66 @@
         <div class="tab-pane fade" id="tab-combos" role="tabpanel">
 
             <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4 mt-3">
-                <div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3 catalogo-page-header">
+                <div class="flex-grow-1 min-w-0">
                     <h2 class="blue fw-bold mb-1">Combos Cirugía-Estudios</h2>
                     <p class="text-secondary mb-0">Vincule los estudios requeridos para cada tipo de cirugía</p>
                 </div>
-                <a href="index.php?modulo=menu_circuitoquirurgico&accion=form_cirugias" class="btn btn-success">
+                <a href="index.php?modulo=menu_circuitoquirurgico&accion=form_cirugias" class="btn btn-success flex-shrink-0">
                     <i class="bi bi-plus-circle fa-bounce white fs-5"></i>
                     <span class="fs-6 text-white ms-1">Agregar Combo</span>
                 </a>
             </div>
 
             <!-- Search / Filter Section -->
-            <div class="card shadow-sm border-0 mb-4" style="border-radius: 0.75rem;">
+            <div class="card catalogo-card border-0 mb-4" style="border-radius: 0.75rem;">
                 <div class="card-body p-4">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-3">
                             <label class="form-label text-secondary small fw-bold">FILTRAR POR CIRUGÍA</label>
-                            <select id="filtro-cirugia-combo" class="form-select border-0 bg-light"
-                                    style="border-radius: 0.5rem; height: 45px;"
+                            <select id="filtro-cirugia-combo" class="form-select border-0 bg-light catalogo-control"
                                     onchange="if(window.combosListados) cargarCombos(1)">
                                 <option value="">— Todas las cirugías —</option>
                             </select>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-12 col-md-5">
                             <label class="form-label text-secondary small fw-bold">NOMBRE DE ESTUDIO A BUSCAR</label>
                             <input type="text" id="buscar-combo"
-                                   class="form-control border-0 bg-light"
+                                   class="form-control border-0 bg-light catalogo-control"
                                    placeholder="Ingrese nombre del estudio..."
-                                   style="border-radius: 0.5rem; height: 45px;"
                                    autocomplete="off"
                                    onkeyup="if(event.key === 'Enter') cargarCombos(1)">
                         </div>
-                        <div class="col-md-4 d-flex gap-2">
-                            <button class="btn btn-primary w-100 fw-bold" onclick="cargarCombos(1)"
-                                    style="border-radius: 0.5rem; height: 45px; border: none;">
-                                <i class="bi bi-search me-1"></i> BUSCAR
-                            </button>
-                            <button class="btn btn-outline-secondary w-100 fw-bold" onclick="listarTodosCombos()"
-                                    style="border-radius: 0.5rem; height: 45px;">
-                                <i class="bi bi-list-ul me-1"></i> TODOS
-                            </button>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold d-none d-md-block">&nbsp;</label>
+                            <div class="d-flex gap-2 catalogo-filtros-acciones">
+                                <button class="btn btn-primary flex-fill catalogo-filtros-btn fw-bold" onclick="cargarCombos(1)">
+                                    <i class="bi bi-search me-1"></i> BUSCAR
+                                </button>
+                                <button class="btn btn-outline-secondary flex-fill catalogo-filtros-btn fw-bold" onclick="listarTodosCombos()">
+                                    <i class="bi bi-list-ul me-1"></i> TODOS
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Table -->
-            <div class="card shadow-sm border-0" style="border-radius: 0.75rem;">
+            <div class="card catalogo-card border-0 card-tabla overflow-hidden" style="border-radius: 0.75rem;">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
+                        <table class="table table-hover table-catalogo mb-0 align-middle">
                             <thead class="bg-light">
                                 <tr>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width: 40%;">Cirugía</th>
-                                    <th class="py-3 border-0 text-secondary text-center" style="width: 45%;">Estudios Requeridos</th>
-                                    <th class="py-3 pe-4 border-0 text-secondary text-center" style="width: 15%;">Acciones</th>
+                                    <th class="catalogo-th col-nombre border-0">Cirugía</th>
+                                    <th class="catalogo-th col-texto border-0">Estudios Requeridos</th>
+                                    <th class="catalogo-th col-acciones border-0">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-combos-body">
                                 <tr>
-                                    <td colspan="3" class="text-center py-5 text-secondary">
+                                    <td colspan="3" class="catalogo-empty text-center text-secondary">
                                         <i class="bi bi-search me-2"></i>
                                         Ingrese un criterio de búsqueda o haga clic en "TODOS" para listar los registros.
                                     </td>
@@ -271,10 +265,10 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                <div class="card-footer bg-white border-0 py-3 px-4 catalogo-tabla-footer">
                     <div class="text-secondary small" id="pag-info-combos">Mostrando 0 de 0 registros</div>
-                    <nav aria-label="Paginación combos">
-                        <ul class="pagination pagination-sm mb-0" id="pag-combos"></ul>
+                    <nav aria-label="Paginación combos" class="catalogo-paginacion ms-auto">
+                        <ul class="pagination mb-0" id="pag-combos"></ul>
                     </nav>
                 </div>
             </div>

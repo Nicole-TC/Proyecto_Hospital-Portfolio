@@ -35,7 +35,7 @@ class ConsultasSeguimiento {
             return ['registros' => [], 'total' => 0];
         }
 
-        if (!in_array($estado_apto, ['PEND', 'OK', 'RECH', 'TODOS'])) {
+        if (!in_array($estado_apto, ['PEND', 'OK', 'OBS', 'TODOS'])) {
             throw new Exception("Estado de Apto Físico inválido.");
         }
 
@@ -186,7 +186,7 @@ class ConsultasSeguimiento {
         $pdo = conexionCircuitoQuirurgico();
 
         // el Apto Físico se carga UNA sola vez por orden. Si ya
-        // existe cualquier verificación previa (OK o RECH), se rechaza el
+        // existe cualquier verificación previa (OK u OBS), se rechaza el
         // registro y se informa fecha/hora + estado del registro existente.
         $stmtCheck = $pdo->prepare("
             SELECT v.fecha, ev.codigo AS estado_codigo

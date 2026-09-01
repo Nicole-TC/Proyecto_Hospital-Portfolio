@@ -219,14 +219,12 @@ switch ($action) {
                 LEFT JOIN profesional prf ON prf.id_profesional   = om.id_profesional
                 LEFT JOIN persona pr      ON pr.id_persona       = prf.id_persona
                 WHERE p.id_persona = :id_persona
-                  AND e.codigo = 'PROG'
                   AND e.codigo IN ('PROG', 'CONF', 'CANC')
                   AND e.entidad = 'TURNO'
                   AND t.fecha_hora >= NOW()
                 ORDER BY t.fecha_hora ASC
             ");
             $stmt->execute([':id_persona' => $idPersona]);
-            $turnos = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $turnos = array_map(static function (array $fila): array {
                 $fila['confirmado'] = ($fila['estado_codigo'] === 'CONF');
                 $fila['cancelado']  = ($fila['estado_codigo'] === 'CANC');
@@ -517,7 +515,10 @@ switch ($action) {
     // ============================================================
     //  RECORDATORIOS PENDIENTES (CRON BOT TL - AVISO 48 HS ANTES)
     //  Devuelve los turnos PROG dentro de las próximas 48 hs sin
-    //  recordar y los marca atómicamente para evitar duplicados.
+    //  recordar. NO marca los turnos al entregarlos (evita la pérdida
+    //  silenciosa): el bot marca con un update posterior a
+    //  recordatorio_enviado=true recién tras un envío exitoso.
+    //  Parametro opcional "marcar=true" reactiva el marcado atomico.
     //  Cron sugerido en el proyecto del bot (cada 30 minutos):
     //  */30 * * * * curl -s -H "Authorization: Bearer $CQ_API_TOKEN" \
     //    "https://<host>/admin/app/cir-api/endpoints/bot-tl-e.php?action=recordatorios_pendientes"
@@ -525,6 +526,8 @@ switch ($action) {
 
     case 'recordatorios_pendientes':
         $pdo = null;
+        $marcar = filter_var($_GET['marcar'] ?? 'false', FILTER_VALIDATE_BOOLEAN);
+
         try {
             $pdo = conexionCircuitoQuirurgico();
 
@@ -567,32 +570,8 @@ switch ($action) {
                 ]);
             }
 
-            $idsTurnos    = array_map(static function (array $fila): int {
-                return (int)$fila['id_turno'];
-            }, $pendientes);
-            $placeholders = implode(', ', array_fill(0, count($idsTurnos), '?'));
-
-            $pdo->beginTransaction();
-
-            $stmtUpd = $pdo->prepare("
-                UPDATE turno
-                SET recordatorio_enviado = true,
-                    fecha_recordatorio_enviado = NOW()
-                WHERE id_turno IN ($placeholders)
-                  AND recordatorio_enviado = false
-                RETURNING id_turno
-            ");
-            $stmtUpd->execute($idsTurnos);
-            $idsMarcados = array_map('intval', $stmtUpd->fetchAll(PDO::FETCH_COLUMN));
-
-            $pdo->commit();
-
             $recordatorios = [];
             foreach ($pendientes as $fila) {
-                if (!in_array((int)$fila['id_turno'], $idsMarcados, true)) {
-                    continue;
-                }
-
                 $medico = trim(trim((string)$fila['medico_apellido']) . ', ' . trim((string)$fila['medico_nombre']));
 
                 $recordatorios[] = [
@@ -612,6 +591,7 @@ switch ($action) {
                 'status'        => 'success',
                 'cantidad'      => count($recordatorios),
                 'recordatorios' => $recordatorios,
+                'marcado'       => $marcar,
             ]);
         } catch (Exception $e) {
             if ($pdo !== null && $pdo->inTransaction()) {

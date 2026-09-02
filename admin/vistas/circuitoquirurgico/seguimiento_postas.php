@@ -33,7 +33,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                         <option value="">Seleccione...</option>
                         <option value="PEND">Pendiente</option>
                         <option value="OK">Aprobado</option>
-                        <option value="RECH">Observado</option>
+                        <option value="OBS">Observado</option>
                         <option value="TODOS">Todos</option>
                     </select>
                 </div>
@@ -173,7 +173,7 @@ $esAdminPostas = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             <input type="hidden" id="apto-id-orden">
              <select class="form-select w-auto me-2" id="apto-estado" style="border-radius: 0.5rem; height: 45px;">
                 <option value="OK">Aprobar Apto Físico</option>
-                <option value="RECH">Observar / Rechazar</option>
+                <option value="OBS">Observar / Rechazar</option>
             </select>
             <input type="text" class="form-control me-2 flex-grow-1" id="apto-observaciones" placeholder="Observaciones de la evaluación clínica..." style="border-radius: 0.5rem; height: 45px;">
             <button type="button" class="btn btn-primary fw-bold text-nowrap" id="btn-guardar-apto" onclick="guardarApto()" style="border-radius: 0.5rem; height: 45px;">
@@ -504,7 +504,11 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
                     'dataType': 'json',
                     'success': function(json) {
                         if (json.status === 'error') {
-                            alert('Error: ' + json.message);
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({ icon: 'error', title: 'Error', text: json.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                            } else {
+                                alert('Error: ' + json.message);
+                            }
                             callback({ 'data': [] });
                             return;
                         }
@@ -535,7 +539,7 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
                     if (data.apto_fisico && data.apto_fisico.estado_codigo === 'OK') {
                         let obs = data.apto_fisico.checklist ? ` title="Obs: ${data.apto_fisico.checklist.replace(/"/g, '&quot;')}" style="cursor: help;"` : '';
                         return `<span class="badge bg-success"${obs}>Aprobado</span>`;
-                    } else if (data.apto_fisico && data.apto_fisico.estado_codigo === 'RECH') {
+                    } else if (data.apto_fisico && data.apto_fisico.estado_codigo === 'OBS') {
                         let obs = data.apto_fisico.checklist ? ` title="Obs: ${data.apto_fisico.checklist.replace(/"/g, '&quot;')}" style="cursor: help;"` : '';
                         return `<span class="badge bg-danger"${obs}>Observado</span>`;
                     }
@@ -613,7 +617,11 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
         }
         // (corrección) no permitir fecha futura en "Admisión hasta".
         if ($('#filtro-fecha-hasta').val() > fechaHoyISO()) {
-            alert('La fecha "Admisión hasta" no puede ser posterior a hoy.');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'La fecha "Admisión hasta" no puede ser posterior a hoy.', confirmButtonColor: '#0056b3' });
+            } else {
+                alert('La fecha "Admisión hasta" no puede ser posterior a hoy.');
+            }
             return;
         }
         $('#postas-sin-filtro').addClass('d-none');
@@ -852,7 +860,11 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
         .then(response => response.json())
         .then(json => {
             if (json.status !== 'success') {
-                alert('Error: ' + json.message);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: json.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+                } else {
+                    alert('Error: ' + json.message);
+                }
                 $chk.prop('checked', !$chk.is(':checked'));
                 return;
             }
@@ -865,7 +877,13 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
             }
             $('#tabla-postas').DataTable().ajax.reload(null, false);
         })
-        .catch(() => alert('Ocurrió un error al actualizar el estudio.'))
+        .catch(() => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al actualizar el estudio.', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+            } else {
+                alert('Ocurrió un error al actualizar el estudio.');
+            }
+        })
         .finally(() => $chk.prop('disabled', false));
     });
 
@@ -882,7 +900,7 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
         let id_profesional = 1;
 
         // Al aprobar (OK) se exige elegir prioridad para la Lista de Espera.
-        // Al observar (RECH) la prioridad no aplica.
+        // Al observar (OBS) la prioridad no aplica.
         if (estado === 'OK') {
             datosAptoPendiente = {
                 id_orden: id_orden,
@@ -928,16 +946,28 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                alert(data.message);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'success', title: 'Éxito', text: data.message, confirmButtonColor: '#0056b3' });
+                } else {
+                    alert(data.message);
+                }
                 $('#expedienteModal').modal('hide');
                 $('#tabla-postas').DataTable().ajax.reload();
             } else {
-                alert('Error: ' + data.message);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0056b3' });
+                } else {
+                    alert('Error: ' + data.message);
+                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Ocurrió un error al registrar el apto.');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al registrar el apto.', confirmButtonColor: '#0056b3' });
+            } else {
+                alert('Ocurrió un error al registrar el apto.');
+            }
         });
     }
 

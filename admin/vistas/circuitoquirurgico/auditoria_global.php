@@ -158,21 +158,4 @@ body.modo-oscuro .form-select {
 }
 </style>
 
-
-<script>
-  // Variable de paginación (lista para cuando llegue el back)
-  let paginaAuditoria = 1;
-
-  function ejecutarBusquedaAuditoria() {
-    // TODO: conectar con el backend cuando esté disponible
-    const tipo  = document.getElementById('filtroTipoAuditoria').value;
-    const valor = document.getElementById('valorBuscadorAuditoria').value.trim();
-    const fecha = document.getElementById('filtroFechaAuditoria').value;
-
-    // Por ahora mostramos el estado vacío
-    document.getElementById('tbodyAuditoria').innerHTML = '';
-    document.getElementById('emptyAuditoria').classList.remove('d-none');
-    document.getElementById('infoAuditoria').textContent  = 'Mostrando 0 registros';
-    document.getElementById('paginacionAuditoria').innerHTML = '';
-  }
-</script>
+<script src="js/circuitoquirurgico/auditoria_global.js?v=<?= @filemtime(__DIR__ . '/../../js/circuitoquirurgico/auditoria_global.js') ?: time() ?>"></script>

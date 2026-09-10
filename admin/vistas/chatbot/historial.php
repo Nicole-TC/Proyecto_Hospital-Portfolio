@@ -218,7 +218,7 @@
                 });
             }
 
-            async function seleccionarChat(id) {
+            async function seleccionarChat(id, esRefresco) {
                 // Limpiar selección visual
                 document.querySelectorAll(".chat-item").forEach(i => i.classList.remove("active-chat"));
                 const item = document.querySelector(`.chat-item[data-id="${CSS.escape(String(id))}"]`);
@@ -245,11 +245,13 @@
                 tag.innerText = chat.estado_label;
                 tagsContainer.appendChild(tag);
 
-                // Mensajes
-                messagesContainer.innerHTML = `
-                    <div class="text-center text-muted small align-self-center" style="margin-top: auto; margin-bottom: auto;">
-                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando mensajes...
-                    </div>`;
+                // Mensajes (spinner solo al abrir el chat, no en el refresh automático)
+                if (!esRefresco) {
+                    messagesContainer.innerHTML = `
+                        <div class="text-center text-muted small align-self-center" style="margin-top: auto; margin-bottom: auto;">
+                            <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando mensajes...
+                        </div>`;
+                }
 
                 try {
                     const res = await fetch(API_URL + "?action=mensajes&chat_id=" + id);
@@ -258,6 +260,7 @@
                     renderMensajes(json.mensajes || []);
                 } catch (error) {
                     console.error("Error cargando mensajes:", error);
+                    if (esRefresco) return;
                     messagesContainer.innerHTML = `
                         <div class="text-center text-danger small align-self-center" style="margin-top: auto; margin-bottom: auto;">
                             <i class="fa-solid fa-triangle-exclamation me-1"></i> No se pudieron cargar los mensajes.
@@ -364,6 +367,14 @@
 
             // Carga inicial
             cargarConversaciones();
+
+            // Actualización automática de la lista y del chat abierto (sin recargar la página)
+            setInterval(function () {
+                cargarConversaciones();
+                if (chatActivo) {
+                    seleccionarChat(chatActivo.id, true);
+                }
+            }, 5000);
         });
         </script>
 

@@ -218,7 +218,7 @@
                 });
             }
 
-            async function seleccionarChat(id) {
+            async function seleccionarChat(id, esRefresco) {
                 // Limpiar selección visual
                 document.querySelectorAll(".chat-item").forEach(i => i.classList.remove("active-chat"));
                 const item = document.querySelector(`.chat-item[data-id="${CSS.escape(String(id))}"]`);
@@ -245,11 +245,13 @@
                 tag.innerText = chat.estado_label;
                 tagsContainer.appendChild(tag);
 
-                // Mensajes
-                messagesContainer.innerHTML = `
-                    <div class="text-center text-muted small align-self-center" style="margin-top: auto; margin-bottom: auto;">
-                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando mensajes...
-                    </div>`;
+                // Mensajes (spinner solo al abrir el chat, no en el refresh automático)
+                if (!esRefresco) {
+                    messagesContainer.innerHTML = `
+                        <div class="text-center text-muted small align-self-center" style="margin-top: auto; margin-bottom: auto;">
+                            <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando mensajes...
+                        </div>`;
+                }
 
                 try {
                     const res = await fetch(API_URL + "?action=mensajes&chat_id=" + id);
@@ -258,6 +260,7 @@
                     renderMensajes(json.mensajes || []);
                 } catch (error) {
                     console.error("Error cargando mensajes:", error);
+                    if (esRefresco) return;
                     messagesContainer.innerHTML = `
                         <div class="text-center text-danger small align-self-center" style="margin-top: auto; margin-bottom: auto;">
                             <i class="fa-solid fa-triangle-exclamation me-1"></i> No se pudieron cargar los mensajes.
@@ -282,16 +285,16 @@
                         div.className = "d-flex flex-row-reverse align-items-start gap-2 msg-container";
                         div.setAttribute("data-remitente", "bot");
                         div.innerHTML = `
-                            <div class="avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm"
-                                 style="width: 32px; height: 32px; flex-shrink: 0; background-color: #20c997;">
+                            <div class="avatar rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm bg-bot"
+                                 style="width: 32px; height: 32px; flex-shrink: 0;">
                                 <i class="fa-solid fa-robot" style="font-size: 0.8rem;"></i>
                             </div>
                             <div class="d-flex flex-column align-items-end">
-                                <div class="p-3 rounded-3 text-white shadow-sm msg-bubble"
-                                     style="background-color: #20c997; max-width: 85%; font-size: 0.9rem; border-top-right-radius: 0px !important;">
+                                <div class="p-3 rounded-3 text-white shadow-sm msg-bubble bg-bot"
+                                     style="max-width: 85%; font-size: 0.95rem; border-top-right-radius: 0 !important;">
                                     ${escapeHTML(msg.contenido)}
                                 </div>
-                                <small class="text-muted" style="font-size: 0.7rem; margin-top: 2px;">${escapeHTML(msg.fecha || "")}</small>
+                                <small class="text-muted mt-1" style="font-size: 0.7rem;">${escapeHTML(msg.fecha || "")}</small>
                             </div>`;
                     } else {
                         div.className = "d-flex align-items-start gap-2 msg-container";
@@ -299,10 +302,10 @@
                         div.innerHTML = `
                             <div class="d-flex flex-column">
                                 <div class="p-3 rounded-3 text-dark border shadow-sm bg-white msg-bubble"
-                                     style="max-width: 85%; font-size: 0.9rem; border-top-left-radius: 0px !important;">
+                                     style="max-width: 85%; font-size: 0.95rem; border-top-left-radius: 0 !important;">
                                     ${escapeHTML(msg.contenido)}
                                 </div>
-                                <small class="text-muted ps-1" style="font-size: 0.7rem; margin-top: 2px;">${escapeHTML(msg.fecha || "")}</small>
+                                <small class="text-muted ps-1 mt-1" style="font-size: 0.7rem;">${escapeHTML(msg.fecha || "")}</small>
                             </div>`;
                     }
                     messagesContainer.appendChild(div);
@@ -364,6 +367,14 @@
 
             // Carga inicial
             cargarConversaciones();
+
+            // Actualización automática de la lista y del chat abierto (sin recargar la página)
+            setInterval(function () {
+                cargarConversaciones();
+                if (chatActivo) {
+                    seleccionarChat(chatActivo.id, true);
+                }
+            }, 5000);
         });
         </script>
 
@@ -379,6 +390,11 @@
         .chat-item.active-chat {
             background-color: rgba(32, 201, 151, 0.08) !important;
             border-left-color: #20c997 !important;
+        }
+
+        /* Teal del módulo, tono más oscuro para mejor lectura del texto blanco */
+        .bg-bot {
+            background-color: #1b9a74 !important;
         }
         /* Custom scrollbar para la lista y mensajes */
         #lista-conversaciones::-webkit-scrollbar,
@@ -450,8 +466,7 @@
             color: #e0e0e0 !important;
             border-color: #444 !important;
         }
-        body.modo-oscuro .msg-container[data-remitente="bot"] .msg-bubble,
-        body.modo-oscuro .msg-container[data-remitente="bot"] .avatar {
+        body.modo-oscuro .bg-bot {
             background-color: #1b9a74 !important;
         }
         body.modo-oscuro #lista-conversaciones::-webkit-scrollbar-thumb,

@@ -101,6 +101,12 @@ switch ($action) {
         botPanel_llamar('/api/panel/conversaciones/' . $chatId . '/mensajes');
         break;
 
+    case 'auditoria':
+        $limite = filter_input(INPUT_GET, 'limite', FILTER_VALIDATE_INT);
+        $limite = $limite && $limite > 0 ? min($limite, 500) : 100;
+        botPanel_llamar('/api/panel/auditoria?limite=' . $limite);
+        break;
+
     default:
         botPanel_responder(400, ['status' => 'error', 'message' => 'Acción no válida.']);
 }

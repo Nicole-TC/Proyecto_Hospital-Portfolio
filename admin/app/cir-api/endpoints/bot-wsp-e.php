@@ -59,6 +59,20 @@ function botTL_medico(?array $fila): ?string
     return $medico !== ', ' ? $medico : null;
 }
 
+function normalizarTelefonoParaComparacion(?string $telefono): string
+{
+    if ($telefono === null) {
+        return '';
+    }
+
+    $soloDigitos = preg_replace('/\D+/', '', trim((string) $telefono));
+    if ($soloDigitos === '') {
+        return '';
+    }
+
+    return substr($soloDigitos, -8);
+}
+
 if (!botTL_autenticar()) {
     botTL_responder(401, ['status' => 'error', 'message' => 'No autorizado. Token inválido o ausente.']);
 }
@@ -136,17 +150,10 @@ switch ($action) {
             $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
             $idRol = $idRol ? (int)$idRol : 4;
 
-            // WhatsApp entrega el numero como wa_id con prefijo de pais y el 9
-            // argentino (5493814567890), mientras que persona.telefono suele estar
-            // cargado en formato local y con separadores (381-456-7890). Comparar
-            // con "=" no encontraria nunca al paciente, asi que se normalizan ambos
-            // lados a solo digitos y se comparan los ultimos 8 (el numero local sin
-            // caracteristica ni prefijos), que es la parte que siempre coincide.
-            $telefonoDigitos = preg_replace('/\D/', '', $telefono);
-            if (strlen($telefonoDigitos) < 8) {
+            $telefonoNormalizado = normalizarTelefonoParaComparacion($telefono);
+            if ($telefonoNormalizado === '') {
                 botTL_responder(400, ['status' => 'error', 'message' => 'Teléfono inválido. Debe tener al menos 8 dígitos.']);
             }
-            $sufijoTelefono = substr($telefonoDigitos, -8);
 
             $stmt = $pdo->prepare("
                 SELECT p.id_persona, p.dni, p.nombre, p.apellido, pa.id_persona_asiste
@@ -154,11 +161,10 @@ switch ($action) {
                 LEFT JOIN persona_asiste pa ON pa.id_persona = p.id_persona
                 WHERE p.id_rol = :id_rol
                   AND p.telefono IS NOT NULL
-                  AND length(regexp_replace(p.telefono, '\\D', '', 'g')) >= 8
                   AND RIGHT(regexp_replace(p.telefono, '\\D', '', 'g'), 8) = :telefono
                 ORDER BY p.apellido, p.nombre
             ");
-            $stmt->execute([':telefono' => $sufijoTelefono, ':id_rol' => $idRol]);
+            $stmt->execute([':telefono' => $telefonoNormalizado, ':id_rol' => $idRol]);
             $coincidencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $cantidad = count($coincidencias);
@@ -271,15 +277,21 @@ switch ($action) {
     // ============================================================
 
     case 'cancelar_turno':
-        $dni     = preg_replace('/\D/', '', trim($_POST['dni'] ?? ''));
-        $idTurno = filter_input(INPUT_POST, 'id_turno', FILTER_VALIDATE_INT);
-        $motivo  = trim($_POST['motivo'] ?? '');
+        $dni      = preg_replace('/\D/', '', trim($_POST['dni'] ?? ''));
+        $idTurno  = filter_input(INPUT_POST, 'id_turno', FILTER_VALIDATE_INT);
+        $motivo   = trim($_POST['motivo'] ?? '');
+        $telefono = trim($_POST['telefono'] ?? '');
 
         if (strlen($dni) < 5 || strlen($dni) > 8) {
             botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);
         }
         if (!$idTurno) {
             botTL_responder(400, ['status' => 'error', 'message' => 'ID de turno inválido.']);
+        }
+
+        $telefonoNormalizado = normalizarTelefonoParaComparacion($telefono);
+        if ($telefonoNormalizado === '') {
+            botTL_responder(400, ['status' => 'error', 'message' => 'Falta el teléfono del paciente o no es válido.']);
         }
 
         try {
@@ -290,12 +302,28 @@ switch ($action) {
             $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
             $idRol = $idRol ? (int)$idRol : 4;
 
-            $stmtPersona = $pdo->prepare("SELECT id_persona FROM persona WHERE dni = :dni AND id_rol = :id_rol LIMIT 1");
-            $stmtPersona->execute([':dni' => $dni, ':id_rol' => $idRol]);
+            // El turno solo se toca si el DNI y el telefono son de la misma persona.
+            // El bot ya lo valida, pero se repite aca: si el bot tuviera un error,
+            // o alguien mas usara el token, igual no se puede operar sobre los
+            // turnos de un paciente desde un numero que no es el suyo.
+            $stmtPersona = $pdo->prepare("
+                SELECT id_persona
+                FROM persona
+                WHERE dni = :dni
+                  AND id_rol = :id_rol
+                  AND telefono IS NOT NULL
+                  AND RIGHT(regexp_replace(telefono, '\\D', '', 'g'), 8) = :telefono
+                LIMIT 1
+            ");
+            $stmtPersona->execute([
+                ':dni'      => $dni,
+                ':id_rol'   => $idRol,
+                ':telefono' => $telefonoNormalizado,
+            ]);
             $idPersona = $stmtPersona->fetch(PDO::FETCH_COLUMN);
 
             if (!$idPersona) {
-                botTL_responder(404, ['status' => 'error', 'message' => 'Paciente no encontrado.']);
+                botTL_responder(403, ['status' => 'error', 'message' => 'El DNI no corresponde al teléfono indicado.']);
             }
 
             // El paciente puede tener mas de una admision: aca solo se verifica que
@@ -408,14 +436,20 @@ switch ($action) {
     // ============================================================
 
     case 'confirmar_turno':
-        $dni     = preg_replace('/\D/', '', trim($_POST['dni'] ?? ''));
-        $idTurno = filter_input(INPUT_POST, 'id_turno', FILTER_VALIDATE_INT);
+        $dni      = preg_replace('/\D/', '', trim($_POST['dni'] ?? ''));
+        $idTurno  = filter_input(INPUT_POST, 'id_turno', FILTER_VALIDATE_INT);
+        $telefono = trim($_POST['telefono'] ?? '');
 
         if (strlen($dni) < 5 || strlen($dni) > 8) {
             botTL_responder(400, ['status' => 'error', 'message' => 'DNI inválido. Debe tener entre 5 y 8 dígitos.']);
         }
         if (!$idTurno) {
             botTL_responder(400, ['status' => 'error', 'message' => 'ID de turno inválido.']);
+        }
+
+        $telefonoNormalizado = normalizarTelefonoParaComparacion($telefono);
+        if ($telefonoNormalizado === '') {
+            botTL_responder(400, ['status' => 'error', 'message' => 'Falta el teléfono del paciente o no es válido.']);
         }
 
         try {
@@ -426,12 +460,28 @@ switch ($action) {
             $idRol = $stmtRol->fetch(PDO::FETCH_COLUMN);
             $idRol = $idRol ? (int)$idRol : 4;
 
-            $stmtPersona = $pdo->prepare("SELECT id_persona FROM persona WHERE dni = :dni AND id_rol = :id_rol LIMIT 1");
-            $stmtPersona->execute([':dni' => $dni, ':id_rol' => $idRol]);
+            // El turno solo se toca si el DNI y el telefono son de la misma persona.
+            // El bot ya lo valida, pero se repite aca: si el bot tuviera un error,
+            // o alguien mas usara el token, igual no se puede operar sobre los
+            // turnos de un paciente desde un numero que no es el suyo.
+            $stmtPersona = $pdo->prepare("
+                SELECT id_persona
+                FROM persona
+                WHERE dni = :dni
+                  AND id_rol = :id_rol
+                  AND telefono IS NOT NULL
+                  AND RIGHT(regexp_replace(telefono, '\\D', '', 'g'), 8) = :telefono
+                LIMIT 1
+            ");
+            $stmtPersona->execute([
+                ':dni'      => $dni,
+                ':id_rol'   => $idRol,
+                ':telefono' => $telefonoNormalizado,
+            ]);
             $idPersona = $stmtPersona->fetch(PDO::FETCH_COLUMN);
 
             if (!$idPersona) {
-                botTL_responder(404, ['status' => 'error', 'message' => 'Paciente no encontrado.']);
+                botTL_responder(403, ['status' => 'error', 'message' => 'El DNI no corresponde al teléfono indicado.']);
             }
 
             // El paciente puede tener mas de una admision: aca solo se verifica que

@@ -140,6 +140,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let chatActivo     = null;
     let filtroActual   = "todos";
     let busquedaActual = "";
+    let firmaMensajesActivos = "";
+    let firmaListaChats = "";
 
     /* ── Utilidades ── */
     function escapeHTML(str) {
@@ -147,6 +149,35 @@ document.addEventListener("DOMContentLoaded", function () {
             tag => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[tag] || tag)
         );
     }
+
+    /** Quita etiquetas HTML para previews / búsqueda */
+    function textoPlano(str) {
+        return String(str ?? "")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+    }
+
+    /** Formatea el mensaje para verlo como en un chat (negrita, saltos, links). */
+    function formatearContenidoMensaje(str) {
+        let s = escapeHTML(String(str ?? ""));
+        s = s.replace(/\r\n|\r|\n/g, "<br>");
+        s = s.replace(/&lt;(\/?)(b|strong|i|em|u|s|code|pre)&gt;/gi, "<$1$2>");
+        s = s.replace(/&lt;br\s*\/?&gt;/gi, "<br>");
+        s = s.replace(
+            /&lt;a\s+href=&quot;(https?:\/\/[^&]+)&quot;.*?&gt;/gi,
+            '<a href="$1" target="_blank" rel="noopener noreferrer">'
+        );
+        s = s.replace(/&lt;\/a&gt;/gi, "</a>");
+        s = s.replace(/(?:<br>\s*)?• /g, "<br>• ");
+        return s;
+    }
+
+    function estaCercaDelFinal(el, umbralPx) {
+        umbralPx = umbralPx == null ? 100 : umbralPx;
+        return el.scrollHeight - el.scrollTop - el.clientHeight <= umbralPx;
+    }
+
     function badgeClase(estado) {
         return estado === "identificado" ? "hc-tag hc-tag--identified" : "hc-tag hc-tag--anon";
     }
@@ -164,7 +195,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* ── Render lista ── */
-    function renderConversaciones() {
+    function renderConversaciones(animarEntrada) {
         const visibles = conversaciones.filter(chat => {
             const matchesFiltro =
                 filtroActual === "todos" ||
@@ -172,7 +203,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 (filtroActual === "telegram"      && chat.canal  === "telegram") ||
                 (filtroActual === "identificados" && chat.estado === "identificado") ||
                 (filtroActual === "anonimos"      && chat.estado === "anonimo");
-            const texto = (chat.nombre + " " + (chat.telegram_chat_id || "") + " " + (chat.ultimo_mensaje || "")).toLowerCase();
+            const texto = (
+                chat.nombre + " " + (chat.telegram_chat_id || "") + " " +
+                textoPlano(chat.ultimo_mensaje || "")
+            ).toLowerCase();
             return matchesFiltro && texto.includes(busquedaActual);
         });
 
@@ -182,6 +216,18 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
             totalEl.innerHTML = `<i class="fa-solid fa-inbox" style="font-size:.72rem;opacity:.8"></i>&nbsp;Sin conversaciones`;
         }
+
+        const firma = JSON.stringify(visibles.map(c => [
+            c.id, c.nombre, c.ultima_fecha, c.estado, c.estado_label,
+            c.n_mensajes, textoPlano(c.ultimo_mensaje || "")
+        ]));
+        if (!animarEntrada && firma === firmaListaChats) {
+            return;
+        }
+        firmaListaChats = firma;
+
+        const listaScroll = document.getElementById("lista-conversaciones");
+        const scrollListaPrev = listaScroll ? listaScroll.scrollTop : 0;
 
         listaGroup.innerHTML = "";
 
@@ -196,9 +242,12 @@ document.addEventListener("DOMContentLoaded", function () {
         visibles.forEach((chat, idx) => {
             const isActive = chatActivo && chatActivo.id === chat.id;
             const div = document.createElement("div");
-            div.className = "hc-chat-item" + (isActive ? " hc-chat-item--active" : "");
+            div.className = "hc-chat-item" + (isActive ? " hc-chat-item--active" : "") +
+                (animarEntrada ? "" : " hc-no-anim");
             div.setAttribute("data-id", chat.id);
-            div.style.animationDelay = (idx * 40) + "ms";
+            if (animarEntrada) {
+                div.style.animationDelay = (idx * 40) + "ms";
+            }
 
             const canalKey = chat.canal === "whatsapp" ? "wa" : "tg";
             div.innerHTML = `
@@ -216,13 +265,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         <span class="${badgeClase(chat.estado)}">${escapeHTML(chat.estado_label || chat.estado)}</span>
                         <span class="hc-ci-msgs">${chat.n_mensajes}&nbsp;msgs</span>
                     </div>
-                    <p class="hc-ci-preview">${escapeHTML(chat.ultimo_mensaje || "Sin mensajes todavía")}</p>
+                    <p class="hc-ci-preview">${escapeHTML(textoPlano(chat.ultimo_mensaje) || "Sin mensajes todavía")}</p>
                 </div>
                 <div class="hc-ci-arrow"><i class="fa-solid fa-chevron-right"></i></div>`;
 
             div.addEventListener("click", () => seleccionarChat(chat.id));
             listaGroup.appendChild(div);
         });
+
+        if (listaScroll) listaScroll.scrollTop = scrollListaPrev;
     }
 
     /* ── Seleccionar chat ── */
@@ -254,6 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Loader de puntos (solo al abrir, no en refresh)
         if (!esRefresco) {
+            firmaMensajesActivos = "";
             messagesContainer.innerHTML = `
                 <div class="hc-msg-loading">
                     <div class="hc-msg-loading-dots"><span></span><span></span><span></span></div>
@@ -265,10 +317,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const res  = await fetch(API_URL + "?action=mensajes&chat_id=" + id);
             const json = await res.json();
             if (json.status !== "success") throw new Error(json.message || "Error al cargar mensajes.");
-            renderMensajes(json.mensajes || []);
+            renderMensajes(json.mensajes || [], !!esRefresco);
         } catch (error) {
             console.error("Error cargando mensajes:", error);
             if (esRefresco) return;
+            firmaMensajesActivos = "";
             messagesContainer.innerHTML = `
                 <div class="hc-empty-state">
                     <div class="hc-empty-icon-wrap hc-empty-icon-wrap--error">
@@ -281,7 +334,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* ── Render mensajes ── */
-    function renderMensajes(mensajes) {
+    function renderMensajes(mensajes, esRefresco) {
+        const firma = JSON.stringify(
+            (mensajes || []).map(m => [m.fecha, m.remitente, m.contenido])
+        );
+        if (esRefresco && firma === firmaMensajesActivos) {
+            return;
+        }
+        firmaMensajesActivos = firma;
+
+        const seguirAbajo = !esRefresco || estaCercaDelFinal(messagesContainer);
+        const scrollPrev = messagesContainer.scrollTop;
+        const alturaPrev = messagesContainer.scrollHeight;
+
         messagesContainer.innerHTML = "";
 
         if (mensajes.length === 0) {
@@ -298,40 +363,47 @@ document.addEventListener("DOMContentLoaded", function () {
 
         mensajes.forEach((msg, idx) => {
             const div = document.createElement("div");
-            div.style.animationDelay = Math.min(idx * 30, 300) + "ms";
+            if (!esRefresco) {
+                div.style.animationDelay = Math.min(idx * 30, 300) + "ms";
+            }
 
             if (msg.remitente === "bot") {
-                div.className = "hc-msg hc-msg--bot";
+                div.className = "hc-msg hc-msg--bot" + (esRefresco ? " hc-no-anim" : "");
                 div.innerHTML = `
                     <div class="hc-msg-avatar--bot"><i class="fa-solid fa-robot"></i></div>
                     <div class="hc-msg-content">
-                        <div class="hc-bubble hc-bubble--bot">${escapeHTML(msg.contenido)}</div>
+                        <div class="hc-bubble hc-bubble--bot">${formatearContenidoMensaje(msg.contenido)}</div>
                         <span class="hc-msg-time">${escapeHTML(msg.fecha || "")}</span>
                     </div>`;
             } else {
-                div.className = "hc-msg hc-msg--user";
+                div.className = "hc-msg hc-msg--user" + (esRefresco ? " hc-no-anim" : "");
                 div.innerHTML = `
                     <div class="hc-msg-content">
-                        <div class="hc-bubble hc-bubble--user">${escapeHTML(msg.contenido)}</div>
+                        <div class="hc-bubble hc-bubble--user">${formatearContenidoMensaje(msg.contenido)}</div>
                         <span class="hc-msg-time">${escapeHTML(msg.fecha || "")}</span>
                     </div>`;
             }
             messagesContainer.appendChild(div);
         });
 
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        if (seguirAbajo) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        } else {
+            messagesContainer.scrollTop = scrollPrev + (messagesContainer.scrollHeight - alturaPrev);
+        }
     }
 
     /* ── Cargar conversaciones ── */
-    async function cargarConversaciones() {
+    async function cargarConversaciones(esRefresco) {
         try {
             const res  = await fetch(API_URL + "?action=conversaciones");
             const json = await res.json();
             if (json.status !== "success") throw new Error(json.message || "Error al cargar conversaciones.");
             conversaciones = json.conversaciones || [];
-            renderConversaciones();
+            renderConversaciones(!esRefresco);
         } catch (error) {
             console.error("Error cargando conversaciones:", error);
+            firmaListaChats = "";
             listaGroup.innerHTML = `
                 <div class="hc-empty-list hc-empty-list--error">
                     <i class="fa-solid fa-triangle-exclamation"></i>
@@ -347,7 +419,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (searchInput) {
         searchInput.addEventListener("input", function () {
             busquedaActual = this.value.toLowerCase().trim();
-            renderConversaciones();
+            firmaListaChats = "";
+            renderConversaciones(false);
         });
     }
 
@@ -357,14 +430,15 @@ document.addEventListener("DOMContentLoaded", function () {
             chips.forEach(c => c.classList.remove("hc-chip--active"));
             this.classList.add("hc-chip--active");
             filtroActual = this.getAttribute("data-filtro");
-            renderConversaciones();
+            firmaListaChats = "";
+            renderConversaciones(false);
         });
     });
 
     /* ── Carga inicial + auto-refresh cada 5s ── */
-    cargarConversaciones();
+    cargarConversaciones(false);
     setInterval(function () {
-        cargarConversaciones();
+        cargarConversaciones(true);
         if (chatActivo) seleccionarChat(chatActivo.id, true);
     }, 5000);
 });
@@ -565,6 +639,10 @@ document.addEventListener("DOMContentLoaded", function () {
     transition: background .18s, border-left-color .18s, transform .15s;
     animation: hcFadeUp .3s ease both;
 }
+.hc-chat-item.hc-no-anim,
+.hc-msg.hc-no-anim {
+    animation: none !important;
+}
 .hc-chat-item:last-child  { border-bottom: none; }
 .hc-chat-item:hover       { background: var(--hc-teal-softer); transform: translateX(2px); }
 .hc-chat-item--active     { background: var(--hc-teal-soft) !important; border-left-color: var(--hc-teal) !important; }
@@ -735,6 +813,11 @@ document.addEventListener("DOMContentLoaded", function () {
     background: var(--hc-bg); color: var(--hc-t1);
     border: 1.5px solid var(--hc-border-s);
     border-bottom-left-radius: 4px; box-shadow: var(--hc-sh-sm);
+}
+.hc-bubble a {
+    color: inherit;
+    text-decoration: underline;
+    word-break: break-word;
 }
 .hc-msg-time { font-size: .63rem; color: var(--hc-t3); letter-spacing: .02em; }
 

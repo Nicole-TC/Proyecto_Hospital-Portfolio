@@ -1,0 +1,4 @@
+# Watchdog del bot — corre el watchdog del panel en el contenedor cliente_proyecto.
+# Instalar en la VPS/bost donde vive el panel (NO en la VPS del bot 149.50.137.51):
+#   cp watchdog_sistema.cron /etc/cron.d/watchdog_sistema && service cron restart
+* * * * * root docker exec cliente_proyecto php /var/www/html/admin/watchdog_sistema.php >> /tmp/watchdog.log 2>&1

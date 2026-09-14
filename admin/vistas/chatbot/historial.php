@@ -314,7 +314,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-            const res  = await fetch(API_URL + "?action=mensajes&chat_id=" + id);
+            // El canal viaja para que el proxy sepa a qué bot preguntarle.
+            const res  = await fetch(
+                API_URL + "?action=mensajes&chat_id=" + id +
+                "&canal=" + encodeURIComponent(chat.canal || "")
+            );
             const json = await res.json();
             if (json.status !== "success") throw new Error(json.message || "Error al cargar mensajes.");
             renderMensajes(json.mensajes || [], !!esRefresco);

@@ -107,6 +107,10 @@ switch ($action) {
         botPanel_llamar('/api/panel/auditoria?limite=' . $limite);
         break;
 
+    case 'comandos':
+        botPanel_llamar('/api/panel/comandos');
+        break;
+
     default:
         botPanel_responder(400, ['status' => 'error', 'message' => 'Acción no válida.']);
 }

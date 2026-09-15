@@ -1,7 +1,14 @@
 <?php
-// Panel de administración del bot: proxy hacia el backend FastAPI (telegram-api)
-// Reenvía estado del bot, listado de conversaciones y mensajes a /api/panel/*
-// usando BOT_API_URL y BOT_API_SECRET (header X-API-Key) desde el .env.
+// Panel de administración del bot: proxy hacia los backends de los bots.
+// Reenvía estado, listado de conversaciones y mensajes a /api/panel/* usando
+// BOT_API_URL / BOT_API_SECRET (Telegram) y WSP_API_URL / WSP_API_SECRET
+// (WhatsApp), con el header X-API-Key.
+//
+// Los dos bots escriben en la misma base `bots` y hablan el mismo contrato, así
+// que acá las respuestas se unen y el front las distingue por el campo `canal`
+// de cada conversación. Si un canal no está configurado o no responde, se
+// devuelve lo del otro: que el bot de WhatsApp esté apagado no puede dejar sin
+// Historial al de Telegram.
 
 header('Content-Type: application/json; charset=utf-8');
 session_start();
@@ -25,6 +32,21 @@ if (empty(getenv('BOT_API_URL')) && file_exists($envPath)) {
     }
 }
 
+/** Canales soportados, con las variables de entorno de cada uno. */
+function botPanel_canales(): array
+{
+    return [
+        'telegram' => [
+            'url'    => rtrim((string) getenv('BOT_API_URL'), '/'),
+            'secret' => trim((string) getenv('BOT_API_SECRET')),
+        ],
+        'whatsapp' => [
+            'url'    => rtrim((string) getenv('WSP_API_URL'), '/'),
+            'secret' => trim((string) getenv('WSP_API_SECRET')),
+        ],
+    ];
+}
+
 function botPanel_responder(int $codigo, array $datos): void
 {
     http_response_code($codigo);
@@ -32,27 +54,25 @@ function botPanel_responder(int $codigo, array $datos): void
     exit;
 }
 
-function botPanel_llamar(string $ruta): void
+/**
+ * Consulta un backend. Nunca corta la ejecución: devuelve el resultado para que
+ * quien llama decida si con un solo canal alcanza.
+ *
+ * @return array{ok: bool, codigo: int, json: array, error: string}
+ */
+function botPanel_consultar(array $canal, string $ruta): array
 {
-    $baseUrl = rtrim((string) getenv('BOT_API_URL'), '/');
-    $secret  = trim((string) getenv('BOT_API_SECRET'));
-
-    if ($baseUrl === '' || $secret === '') {
-        botPanel_responder(500, [
-            'status' => 'error',
-            'message' => 'Faltan BOT_API_URL / BOT_API_SECRET en el .env.',
-        ]);
+    if ($canal['url'] === '' || $canal['secret'] === '') {
+        return ['ok' => false, 'codigo' => 503, 'json' => [], 'error' => 'canal no configurado'];
     }
 
-    $url = $baseUrl . $ruta;
-
-    $ch = curl_init($url);
+    $ch = curl_init($canal['url'] . $ruta);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 5,
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_HTTPHEADER     => [
-            'X-API-Key: ' . $secret,
+            'X-API-Key: ' . $canal['secret'],
             'Accept: application/json',
         ],
     ]);
@@ -63,34 +83,116 @@ function botPanel_llamar(string $ruta): void
     curl_close($ch);
 
     if ($respuesta === false) {
-        botPanel_responder(502, [
-            'status' => 'error',
-            'message' => 'No se pudo contactar al backend del bot: ' . $error,
-        ]);
+        return ['ok' => false, 'codigo' => 502, 'json' => [], 'error' => $error];
     }
 
     $json = json_decode($respuesta, true);
     if (!is_array($json)) {
-        botPanel_responder(502, [
-            'status' => 'error',
-            'message' => 'Respuesta inválida del backend del bot.',
-        ]);
+        return ['ok' => false, 'codigo' => 502, 'json' => [], 'error' => 'respuesta no JSON'];
     }
 
-    botPanel_responder($codigoHttp, $json);
+    return [
+        'ok'     => $codigoHttp === 200 && ($json['status'] ?? '') === 'success',
+        'codigo' => $codigoHttp,
+        'json'   => $json,
+        'error'  => (string) ($json['message'] ?? ''),
+    ];
 }
 
-$action = $_GET['action'] ?? '';
+/** Reenvía tal cual la respuesta de un solo canal (acciones que no se unen). */
+function botPanel_reenviar(array $canal, string $ruta): void
+{
+    $r = botPanel_consultar($canal, $ruta);
+    if (!$r['ok'] && $r['json'] === []) {
+        botPanel_responder($r['codigo'], [
+            'status'  => 'error',
+            'message' => 'No se pudo contactar al backend del bot: ' . $r['error'],
+        ]);
+    }
+    botPanel_responder($r['codigo'] ?: 200, $r['json']);
+}
+
+/**
+ * `ultima_fecha` viaja como `dd/mm/aaaa hh:mm`. Se pasa a timestamp para poder
+ * ordenar conversaciones de los dos canales en una sola lista.
+ */
+function botPanel_timestamp(?string $fecha): int
+{
+    if (!$fecha) return 0;
+    $dt = DateTime::createFromFormat('d/m/Y H:i', $fecha);
+    return $dt ? (int) $dt->getTimestamp() : 0;
+}
+
+$canales = botPanel_canales();
+$action  = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'estado':
-        botPanel_llamar('/api/panel/estado');
+        // Las claves de primer nivel siguen siendo las de Telegram: el watchdog
+        // y la vista de Configuración ya las leen así, y un WhatsApp apagado no
+        // tiene que hacerles creer que se cayó el sistema. El detalle por canal
+        // va aparte, en `canales`.
+        $base = botPanel_consultar($canales['telegram'], '/api/panel/estado');
+        $wsp  = botPanel_consultar($canales['whatsapp'], '/api/panel/estado');
+
+        $salida = $base['json'] ?: [
+            'status'   => 'success',
+            'servidor' => false,
+            'bot'      => false,
+            'polling'  => false,
+            'db'       => false,
+            'en_linea' => false,
+        ];
+        $salida['status']  = 'success';
+        $salida['canales'] = [
+            'telegram' => $base['ok'] ? $base['json'] : ['en_linea' => false, 'error' => $base['error']],
+            'whatsapp' => $wsp['ok']  ? $wsp['json']  : ['en_linea' => false, 'error' => $wsp['error']],
+        ];
+        botPanel_responder(200, $salida);
         break;
 
     case 'conversaciones':
         $limite = filter_input(INPUT_GET, 'limite', FILTER_VALIDATE_INT);
         $limite = $limite && $limite > 0 ? min($limite, 500) : 100;
-        botPanel_llamar('/api/panel/conversaciones?limite=' . $limite);
+
+        $conversaciones = [];
+        $caidos         = [];
+
+        foreach ($canales as $nombre => $canal) {
+            $r = botPanel_consultar($canal, '/api/panel/conversaciones?limite=' . $limite);
+            if (!$r['ok']) {
+                if ($canal['url'] !== '') {
+                    $caidos[$nombre] = $r['error'] ?: 'sin respuesta';
+                }
+                continue;
+            }
+            foreach (($r['json']['conversaciones'] ?? []) as $conv) {
+                // Si el backend no lo dice, el canal es el que respondió.
+                $conv['canal'] = $conv['canal'] ?? $nombre;
+                $conversaciones[] = $conv;
+            }
+        }
+
+        // Más recientes primero, mezclando los dos canales.
+        usort($conversaciones, function ($a, $b) {
+            return botPanel_timestamp($b['ultima_fecha'] ?? null)
+                 <=> botPanel_timestamp($a['ultima_fecha'] ?? null);
+        });
+        $conversaciones = array_slice($conversaciones, 0, $limite);
+
+        if (!$conversaciones && $caidos) {
+            botPanel_responder(502, [
+                'status'  => 'error',
+                'message' => 'No se pudo contactar al backend del bot: ' . implode('; ', $caidos),
+            ]);
+        }
+
+        botPanel_responder(200, [
+            'status'         => 'success',
+            'cantidad'       => count($conversaciones),
+            'conversaciones' => $conversaciones,
+            'canales_caidos' => $caidos,
+        ]);
         break;
 
     case 'mensajes':
@@ -98,13 +200,44 @@ switch ($action) {
         if (!$chatId) {
             botPanel_responder(400, ['status' => 'error', 'message' => 'chat_id inválido.']);
         }
-        botPanel_llamar('/api/panel/conversaciones/' . $chatId . '/mensajes');
+
+        $ruta = '/api/panel/conversaciones/' . $chatId . '/mensajes';
+
+        // El front manda el canal de la conversación abierta. Si no viene (una
+        // pestaña vieja, por ejemplo) se prueban los dos: los ids son únicos
+        // entre canales porque salen de la misma tabla `chats`.
+        $canalPedido = $_GET['canal'] ?? '';
+        $orden = isset($canales[$canalPedido])
+            ? [$canalPedido]
+            : array_keys($canales);
+
+        $ultimo = null;
+        foreach ($orden as $nombre) {
+            $r = botPanel_consultar($canales[$nombre], $ruta);
+            $ultimo = $r;
+            if ($r['ok'] && !empty($r['json']['mensajes'])) {
+                botPanel_responder(200, $r['json']);
+            }
+        }
+
+        // Ningún canal tenía mensajes: se devuelve la última respuesta válida
+        // (lista vacía) y, si ninguna lo fue, el error.
+        if ($ultimo && $ultimo['ok']) {
+            botPanel_responder(200, $ultimo['json']);
+        }
+        botPanel_responder($ultimo['codigo'] ?? 502, [
+            'status'  => 'error',
+            'message' => 'No se pudo contactar al backend del bot: ' . ($ultimo['error'] ?? 'sin respuesta'),
+        ]);
         break;
 
     case 'auditoria':
+        // Solo Telegram: los eventos viven en `errores_log`, que no tiene
+        // columna `canal`, así que todavía no hay forma de separar los de cada
+        // bot sin tocar cómo escribe el de Telegram.
         $limite = filter_input(INPUT_GET, 'limite', FILTER_VALIDATE_INT);
         $limite = $limite && $limite > 0 ? min($limite, 500) : 100;
-        botPanel_llamar('/api/panel/auditoria?limite=' . $limite);
+        botPanel_reenviar($canales['telegram'], '/api/panel/auditoria?limite=' . $limite);
         break;
 
     default:

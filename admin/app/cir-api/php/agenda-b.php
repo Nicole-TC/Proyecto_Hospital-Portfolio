@@ -140,6 +140,55 @@ class ConsultasAgenda {
         ];
     }
 
+    // ── Obtener el próximo ciclo de cupos (fecha_desde > hoy) ──────────
+    // Se usa cuando no hay una config vigente HOY (ej. cupos creados para
+    // la semana siguiente): permite habilitar la programación hacia adelante.
+    public static function obtenerConfigFutura($id_tipo_turno) {
+        $pdo = conexionCircuitoQuirurgico();
+
+        $id_estado_ina = id_estado('DATO', 'ELIM');
+        if (!$id_estado_ina) $id_estado_ina = 0;
+
+        $hoy = date('Y-m-d');
+
+        $sql = "SELECT cupos_total, hora_inicio, lunes, martes, miercoles, jueves, viernes, fecha_desde, fecha_hasta
+                FROM agenda_cupos
+                WHERE id_tipo_turno = :id_tipo_turno
+                  AND id_estado != :id_estado_ina
+                  AND fecha_desde > :hoy
+                  AND (fecha_hasta IS NULL OR fecha_hasta >= :hoy2)
+                ORDER BY fecha_desde ASC
+                LIMIT 1";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id_tipo_turno', $id_tipo_turno, PDO::PARAM_INT);
+        $stmt->bindParam(':id_estado_ina', $id_estado_ina, PDO::PARAM_INT);
+        $stmt->bindParam(':hoy',  $hoy);
+        $stmt->bindParam(':hoy2', $hoy);
+        $stmt->execute();
+        $config = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$config) {
+            return ['ok' => true, 'sin_config' => true, 'dias_activos' => [], 'cupos_total' => 0, 'hora_inicio' => null];
+        }
+
+        $boolVal = function($v) { return ($v === true || $v === 't' || $v === '1' || $v === 1); };
+        $diasActivos = [];
+        foreach (['lunes','martes','miercoles','jueves','viernes'] as $dia) {
+            if ($boolVal($config[$dia])) $diasActivos[] = $dia;
+        }
+
+        return [
+            'ok'           => true,
+            'sin_config'   => false,
+            'dias_activos' => $diasActivos,
+            'cupos_total'  => (int)$config['cupos_total'],
+            'hora_inicio'  => $config['hora_inicio'],
+            'fecha_desde'  => $config['fecha_desde'],
+            'fecha_hasta'  => $config['fecha_hasta'],
+        ];
+    }
+
     // ── Verificar si quedan cupos disponibles en una fecha ─────────────
     public static function verificarCupoDisponible($fecha, $id_tipo_turno) {
         $config = self::obtenerConfiguracionCupo($fecha, $id_tipo_turno);

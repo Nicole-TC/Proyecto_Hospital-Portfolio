@@ -23,6 +23,11 @@ try {
                 exit;
             }
             $config = ConsultasAgenda::obtenerConfigActiva($idTipoTurnoCir);
+            // Si no hay ciclo vigente hoy (ej. cupos creados para la semana siguiente),
+            // usar el próximo ciclo para habilitar la programación.
+            if ($config['sin_config']) {
+                $config = ConsultasAgenda::obtenerConfigFutura($idTipoTurnoCir);
+            }
             echo json_encode(['status' => 'success', 'config' => $config]);
             exit;
         }

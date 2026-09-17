@@ -1,6 +1,6 @@
 <?php
 // Vista: Dashboard del bot (OmniBot Hospital)
-// Datos desde bot-panel-e.php: estado + conversaciones + auditoría.
+// Datos desde bot-panel-e.php: estado + conversaciones + auditoría + comandos.
 ?>
 <div class="container-fluid py-3">
     <div class="card p-4 shadow-sm">
@@ -139,6 +139,31 @@
                 </div>
             </div>
         </div>
+
+        <h6 class="fw-bold text-muted text-uppercase mb-3 mt-4" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+            Comandos
+        </h6>
+        <div class="card shadow-sm border rounded-3 bg-white">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3">Comandos más utilizados</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted small text-uppercase">
+                                <th scope="col">Comandos</th>
+                                <th scope="col">Cantidad de usos</th>
+                                <th scope="col">Proporción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-comandos-tbody">
+                            <tr>
+                                <td colspan="3" class="text-muted">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -151,6 +176,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Guardamos la ultima respuesta buena, por si el bot se cae
     var datosConversacionesOk = null;
     var datosAuditoriaOk = null;
+    var datosComandosOk = null;
 
     // Escribe un texto en un elemento por su id
     function escribir(id, texto, color) {
@@ -302,11 +328,146 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
 
+    // ----- 4) Comandos mas usados -----
+    function mostrarComandos(lista) {
+        var tbody = document.getElementById("dash-comandos-tbody");
+        var i;
+        var maxUsos;
+        var item;
+        var porcentaje;
+        var filas = 0;
+        var tr;
+        var tdComando;
+        var tdCantidad;
+        var tdBarra;
+        var filaBarra;
+        var cajaProgress;
+        var barra;
+        var textoPct;
+
+        if (!tbody) {
+            return;
+        }
+
+        tbody.innerHTML = "";
+
+        if (!lista || lista.length === 0) {
+            tr = document.createElement("tr");
+            tdComando = document.createElement("td");
+            tdComando.colSpan = 3;
+            tdComando.className = "text-muted";
+            tdComando.textContent = "Sin usos de comandos registrados";
+            tr.appendChild(tdComando);
+            tbody.appendChild(tr);
+            return;
+        }
+
+        // El mayor uso sirve para armar la barra
+        maxUsos = 0;
+        for (i = 0; i < lista.length; i++) {
+            item = lista[i];
+            // Ocultar /comando@nombre_bot
+            if (String(item.comando || "").indexOf("@") !== -1) {
+                continue;
+            }
+            if (Number(item.cantidad) > maxUsos) {
+                maxUsos = Number(item.cantidad);
+            }
+        }
+
+        for (i = 0; i < lista.length; i++) {
+            item = lista[i];
+            if (String(item.comando || "").indexOf("@") !== -1) {
+                continue;
+            }
+
+            porcentaje = 0;
+            if (maxUsos > 0) {
+                porcentaje = Math.round((Number(item.cantidad) / maxUsos) * 100);
+            }
+
+            tr = document.createElement("tr");
+
+            tdComando = document.createElement("td");
+            tdComando.className = "fw-semibold";
+            tdComando.style.color = "#20c997";
+            tdComando.textContent = String(item.comando || "");
+            tr.appendChild(tdComando);
+
+            tdCantidad = document.createElement("td");
+            tdCantidad.textContent = String(item.cantidad || 0);
+            tr.appendChild(tdCantidad);
+
+            // Barra de proporcion
+            barra = document.createElement("div");
+            barra.className = "progress-bar";
+            barra.setAttribute("role", "progressbar");
+            barra.style.width = porcentaje + "%";
+            barra.style.backgroundColor = "#20c997";
+
+            cajaProgress = document.createElement("div");
+            cajaProgress.className = "progress flex-grow-1";
+            cajaProgress.style.height = "6px";
+            cajaProgress.style.maxWidth = "180px";
+            cajaProgress.appendChild(barra);
+
+            textoPct = document.createElement("span");
+            textoPct.className = "small text-muted";
+            textoPct.textContent = porcentaje + "%";
+
+            filaBarra = document.createElement("div");
+            filaBarra.className = "d-flex align-items-center gap-2";
+            filaBarra.appendChild(cajaProgress);
+            filaBarra.appendChild(textoPct);
+
+            tdBarra = document.createElement("td");
+            tdBarra.appendChild(filaBarra);
+            tr.appendChild(tdBarra);
+
+            tbody.appendChild(tr);
+            filas = filas + 1;
+        }
+
+        if (filas === 0) {
+            tr = document.createElement("tr");
+            tdComando = document.createElement("td");
+            tdComando.colSpan = 3;
+            tdComando.className = "text-muted";
+            tdComando.textContent = "Sin usos de comandos registrados";
+            tr.appendChild(tdComando);
+            tbody.appendChild(tr);
+        }
+    }
+
+    function cargarComandos() {
+        fetch(API_URL + "?action=comandos")
+            .then(function (respuesta) {
+                return respuesta.json();
+            })
+            .then(function (datos) {
+                if (datos.status !== "success") {
+                    throw new Error("No se pudieron leer los comandos");
+                }
+
+                var lista = datos.comandos || [];
+                datosComandosOk = lista;
+                mostrarComandos(lista);
+            })
+            .catch(function () {
+                if (datosComandosOk) {
+                    mostrarComandos(datosComandosOk);
+                } else {
+                    mostrarComandos([]);
+                }
+            });
+    }
+
     // Carga todo el dashboard
     function cargarDashboard() {
         cargarEstado();
         cargarConversaciones();
         cargarAuditoria();
+        cargarComandos();
     }
 
     // Primera carga

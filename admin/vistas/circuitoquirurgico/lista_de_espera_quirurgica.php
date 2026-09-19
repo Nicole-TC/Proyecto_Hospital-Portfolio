@@ -1,66 +1,68 @@
-<div class="col-12 mb-5 px-3">
-    <div class="card shadow-sm border-0" style="border-radius: 1rem;">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold text-primary mb-0"><i class="fa-solid fa-list-check me-2"></i>Pacientes con Apto Físico</h5>
-            </div>
+<div class="col-12 mb-5 px-md-4 px-3 mt-4 lista-espera">
 
-            <!-- Filtros homogeneizados con seguimiento_postas -->
-            <div class="row g-2 align-items-end mb-4">
-                <div class="col-md-3">
-                    <label class="form-label small text-secondary mb-1" for="filtro-fecha-desde">Apto Físico desde</label>
-                    <input type="date" class="form-control" id="filtro-fecha-desde">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div class="flex-grow-1 min-w-0">
+            <h2 class="blue fw-bold mb-1">Lista de Espera Quirúrgica</h2>
+            <p class="text-secondary mb-0">Pacientes con apto físico aguardando programación de cirugía</p>
+        </div>
+    </div>
+
+    <div class="card border-0 mb-4 le-card">
+        <div class="card-body p-3 p-md-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">APTO FÍSICO DESDE</label>
+                    <input type="date" class="form-control border-0 bg-light le-control" id="filtro-fecha-desde">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-secondary mb-1" for="filtro-fecha-hasta">Apto Físico hasta</label>
-                    <input type="date" class="form-control" id="filtro-fecha-hasta">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">APTO FÍSICO HASTA</label>
+                    <input type="date" class="form-control border-0 bg-light le-control" id="filtro-fecha-hasta">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small text-secondary mb-1" for="filtro-estado-apto">Estado Apto Físico</label>
-                    <select class="form-select" id="filtro-estado-apto">
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-estado-apto">ESTADO APTO FÍSICO</label>
+                    <select class="form-select border-0 bg-light le-select" id="filtro-estado-apto">
                         <option value="OK" selected>Apto Quirúrgico</option>
                         <option value="OBS">Observado</option>
                         <option value="TODOS">Todos</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex">
-                    <button type="button" class="btn btn-primary w-100" id="btn-filtrar-espera">
-                        <i class="fa-solid fa-magnifying-glass me-1"></i> Buscar
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label text-secondary small fw-bold d-none d-lg-block">&nbsp;</label>
+                    <button type="button" class="btn btn-primary w-100 fw-bold le-btn" id="btn-filtrar-espera">
+                        <i class="bi bi-search me-1"></i> BUSCAR
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="card shadow-sm border-0" style="border-radius: 0.85rem;">
-                <div class="card-body p-4">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 w-100" id="tabla-lista-espera">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-secondary small text-uppercase fw-semibold">DNI</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold">Paciente</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold">Cirugía</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold">Apto Desde</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold">Estado</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold text-center">Prioridad</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold text-center">Fecha Asignada</th>
-                                    <th class="text-secondary small text-uppercase fw-semibold text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+    <div class="card border-0 le-card le-card-tabla">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0 w-100" id="tabla-lista-espera">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="le-th border-0">DNI</th>
+                        <th class="le-th border-0">Paciente</th>
+                        <th class="le-th border-0">Cirugía</th>
+                        <th class="le-th border-0">Apto Desde</th>
+                        <th class="le-th border-0">Estado</th>
+                        <th class="le-th border-0 text-center">Prioridad</th>
+                        <th class="le-th border-0 text-center">Fecha Asignada</th>
+                        <th class="le-th border-0 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <!-- Modal Programar Cirugía -->
 <div class="modal fade" id="modal-programar-cirugia" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="border-radius: 1rem; border: none;">
-      <div class="modal-header bg-primary text-white" id="prog-modal-header" style="border-top-left-radius: 1rem; border-top-right-radius: 1rem;">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow le-modal">
+      <div class="modal-header bg-primary text-white" id="prog-modal-header">
         <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Programar Cirugía</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -68,29 +70,29 @@
         <div class="modal-body p-4">
             <input type="hidden" id="prog-id-orden" name="id_orden">
             <input type="hidden" id="prog-id-persona-asiste" name="id_persona_asiste">
-            
+
             <p class="mb-4">Programando cirugía para <strong id="prog-nombre-paciente" class="text-primary"></strong>.</p>
-            
+
             <div class="mb-3">
-                <label class="form-label fw-bold text-secondary">Fecha y Hora de la Cirugía <span class="text-danger">*</span></label>
-                <input type="datetime-local" class="form-control" id="prog-fecha-hora" name="fecha_hora" required>
+                <label class="form-label text-secondary small fw-bold" for="prog-fecha-hora">FECHA Y HORA DE LA CIRUGÍA <span class="text-danger">*</span></label>
+                <input type="datetime-local" class="form-control border-0 bg-light le-control" id="prog-fecha-hora" name="fecha_hora" required>
             </div>
-            
+
             <div class="mb-3">
-                <label class="form-label fw-bold text-secondary" for="prog-id-profesional">Cirujano Asignado <span class="text-danger">*</span></label>
-                <select class="form-select" id="prog-id-profesional" name="id_profesional" required>
+                <label class="form-label text-secondary small fw-bold" for="prog-id-profesional">CIRUJANO ASIGNADO <span class="text-danger">*</span></label>
+                <select class="form-select border-0 bg-light le-select" id="prog-id-profesional" name="id_profesional" required>
                     <option value="">Seleccione un profesional...</option>
                 </select>
             </div>
-            
+
             <div class="mb-3">
-                <label class="form-label fw-bold text-secondary">Observaciones Quirúrgicas <span class="text-muted fw-normal">(Opcional)</span></label>
-                <textarea class="form-control" id="prog-observaciones" name="observaciones" rows="2" placeholder="Ej: Material especial requerido, lateralidad..."></textarea>
+                <label class="form-label text-secondary small fw-bold" for="prog-observaciones">OBSERVACIONES QUIRÚRGICAS <span class="text-muted fw-normal">(Opcional)</span></label>
+                <textarea class="form-control border-0 bg-light le-textarea" id="prog-observaciones" name="observaciones" rows="2" placeholder="Ej: Material especial requerido, lateralidad..."></textarea>
             </div>
         </div>
-        <div class="modal-footer bg-light" id="prog-modal-footer" style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem;">
-            <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal" style="border-radius: 0.5rem; height: 45px;">Cancelar</button>
-            <button type="submit" class="btn btn-primary fw-bold" style="border-radius: 0.5rem; height: 45px;">Confirmar Turno</button>
+        <div class="modal-footer bg-light border-0" id="prog-modal-footer">
+            <button type="button" class="btn btn-outline-secondary fw-bold le-btn" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary fw-bold le-btn">Confirmar Turno</button>
         </div>
       </form>
     </div>
@@ -101,13 +103,249 @@
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.js"></script>
 
 <style>
-/* Ajustes modo oscuro para inputs */
-body.modo-oscuro #filtro-estado-apto,
-body.modo-oscuro #prog-fecha-hora {
+/* Lista de espera */
+.lista-espera .le-card {
+    border-radius: 0.75rem;
+    box-shadow: 0 0.35rem 1rem rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.lista-espera .le-card-tabla {
+    overflow: hidden;
+}
+.lista-espera .le-control,
+.lista-espera .le-select {
+    border-radius: 0.5rem;
+    height: 45px;
+}
+.lista-espera .le-textarea {
+    border-radius: 0.5rem;
+}
+.lista-espera .le-btn {
+    border-radius: 0.5rem;
+    height: 45px;
+    min-height: 45px;
+}
+
+.lista-espera .le-dt-toolbar {
+    border-bottom: 1px solid #eef1f4;
+}
+.lista-espera .le-dt-footer {
+    border-top: 1px solid #eef1f4;
+}
+.lista-espera #tabla-lista-espera_wrapper .dataTables_length,
+.lista-espera #tabla-lista-espera_wrapper .dataTables_filter,
+.lista-espera #tabla-lista-espera_wrapper .dataTables_info,
+.lista-espera #tabla-lista-espera_wrapper .dataTables_paginate {
+    padding: 0.75rem 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.lista-espera #tabla-lista-espera_wrapper .dataTables_length label,
+.lista-espera #tabla-lista-espera_wrapper .dataTables_filter label {
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+.lista-espera #tabla-lista-espera_wrapper .dataTables_filter {
+    text-align: left;
+}
+@media (min-width: 768px) {
+    .lista-espera #tabla-lista-espera_wrapper .dataTables_filter {
+        text-align: right;
+    }
+    .lista-espera #tabla-lista-espera_wrapper .dataTables_filter label {
+        justify-content: flex-end;
+    }
+}
+
+/* Select "Mostrar X" de DataTables */
+.lista-espera #tabla-lista-espera_wrapper .dataTables_length select {
+    display: inline-block;
+    width: auto;
+    min-width: 4.25rem;
+    margin: 0;
+    height: 38px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0984e3;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+.lista-espera #tabla-lista-espera_wrapper .dataTables_length select:focus {
+    outline: none;
+    border-color: #0984e3;
+    box-shadow: 0 0 0 0.15rem rgba(9, 132, 227, 0.2);
+}
+
+/* Input de búsqueda de DataTables */
+.lista-espera #tabla-lista-espera_wrapper .dataTables_filter input {
+    width: 100%;
+    max-width: 260px;
+    height: 38px;
+    margin-left: 0;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #343a40;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+.lista-espera #tabla-lista-espera_wrapper .dataTables_filter input:focus {
+    outline: none;
+    border-color: #0984e3;
+    box-shadow: 0 0 0 0.15rem rgba(9, 132, 227, 0.2);
+}
+.lista-espera #tabla-lista-espera_wrapper .dataTables_filter input::placeholder {
+    color: #adb5bd;
+    font-weight: 400;
+}
+
+/* Scroll horizontal solo en la tabla */
+.lista-espera .le-dt-scroll {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.lista-espera #tabla-lista-espera {
+    width: 100% !important;
+    min-width: 960px;
+    margin: 0 !important;
+    border-collapse: collapse;
+}
+.lista-espera #tabla-lista-espera thead th,
+.lista-espera #tabla-lista-espera thead th.le-th {
+    font-size: 0.9rem;
+    font-weight: 700;
+    border-top: none !important;
+    border-bottom-width: 2px !important;
+    padding: 0.85rem 1rem !important;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+.lista-espera #tabla-lista-espera tbody td {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    padding: 0.85rem 1rem !important;
+    vertical-align: middle;
+}
+.lista-espera #tabla-lista-espera tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.lista-espera .le-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 6rem;
+    padding: 0.42em 0.9em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.lista-espera .le-badge--ok { background: rgba(25, 135, 84, 0.12); color: #146c43; }
+.lista-espera .le-badge--obs { background: rgba(220, 53, 69, 0.1); color: #b02a37; }
+.lista-espera .le-badge--pend { background: #e9ecef; color: #495057; }
+.lista-espera .le-badge--prio-roja { background: rgba(220, 53, 69, 0.12); color: #b02a37; }
+.lista-espera .le-badge--prio-amarilla { background: #fff3cd; color: #856404; }
+.lista-espera .le-badge--prio-verde { background: rgba(25, 135, 84, 0.12); color: #146c43; }
+.lista-espera .le-badge--prio-na { background: #f1f3f5; color: #495057; }
+
+.lista-espera .le-acciones {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.lista-espera .le-btn-accion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 8.5rem;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1;
+    border: none;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
+}
+.lista-espera .le-btn-accion i { font-size: 0.9rem; line-height: 1; }
+.lista-espera .le-btn-accion:hover:not(:disabled) { transform: translateY(-1px); }
+.lista-espera .le-btn-accion:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.lista-espera .le-btn-accion--programar { background: linear-gradient(135deg, #00cec9 0%, #00b4d8 100%); color: #fff; }
+.lista-espera .le-btn-accion--programar:hover:not(:disabled) { box-shadow: 0 3px 12px rgba(0, 180, 216, 0.4); filter: brightness(1.05); }
+.lista-espera .le-btn-accion--asignado { background: rgba(25, 135, 84, 0.14); color: #146c43; }
+.lista-espera .le-btn-accion--noapto { background: #e9ecef; color: #6c757d; }
+
+.lista-espera #tabla-lista-espera_wrapper .pagination {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.25rem;
+    margin-bottom: 0;
+}
+@media (min-width: 768px) {
+    .lista-espera #tabla-lista-espera_wrapper .pagination {
+        justify-content: flex-end;
+    }
+}
+.lista-espera #tabla-lista-espera_wrapper .pagination .page-link {
+    border-radius: 0.5rem !important;
+    font-weight: 600;
+    min-width: 2.5rem;
+    text-align: center;
+    padding: 0.45rem 0.75rem;
+}
+
+.le-modal { border-radius: 0.75rem; }
+.le-modal .modal-header {
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+}
+.le-modal .modal-footer {
+    border-bottom-left-radius: 0.75rem;
+    border-bottom-right-radius: 0.75rem;
+}
+
+/* Modo oscuro: lo que no cubre darkmode.css */
+body.modo-oscuro .lista-espera .form-control.bg-light,
+body.modo-oscuro .lista-espera .form-select.bg-light,
+body.modo-oscuro #prog-fecha-hora,
+body.modo-oscuro #prog-observaciones,
+body.modo-oscuro #prog-id-profesional {
     background-color: #2a2a2a !important;
     color: #f1f1f1 !important;
+    border: 1px solid #444 !important;
 }
-body.modo-oscuro input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+body.modo-oscuro .lista-espera .le-badge--ok { background: rgba(107, 216, 141, 0.15); color: #6bd88d; }
+body.modo-oscuro .lista-espera .le-badge--obs { background: rgba(255, 107, 107, 0.12); color: #ff6b6b; }
+body.modo-oscuro .lista-espera .le-badge--pend { background: #2a2a2a; color: #aaa; }
+body.modo-oscuro .lista-espera .le-badge--prio-roja { background: rgba(255, 107, 107, 0.12); color: #ff6b6b; }
+body.modo-oscuro .lista-espera .le-badge--prio-amarilla { background: rgba(255, 193, 7, 0.15); color: #ffd553; }
+body.modo-oscuro .lista-espera .le-badge--prio-verde { background: rgba(107, 216, 141, 0.15); color: #6bd88d; }
+body.modo-oscuro .lista-espera .le-badge--prio-na { background: #2a2a2a; color: #aaa; }
+body.modo-oscuro .lista-espera .le-btn-accion--asignado { background: rgba(107, 216, 141, 0.15); color: #6bd88d; }
+body.modo-oscuro .lista-espera .le-btn-accion--noapto { background: #2a2a2a; color: #aaa; }
+body.modo-oscuro .lista-espera #tabla-lista-espera_wrapper .dataTables_length select,
+body.modo-oscuro .lista-espera #tabla-lista-espera_wrapper .dataTables_filter input {
+    background-color: #1f1f1f !important;
+    color: #ccc !important;
+    border-color: #444 !important;
+}
+body.modo-oscuro input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+body.modo-oscuro input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1) brightness(200%);
     cursor: pointer;
 }
@@ -122,8 +360,12 @@ function inicializarTabla() {
     }
 
     tablaListaEspera = $('#tabla-lista-espera').DataTable({
-        // Orden por defecto: 1) Prioridad (Rojo→Amarillo→Verde) 2) Apto Desde
         order: [[5, 'asc'], [3, 'asc']],
+        // Mostrar/Filtrar fuera del scroll; scroll solo en la tabla
+        dom:
+            "<'le-dt-toolbar px-3'<'row align-items-center g-2'<'col-12 col-md-6'l><'col-12 col-md-6'f>>>" +
+            "<'le-dt-scroll'tr>" +
+            "<'le-dt-footer px-3'<'row align-items-center g-2'<'col-12 col-md-5'i><'col-12 col-md-7'p>>>",
         ajax: function(data, callback) {
             $.ajax({
                 url: 'app/cir-api/endpoints/lista_espera-e.php',
@@ -148,22 +390,20 @@ function inicializarTabla() {
             });
         },
         columns: [
-            { data: 'dni' },
-            { data: null, render: function (data) { return data.paciente_apellido + ', ' + data.paciente_nombre; } },
-            { data: 'cirugia_nombre' },
-            { data: 'apto_desde', render: function (data) { if (!data) return '-'; const parts = data.split(' ')[0].split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`; } },
-            { data: 'estado_apto_codigo', render: function (data, type, row) {
-                if (data === 'OK') {
-                    let p = row.prioridad_codigo;
-                    let badgeClass = 'bg-success', badgeStyle = '', text = 'Aprobado';
-                    if (p === 'ROJO') { badgeClass = 'bg-danger'; text = 'Aprobado'; }
-                    else if (p === 'AMARILLO') { badgeClass = ''; badgeStyle = 'background-color:#ffd400;color:#fff;'; text = 'Aprobado'; }
-                    else if (p === 'VERDE') { badgeClass = 'bg-success'; text = 'Aprobado'; }
-                    return `<span class="badge ${badgeClass}" style="${badgeStyle}">${text}</span>`;
-                } else if (data === 'OBS') {
-                    return `<span class="badge bg-danger">Observado</span>`;
-                }
-                return `<span class="badge bg-secondary">Pendiente</span>`;
+            { data: 'dni', className: 'fw-semibold' },
+            { data: null, render: function (data) {
+                return '<span class="fw-semibold">' + data.paciente_apellido + ', ' + data.paciente_nombre + '</span>';
+            } },
+            { data: 'cirugia_nombre', className: 'text-secondary' },
+            { data: 'apto_desde', className: 'text-center', render: function (data) {
+                if (!data) return '<span class="text-muted">-</span>';
+                const parts = data.split(' ')[0].split('-');
+                return parts[2] + '/' + parts[1] + '/' + parts[0];
+            } },
+            { data: 'estado_apto_codigo', className: 'text-center', render: function (data) {
+                if (data === 'OK') return '<span class="le-badge le-badge--ok">Aprobado</span>';
+                if (data === 'OBS') return '<span class="le-badge le-badge--obs">Observado</span>';
+                return '<span class="le-badge le-badge--pend">Pendiente</span>';
             } },
             { data: 'prioridad_codigo', className: 'text-center', render: function (data, type) {
                 if (type === 'sort' || type === 'type') {
@@ -172,25 +412,54 @@ function inicializarTabla() {
                     if (data === 'VERDE') return 3;
                     return 4;
                 }
-                if (!data) return '<span class="text-muted">-</span>';
-                let map = {
-                    'ROJO':     ['bg-danger', 'Urgente', ''],
-                    'AMARILLO': ['', 'Media', 'background-color:#ffd400;color:#fff;'],
-                    'VERDE':    ['bg-success', 'Baja', '']
-                };
-                    let info = map[data] || ['bg-secondary', data, ''];
-                    return `<span class="badge ${info[0]}" style="${info[2]}">${info[1]}</span>`;
+                if (data === 'ROJO') return '<span class="le-badge le-badge--prio-roja">Urgente</span>';
+                if (data === 'AMARILLO') return '<span class="le-badge le-badge--prio-amarilla">Media</span>';
+                if (data === 'VERDE') return '<span class="le-badge le-badge--prio-verde">Baja</span>';
+                return '<span class="le-badge le-badge--prio-na">-</span>';
             } },
-            { data: 'turno_programado_fecha', className: 'text-center fw-bold', render: function (data) { if (!data) return '<span class="text-muted">-</span>'; const datePart = data.split(' ')[0]; const timePart = data.split(' ')[1] ? data.split(' ')[1].substring(0,5) : ''; const parts = datePart.split('-'); return `<span class="text-primary"><i class="bi bi-calendar-check me-1"></i>${parts[2]}/${parts[1]}/${parts[0]} ${timePart}</span>`; } },
-            { data: null, orderable: false, className: 'text-center', render: function (data) { if (data.turno_programado_fecha) { const parts = data.turno_programado_fecha.split(' ')[0].split('-'); return `<button type="button" class="btn btn-sm btn-outline-success fw-bold" style="border-radius: 0.5rem;" disabled>Turno Asignado</button>`; } if (data.estado_apto_codigo === 'OK') { return `<button type="button" class="btn btn-sm btn-primary fw-bold" style="border-radius: 0.5rem;" onclick="abrirModalProgramar(${data.id_orden}, ${data.id_persona_asiste}, '${data.paciente_apellido.replace(/'/g, "\\'")}, ${data.paciente_nombre.replace(/'/g, "\\'")}', '${data.prioridad_codigo || ''}')"><i class="bi bi-calendar-plus me-1"></i> Programar</button>`; } return `<button type="button" class="btn btn-sm btn-outline-secondary fw-bold" style="border-radius: 0.5rem;" disabled>No Apto</button>`; } }
+            { data: 'turno_programado_fecha', className: 'text-center', render: function (data) {
+                if (!data) return '<span class="text-muted">-</span>';
+                const datePart = data.split(' ')[0];
+                const timePart = data.split(' ')[1] ? data.split(' ')[1].substring(0, 5) : '';
+                const parts = datePart.split('-');
+                return '<span class="text-primary fw-semibold"><i class="bi bi-calendar-check me-1"></i>' +
+                    parts[2] + '/' + parts[1] + '/' + parts[0] + ' ' + timePart + '</span>';
+            } },
+            { data: null, orderable: false, className: 'text-center', render: function (data) {
+                if (data.turno_programado_fecha) {
+                    return '<div class="le-acciones"><button type="button" class="le-btn-accion le-btn-accion--asignado" disabled>' +
+                        '<i class="bi bi-check2-circle"></i><span>Turno asignado</span></button></div>';
+                }
+                if (data.estado_apto_codigo === 'OK') {
+                    const ape = data.paciente_apellido.replace(/'/g, "\\'");
+                    const nom = data.paciente_nombre.replace(/'/g, "\\'");
+                    const prio = data.prioridad_codigo || '';
+                    return '<div class="le-acciones"><button type="button" class="le-btn-accion le-btn-accion--programar" ' +
+                        'onclick="abrirModalProgramar(' + data.id_orden + ', ' + data.id_persona_asiste + ', \'' + ape + ', ' + nom + '\', \'' + prio + '\')">' +
+                        '<i class="bi bi-calendar-plus"></i><span>Programar</span></button></div>';
+                }
+                return '<div class="le-acciones"><button type="button" class="le-btn-accion le-btn-accion--noapto" disabled>' +
+                    '<span>No apto</span></button></div>';
+            } }
         ],
         language: {
             lengthMenu: "Mostrar _MENU_ registros",
+            search: "Filtrar:",
             zeroRecords: 'No hay pacientes.',
+            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            infoEmpty: "Mostrando 0 registros",
+            infoFiltered: "(filtrado de _MAX_)",
             paginate: {
                 next: 'Siguiente',
                 previous: 'Anterior'
             }
+        },
+        initComplete: function() {
+            const $filter = $('#tabla-lista-espera_filter input');
+            $filter.attr('placeholder', 'Buscar en la tabla...');
+            $('#tabla-lista-espera_length select')
+                .addClass('form-select form-select-sm')
+                .css({ width: 'auto', display: 'inline-block' });
         }
     });
 }
@@ -246,7 +515,6 @@ $('#filtro-estado-apto').on('change', function() {
 let diasActivosAgenda = [];
 
 function abrirModalProgramar(id_orden, id_persona_asiste, paciente, prioridad) {
-    // Tintar cabecera y pie del modal según la prioridad del paciente.
     let headerBg = '#0d6efd', headerText = '#fff';
     let footerBg = '#f8f9fa', footerText = '';
     if (prioridad === 'ROJO') {
@@ -260,10 +528,8 @@ function abrirModalProgramar(id_orden, id_persona_asiste, paciente, prioridad) {
     $('#prog-modal-header').get(0).style.setProperty('color', headerText, 'important');
     $('#prog-modal-footer').get(0).style.setProperty('background-color', footerBg, 'important');
     $('#prog-modal-footer').get(0).style.setProperty('color', footerText, 'important');
-    // Asegurar que el botón de cerrar del header contraste con el fondo de la prioridad.
     $('#prog-modal-header .btn-close').toggleClass('btn-close-white', headerText === '#fff');
 
-    // Verificar si hay agenda activa para CIRUGIA
     $.ajax({
         url: 'app/cir-api/endpoints/lista_espera-e.php?accion=config_agenda_cirugia',
         method: 'GET',
@@ -273,31 +539,30 @@ function abrirModalProgramar(id_orden, id_persona_asiste, paciente, prioridad) {
                     Swal.fire('Atención', 'No hay agenda abierta para Cirugías. Debe crear cupos en la Agenda antes de programar turnos.', 'warning');
                     return;
                 }
-                
+
                 diasActivosAgenda = res.config.dias_activos || [];
-                
+
                 $('#prog-id-orden').val(id_orden);
                 $('#prog-id-persona-asiste').val(id_persona_asiste);
                 $('#prog-nombre-paciente').text(paciente);
-                
-                // Establecer límites de fecha mínima y máxima
+
                 let today = new Date();
                 today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-                let minDate = today.toISOString().slice(0, 16); 
-                
+                let minDate = today.toISOString().slice(0, 16);
+
                 let configStart = res.config.fecha_desde ? res.config.fecha_desde + 'T00:00' : null;
                 if (configStart && configStart > minDate) {
                     minDate = configStart;
                 }
-                
+
                 $('#prog-fecha-hora').attr('min', minDate);
-                
+
                 if (res.config.fecha_hasta) {
                     $('#prog-fecha-hora').attr('max', res.config.fecha_hasta + 'T23:59');
                 } else {
                     $('#prog-fecha-hora').removeAttr('max');
                 }
-                
+
                 $('#prog-fecha-hora').val('');
                 $('#prog-id-profesional').val('');
                 $('#prog-observaciones').val('');
@@ -312,16 +577,15 @@ function abrirModalProgramar(id_orden, id_persona_asiste, paciente, prioridad) {
     });
 }
 
-// Validar que el día de la semana seleccionado coincida con los días activos de la agenda
 $('#prog-fecha-hora').on('change', function() {
     let val = $(this).val();
     if (!val) return;
-    
+
     let dateObj = new Date(val);
-    let day = dateObj.getDay(); // 0 = Domingo, 1 = Lunes, etc.
+    let day = dateObj.getDay();
     let mapDias = {1: 'lunes', 2: 'martes', 3: 'miercoles', 4: 'jueves', 5: 'viernes'};
     let diaSemana = mapDias[day];
-    
+
     if (!diaSemana || !diasActivosAgenda.includes(diaSemana)) {
         let diasNombres = diasActivosAgenda.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ');
         Swal.fire('Día no habilitado', 'La agenda actual solo permite programar cirugías los días: <b>' + diasNombres + '</b>.', 'warning');
@@ -335,13 +599,13 @@ $('#form-programar-cirugia').on('submit', function(e) {
     const idPersonaAsiste = $('#prog-id-persona-asiste').val();
     const fechaHora = $('#prog-fecha-hora').val();
     const idProfesional = $('#prog-id-profesional').val();
-    
-    if(!fechaHora) {
+
+    if (!fechaHora) {
         Swal.fire('Atención', 'Debe seleccionar una fecha y hora.', 'warning');
         return;
     }
 
-    if(!idProfesional) {
+    if (!idProfesional) {
         Swal.fire('Atención', 'Debe seleccionar un cirujano.', 'warning');
         return;
     }

@@ -99,6 +99,82 @@ function botPanel_consultar(array $canal, string $ruta): array
     ];
 }
 
+/** Reenvía la foto de perfil al bot de Telegram. */
+function botPanel_enviar_foto(array $canal, array $archivo): void
+{
+    if ($canal['url'] === '' || $canal['secret'] === '') {
+        botPanel_responder(503, [
+            'status'  => 'error',
+            'message' => 'Canal de Telegram no configurado.',
+        ]);
+    }
+    $errorArchivo = $archivo['error'] ?? UPLOAD_ERR_NO_FILE;
+    $topeBytes = 10 * 1024 * 1024;
+    if ($errorArchivo === UPLOAD_ERR_INI_SIZE || $errorArchivo === UPLOAD_ERR_FORM_SIZE || (($archivo['size'] ?? 0) > $topeBytes)) {
+        botPanel_responder(400, [
+            'status'  => 'error',
+            'message' => 'La imagen supera los 10 MB.',
+        ]);
+    }
+    if ($errorArchivo !== UPLOAD_ERR_OK || empty($archivo['tmp_name'])) {
+        botPanel_responder(400, [
+            'status'  => 'error',
+            'message' => 'No se recibió la imagen.',
+        ]);
+    }
+
+    $extension = strtolower(pathinfo((string) ($archivo['name'] ?? ''), PATHINFO_EXTENSION));
+    if (!in_array($extension, ['jpg', 'jpeg', 'png', 'mp4'], true)) {
+        botPanel_responder(400, [
+            'status'  => 'error',
+            'message' => 'Formato no soportado: usá JPG, PNG o MP4.',
+        ]);
+    }
+
+    $mime = mime_content_type($archivo['tmp_name']) ?: 'application/octet-stream';
+    $cfile = new CURLFile($archivo['tmp_name'], $mime, $archivo['name'] ?: 'foto');
+
+    $ch = curl_init($canal['url'] . '/api/panel/configuracion/imagen');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_POSTFIELDS     => ['foto' => $cfile],
+        CURLOPT_HTTPHEADER     => [
+            'X-API-Key: ' . $canal['secret'],
+            'Accept: application/json',
+        ],
+    ]);
+
+    $respuesta  = curl_exec($ch);
+    $codigoHttp = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $error      = curl_error($ch);
+    curl_close($ch);
+
+    if ($respuesta === false) {
+        botPanel_responder(502, [
+            'status'  => 'error',
+            'message' => 'No se pudo contactar al backend del bot: ' . $error,
+        ]);
+    }
+
+    $json = json_decode($respuesta, true);
+    if (!is_array($json)) {
+        botPanel_responder(502, [
+            'status'  => 'error',
+            'message' => 'El bot no devolvió una respuesta válida.',
+        ]);
+    }
+
+    if (isset($json['detail']) && !isset($json['message'])) {
+        $json['message'] = is_string($json['detail']) ? $json['detail'] : 'No se pudo cambiar la foto.';
+        $json['status'] = $json['status'] ?? 'error';
+    }
+
+    botPanel_responder($codigoHttp ?: 200, $json);
+}
+
 /** Reenvía tal cual la respuesta de un solo canal (acciones que no se unen). */
 function botPanel_reenviar(array $canal, string $ruta): void
 {
@@ -242,6 +318,10 @@ switch ($action) {
 
     case 'comandos':
         botPanel_llamar('/api/panel/comandos');
+        break;
+
+    case 'config_imagen':
+        botPanel_enviar_foto($canales['telegram'], $_FILES['foto'] ?? []);
         break;
 
     default:

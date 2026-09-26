@@ -6,20 +6,32 @@
  * Renderiza la estructura visual de una Tarjeta de Credencial reutilizable
  * Subtarea 3: Estructura visual base, con soporte para inputs adaptables y estilos coherentes
  */
-function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2, $name2, $val2, $type2 = "text") {
+function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2, $name2, $val2, $type2 = "text", $conFoto = false, $placeholder2 = "") {
+    $textoPlaceholder2 = $placeholder2 !== "" ? $placeholder2 : ("Ingrese " . strtolower($label2));
     ?>
     <div class="col-12 col-lg-6">
         <div class="card shadow-sm h-100 border rounded-3 bg-white">
-            <!-- Cabecera de la Tarjeta -->
             <div class="card-header bg-transparent border-0 pt-4 pb-2">
                 <h5 class="fw-bold d-flex align-items-center mb-0">
                     <i class="<?php echo $icono; ?> me-2 fs-4"></i>
                     <?php echo $canal; ?>
                 </h5>
             </div>
-            <!-- Cuerpo con Inputs -->
             <div class="card-body pt-2">
-                <!-- Primer Campo -->
+                <?php if ($conFoto) { ?>
+                <div class="cfg-foto">
+                    <p class="cfg-foto-titulo mb-2">Foto de perfil del bot</p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="cfg-foto-preview" id="telegram-foto-preview" aria-hidden="true">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <label class="btn btn-outline-primary cfg-foto-btn mb-0" for="telegram_foto_perfil">
+                            <i class="fa-solid fa-image me-2"></i>Seleccionar imagen
+                        </label>
+                        <input type="file" class="d-none" id="telegram_foto_perfil" name="telegram_foto_perfil" accept="image/jpeg,image/png,.jpg,.jpeg,.png,.mp4">
+                    </div>
+                </div>
+                <?php } ?>
                 <div class="mb-3">
                     <label for="<?php echo $name1; ?>" class="form-label fw-bold text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.05em;">
                         <?php echo $label1; ?>
@@ -31,7 +43,7 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                     <label for="<?php echo $name2; ?>" class="form-label fw-bold text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.05em;">
                         <?php echo $label2; ?>
                     </label>
-                    <input type="<?php echo $type2; ?>" class="form-control" id="<?php echo $name2; ?>" name="<?php echo $name2; ?>" value="<?php echo htmlspecialchars($val2); ?>" placeholder="Ingrese <?php echo strtolower($label2); ?>">
+                    <input type="<?php echo $type2; ?>" class="form-control" id="<?php echo $name2; ?>" name="<?php echo $name2; ?>" value="<?php echo htmlspecialchars($val2); ?>" placeholder="<?php echo htmlspecialchars($textoPlaceholder2); ?>">
                 </div>
             </div>
         </div>
@@ -70,9 +82,12 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                                 "Token del Bot",
                                 "telegram_token",
                                 $telegram_token,
-                                "ID del Chat",
+                                "Nombre del bot",
                                 "telegram_chat_id",
-                                $telegram_chat_id
+                                $telegram_chat_id,
+                                "text",
+                                true,
+                                "Ingrese el nombre del bot"
                             );
 
                             // Tarjeta WhatsApp
@@ -122,7 +137,9 @@ document.addEventListener("DOMContentLoaded", function() {
             const formData = new FormData(form);
             const data = {};
             formData.forEach((value, key) => {
-                data[key] = value.trim();
+                if (typeof value === "string") {
+                    data[key] = value.trim();
+                }
             });
 
             // Validación de campos vacíos en el Frontend
@@ -226,6 +243,113 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     cargarEstadoBot();
+
+    const inputFoto = document.getElementById("telegram_foto_perfil");
+    const previewFoto = document.getElementById("telegram-foto-preview");
+    if (inputFoto && previewFoto) {
+        inputFoto.addEventListener("change", async function() {
+            const archivo = this.files && this.files[0];
+            if (!archivo) return;
+
+            const extension = (archivo.name.split(".").pop() || "").toLowerCase();
+            if (!["jpg", "jpeg", "png", "mp4"].includes(extension)) {
+                this.value = "";
+                Swal.fire({
+                    icon: "error",
+                    title: "Formato no soportado",
+                    text: "Usá JPG, PNG o MP4.",
+                    confirmButtonColor: "#20c997"
+                });
+                return;
+            }
+            if (archivo.size > 10 * 1024 * 1024) {
+                this.value = "";
+                Swal.fire({
+                    icon: "error",
+                    title: "Archivo demasiado grande",
+                    text: "La imagen supera los 10 MB.",
+                    confirmButtonColor: "#20c997"
+                });
+                return;
+            }
+
+            const lector = new FileReader();
+            lector.onload = function(ev) {
+                const etiqueta = extension === "mp4" ? "video" : "img";
+                previewFoto.innerHTML = '<' + etiqueta + ' src="' + ev.target.result + '" alt="Foto de perfil del bot"' + (extension === "mp4" ? ' muted' : '') + '></' + etiqueta + '>';
+            };
+            lector.readAsDataURL(archivo);
+
+            const datos = new FormData();
+            datos.append("foto", archivo);
+            try {
+                const res = await fetch("app/cir-api/endpoints/bot-panel-e.php?action=config_imagen", {
+                    method: "POST",
+                    body: datos
+                });
+                const json = await res.json();
+                const detalle = json.message || json.detail || json.mensaje;
+                if (!res.ok || json.status === "error") {
+                    Swal.fire({
+                        icon: "error",
+                        title: "No se pudo cambiar la foto",
+                        text: typeof detalle === "string" ? detalle : "El bot no aceptó la imagen.",
+                        confirmButtonColor: "#20c997"
+                    });
+                    return;
+                }
+                Swal.fire({
+                    icon: "success",
+                    title: "Foto actualizada",
+                    text: typeof detalle === "string" ? detalle : "Foto de perfil actualizada.",
+                    confirmButtonColor: "#20c997"
+                });
+            } catch (error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "No se pudo cambiar la foto",
+                    text: "No hubo respuesta del servidor.",
+                    confirmButtonColor: "#20c997"
+                });
+            }
+        });
+    }
 });
 </script>
+
+<style>
+.cfg-foto {
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+.cfg-foto-titulo { font-weight: 700; }
+.cfg-foto-preview {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: #e7f3ff;
+    color: #0d6efd;
+    font-size: 1.7rem;
+    border: 1px solid rgba(13, 110, 253, 0.2);
+}
+.cfg-foto-preview img,
+.cfg-foto-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.cfg-foto-btn { border-radius: 0.4rem; }
+body.modo-oscuro .cfg-foto { border-bottom-color: #444; }
+body.modo-oscuro .cfg-foto-preview {
+    background: #1a3348;
+    color: #6cb6ff;
+    border-color: #375a7f;
+}
+</style>
 

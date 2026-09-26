@@ -142,17 +142,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             });
 
-            // Validación de campos vacíos en el Frontend
-            if (!data.telegram_token || !data.telegram_chat_id || !data.whatsapp_phone || !data.whatsapp_token) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Campos incompletos',
-                    text: 'Por favor, completa todas las credenciales de Telegram y WhatsApp antes de guardar.',
-                    confirmButtonColor: '#20c997'
-                });
-                return;
-            }
-
             // Cambiar estado del botón de guardar (Loading)
             const btnSubmit = form.querySelector('button[type="submit"]');
             const originalText = btnSubmit.innerHTML;

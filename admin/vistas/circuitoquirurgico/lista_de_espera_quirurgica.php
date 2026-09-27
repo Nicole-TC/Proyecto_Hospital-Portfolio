@@ -10,27 +10,47 @@
     <div class="card border-0 mb-4 le-card">
         <div class="card-body p-3 p-md-4">
             <div class="row g-3 align-items-end">
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">APTO FÍSICO DESDE</label>
-                    <input type="date" class="form-control border-0 bg-light le-control" id="filtro-fecha-desde">
+                <div class="col-12">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold" for="filtro-fecha-desde">APTO FÍSICO DESDE</label>
+                            <input type="date" class="form-control border-0 bg-light le-control" id="filtro-fecha-desde">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">APTO FÍSICO HASTA</label>
+                            <input type="date" class="form-control border-0 bg-light le-control" id="filtro-fecha-hasta">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold" for="filtro-estado-apto">ESTADO APTO FÍSICO</label>
+                            <select class="form-select border-0 bg-light le-select" id="filtro-estado-apto">
+                                <option value="OK" selected>Apto Quirúrgico</option>
+                                <option value="OBS">Observado</option>
+                                <option value="TODOS">Todos</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-fecha-hasta">APTO FÍSICO HASTA</label>
-                    <input type="date" class="form-control border-0 bg-light le-control" id="filtro-fecha-hasta">
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <label class="form-label text-secondary small fw-bold" for="filtro-estado-apto">ESTADO APTO FÍSICO</label>
-                    <select class="form-select border-0 bg-light le-select" id="filtro-estado-apto">
-                        <option value="OK" selected>Apto Quirúrgico</option>
-                        <option value="OBS">Observado</option>
-                        <option value="TODOS">Todos</option>
-                    </select>
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <label class="form-label text-secondary small fw-bold d-none d-lg-block">&nbsp;</label>
-                    <button type="button" class="btn btn-primary w-100 fw-bold le-btn" id="btn-filtrar-espera">
-                        <i class="bi bi-search me-1"></i> BUSCAR
-                    </button>
+                <div class="col-12">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold" for="filtro-especialidad">ESPECIALIDAD</label>
+                            <select class="form-select border-0 bg-light le-select" id="filtro-especialidad">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold" for="filtro-subespecialidad">SUBESPECIALIDAD</label>
+                            <select class="form-select border-0 bg-light le-select" id="filtro-subespecialidad" disabled>
+                                <option value="">Seleccione una especialidad primero</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label text-secondary small fw-bold d-none d-md-block">&nbsp;</label>
+                            <button type="button" class="btn btn-primary w-100 fw-bold le-btn" id="btn-filtrar-espera">
+                                <i class="bi bi-search me-1"></i> BUSCAR
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -44,6 +64,8 @@
                         <th class="le-th border-0">DNI</th>
                         <th class="le-th border-0">Paciente</th>
                         <th class="le-th border-0">Cirugía</th>
+                        <th class="le-th border-0">Especialidad</th>
+                        <th class="le-th border-0">Subespecialidad</th>
                         <th class="le-th border-0">Apto Desde</th>
                         <th class="le-th border-0">Estado</th>
                         <th class="le-th border-0 text-center">Prioridad</th>
@@ -353,6 +375,7 @@ body.modo-oscuro input[type="date"]::-webkit-calendar-picker-indicator {
 
 <script>
 let tablaListaEspera;
+let catalogoSubespecialidades = [];
 
 function inicializarTabla() {
     if ($.fn.DataTable.isDataTable('#tabla-lista-espera')) {
@@ -360,7 +383,7 @@ function inicializarTabla() {
     }
 
     tablaListaEspera = $('#tabla-lista-espera').DataTable({
-        order: [[5, 'asc'], [3, 'asc']],
+        order: [[7, 'asc'], [5, 'asc']],
         // Mostrar/Filtrar fuera del scroll; scroll solo en la tabla
         dom:
             "<'le-dt-toolbar px-3'<'row align-items-center g-2'<'col-12 col-md-6'l><'col-12 col-md-6'f>>>" +
@@ -395,6 +418,8 @@ function inicializarTabla() {
                 return '<span class="fw-semibold">' + data.paciente_apellido + ', ' + data.paciente_nombre + '</span>';
             } },
             { data: 'cirugia_nombre', className: 'text-secondary' },
+            { data: 'especialidad_nombre', defaultContent: '<span class="text-muted">-</span>', className: 'text-secondary' },
+            { data: 'subespecialidad_nombre', defaultContent: '<span class="text-muted">-</span>', className: 'text-secondary' },
             { data: 'apto_desde', className: 'text-center', render: function (data) {
                 if (!data) return '<span class="text-muted">-</span>';
                 const parts = data.split(' ')[0].split('-');
@@ -464,6 +489,76 @@ function inicializarTabla() {
     });
 }
 
+function cargarFiltrosEspecialidad() {
+    $.ajax({
+        url: 'app/cir-api/endpoints/lista_espera-e.php?accion=obtener_catalogos_especialidades',
+        method: 'GET',
+        dataType: 'json',
+        success: function(res) {
+            if (res.status !== 'success') return;
+
+            (res.especialidades || []).forEach(function(registro) {
+                $('#filtro-especialidad').append(
+                    $('<option>')
+                        .val(registro.id_especialidad)
+                        .attr('data-nombre', registro.nombre)
+                        .text(registro.nombre)
+                );
+            });
+            catalogoSubespecialidades = res.subespecialidades || [];
+        },
+        error: function() {
+            Swal.fire('Error', 'No se pudieron cargar las especialidades del catálogo.', 'error');
+        }
+    });
+}
+
+function actualizarSelectSubespecialidades() {
+    const idEspecialidad = $('#filtro-especialidad').val();
+    const $select = $('#filtro-subespecialidad');
+    $select.empty();
+
+    if (!idEspecialidad) {
+        $select.append($('<option>').val('').text('Seleccione una especialidad primero'));
+        $select.prop('disabled', true);
+        return;
+    }
+
+    const subespecialidades = catalogoSubespecialidades.filter(function(registro) {
+        return String(registro.id_especialidad_padre) === String(idEspecialidad);
+    });
+
+    $select.append($('<option>').val('').text('Todas'));
+    subespecialidades.forEach(function(registro) {
+        $select.append(
+            $('<option>')
+                .val(registro.id_especialidad)
+                .attr('data-nombre', registro.nombre)
+                .text(registro.nombre)
+        );
+    });
+    $select.prop('disabled', subespecialidades.length === 0);
+
+    if (subespecialidades.length === 0) {
+        $select.empty().append($('<option>').val('').text('Sin subespecialidades'));
+    }
+}
+
+function aplicarFiltrosEspecialidad() {
+    const nombreEspecialidad = $('#filtro-especialidad option:selected').attr('data-nombre') || '';
+    const nombreSubespecialidad = $('#filtro-subespecialidad option:selected').attr('data-nombre') || '';
+    [
+        { columna: 3, valor: nombreEspecialidad },
+        { columna: 4, valor: nombreSubespecialidad }
+    ].forEach(function(filtro) {
+        const expresion = filtro.valor
+            ? '(^|,\\s*)' + $.fn.dataTable.util.escapeRegex(filtro.valor) + '(,\\s*|$)'
+            : '';
+        tablaListaEspera.column(filtro.columna).search(expresion, true, false);
+    });
+    tablaListaEspera.draw();
+}
+
 function fechaHoyISO() {
     let hoy = new Date();
     let mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -492,6 +587,7 @@ $(document).ready(function() {
     $('#filtro-fecha-hasta').attr('max', fechaHoyISO());
     inicializarTabla();
     cargarCirujanos();
+    cargarFiltrosEspecialidad();
 });
 
 $('#btn-filtrar-espera').on('click', function() {
@@ -511,6 +607,13 @@ $('#btn-filtrar-espera').on('click', function() {
 $('#filtro-estado-apto').on('change', function() {
     $('#btn-filtrar-espera').click();
 });
+
+$('#filtro-especialidad').on('change', function() {
+    actualizarSelectSubespecialidades();
+    aplicarFiltrosEspecialidad();
+});
+
+$('#filtro-subespecialidad').on('change', aplicarFiltrosEspecialidad);
 
 let diasActivosAgenda = [];
 

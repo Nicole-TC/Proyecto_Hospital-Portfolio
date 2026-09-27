@@ -27,6 +27,18 @@
                     </select>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-especialidad">ESPECIALIDAD</label>
+                    <select class="form-select border-0 bg-light le-select" id="filtro-especialidad">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                    <label class="form-label text-secondary small fw-bold" for="filtro-subespecialidad">SUBESPECIALIDAD</label>
+                    <select class="form-select border-0 bg-light le-select" id="filtro-subespecialidad">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
                     <label class="form-label text-secondary small fw-bold d-none d-lg-block">&nbsp;</label>
                     <button type="button" class="btn btn-primary w-100 fw-bold le-btn" id="btn-filtrar-espera">
                         <i class="bi bi-search me-1"></i> BUSCAR
@@ -44,6 +56,8 @@
                         <th class="le-th border-0">DNI</th>
                         <th class="le-th border-0">Paciente</th>
                         <th class="le-th border-0">Cirugía</th>
+                        <th class="le-th border-0">Especialidad</th>
+                        <th class="le-th border-0">Subespecialidad</th>
                         <th class="le-th border-0">Apto Desde</th>
                         <th class="le-th border-0">Estado</th>
                         <th class="le-th border-0 text-center">Prioridad</th>
@@ -360,7 +374,7 @@ function inicializarTabla() {
     }
 
     tablaListaEspera = $('#tabla-lista-espera').DataTable({
-        order: [[5, 'asc'], [3, 'asc']],
+        order: [[7, 'asc'], [5, 'asc']],
         // Mostrar/Filtrar fuera del scroll; scroll solo en la tabla
         dom:
             "<'le-dt-toolbar px-3'<'row align-items-center g-2'<'col-12 col-md-6'l><'col-12 col-md-6'f>>>" +
@@ -381,7 +395,9 @@ function inicializarTabla() {
                         callback({ data: [] });
                         return;
                     }
-                    callback({ data: json.registros || [] });
+                    const registros = json.registros || [];
+                    actualizarFiltrosEspecialidad(registros);
+                    callback({ data: registros });
                 },
                 error: function() {
                     Swal.fire('Error', 'No se pudo comunicar con el servidor al cargar la lista.', 'error');
@@ -395,6 +411,8 @@ function inicializarTabla() {
                 return '<span class="fw-semibold">' + data.paciente_apellido + ', ' + data.paciente_nombre + '</span>';
             } },
             { data: 'cirugia_nombre', className: 'text-secondary' },
+            { data: 'especialidad_nombre', defaultContent: '<span class="text-muted">-</span>', className: 'text-secondary' },
+            { data: 'subespecialidad_nombre', defaultContent: '<span class="text-muted">-</span>', className: 'text-secondary' },
             { data: 'apto_desde', className: 'text-center', render: function (data) {
                 if (!data) return '<span class="text-muted">-</span>';
                 const parts = data.split(' ')[0].split('-');
@@ -464,6 +482,46 @@ function inicializarTabla() {
     });
 }
 
+function actualizarFiltrosEspecialidad(registros) {
+    [
+        { selector: '#filtro-especialidad', campo: 'especialidad_nombre' },
+        { selector: '#filtro-subespecialidad', campo: 'subespecialidad_nombre' }
+    ].forEach(function(filtro) {
+        const $select = $(filtro.selector);
+        const seleccionado = $select.val() || '';
+        const opciones = new Set();
+        registros.forEach(function(registro) {
+            (registro[filtro.campo] || '').split(',').forEach(function(nombre) {
+                nombre = nombre.trim();
+                if (nombre) opciones.add(nombre);
+            });
+        });
+
+        $select.empty().append('<option value="">Todas</option>');
+        Array.from(opciones).sort(function(a, b) { return a.localeCompare(b); }).forEach(function(nombre) {
+            $select.append($('<option>').val(nombre).text(nombre));
+        });
+        if (seleccionado && !opciones.has(seleccionado)) {
+            $select.append($('<option>').val(seleccionado).text(seleccionado));
+        }
+        $select.val(seleccionado);
+    });
+}
+
+function aplicarFiltrosEspecialidad() {
+    const filtros = [
+        { columna: 3, valor: $('#filtro-especialidad').val() },
+        { columna: 4, valor: $('#filtro-subespecialidad').val() }
+    ];
+    filtros.forEach(function(filtro) {
+        const expresion = filtro.valor
+            ? '(^|,\\s*)' + $.fn.dataTable.util.escapeRegex(filtro.valor) + '(\\s*,|$)'
+            : '';
+        tablaListaEspera.column(filtro.columna).search(expresion, true, false);
+    });
+    tablaListaEspera.draw();
+}
+
 function fechaHoyISO() {
     let hoy = new Date();
     let mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -511,6 +569,8 @@ $('#btn-filtrar-espera').on('click', function() {
 $('#filtro-estado-apto').on('change', function() {
     $('#btn-filtrar-espera').click();
 });
+
+$('#filtro-especialidad, #filtro-subespecialidad').on('change', aplicarFiltrosEspecialidad);
 
 let diasActivosAgenda = [];
 

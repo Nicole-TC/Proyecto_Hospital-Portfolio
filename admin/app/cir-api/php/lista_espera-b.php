@@ -74,6 +74,32 @@ class ConsultasListasEspera {
                 c.nombre AS cirugia_nombre,
                 c.id_cirugia_catalogo,
                 (
+                    SELECT string_agg(especialidades.nombre, ', ' ORDER BY especialidades.nombre)
+                    FROM (
+                        SELECT DISTINCT CASE
+                            WHEN e.id_especialidad_padre IS NULL THEN e.nombre
+                            ELSE padre.nombre
+                        END AS nombre
+                        FROM profesional_especialidad pe
+                        INNER JOIN especialidad e ON e.id_especialidad = pe.id_especialidad
+                        LEFT JOIN especialidad padre ON padre.id_especialidad = e.id_especialidad_padre
+                        WHERE pe.id_profesional = om.id_profesional
+                          AND e.id_estado = :id_estado_especialidad
+                          AND (e.id_especialidad_padre IS NULL OR padre.id_estado = :id_estado_padre)
+                    ) especialidades
+                ) AS especialidad_nombre,
+                (
+                    SELECT string_agg(subespecialidades.nombre, ', ' ORDER BY subespecialidades.nombre)
+                    FROM (
+                        SELECT DISTINCT e.nombre
+                        FROM profesional_especialidad pe
+                        INNER JOIN especialidad e ON e.id_especialidad = pe.id_especialidad
+                        WHERE pe.id_profesional = om.id_profesional
+                          AND e.id_especialidad_padre IS NOT NULL
+                          AND e.id_estado = :id_estado_subespecialidad
+                    ) subespecialidades
+                ) AS subespecialidad_nombre,
+                (
                     SELECT v.fecha
                     FROM verificacion_pre_cirugia v
                     WHERE v.id_orden = om.id_orden
@@ -106,6 +132,10 @@ class ConsultasListasEspera {
 
         $stmt = $pdo->prepare($sql);
         foreach ($params as $k => $v) $stmt->bindValue($k, $v);
+        $idActivo = id_estado('USUARIO', 'ACT');
+        $stmt->bindValue(':id_estado_especialidad', $idActivo, PDO::PARAM_INT);
+        $stmt->bindValue(':id_estado_padre', $idActivo, PDO::PARAM_INT);
+        $stmt->bindValue(':id_estado_subespecialidad', $idActivo, PDO::PARAM_INT);
         $stmt->execute();
         
         $registros = $stmt->fetchAll(PDO::FETCH_ASSOC);

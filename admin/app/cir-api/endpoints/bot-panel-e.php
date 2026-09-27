@@ -99,6 +99,66 @@ function botPanel_consultar(array $canal, string $ruta): array
     ];
 }
 
+/**
+ * Envía JSON a un backend y devuelve el resultado sin cortar la ejecución.
+ *
+ * @return array{ok: bool, codigo: int, json: array, error: string}
+ */
+function botPanel_enviar_json(array $canal, string $ruta, string $metodo, ?array $body): array
+{
+    if ($canal['url'] === '' || $canal['secret'] === '') {
+        return ['ok' => false, 'codigo' => 503, 'json' => [], 'error' => 'canal no configurado'];
+    }
+
+    $opciones = [
+        CURLOPT_CUSTOMREQUEST  => strtoupper($metodo),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 30,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_HTTPHEADER     => [
+            'X-API-Key: ' . $canal['secret'],
+            'Accept: application/json',
+            'Content-Type: application/json',
+        ],
+    ];
+    if ($body !== null) {
+        $opciones[CURLOPT_POSTFIELDS] = json_encode($body, JSON_UNESCAPED_UNICODE);
+    }
+
+    $ch = curl_init($canal['url'] . $ruta);
+    curl_setopt_array($ch, $opciones);
+
+    $respuesta  = curl_exec($ch);
+    $codigoHttp = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $error      = curl_error($ch);
+    curl_close($ch);
+
+    if ($respuesta === false) {
+        return ['ok' => false, 'codigo' => 502, 'json' => [], 'error' => $error];
+    }
+
+    $json = json_decode($respuesta, true);
+    if (!is_array($json)) {
+        return ['ok' => false, 'codigo' => 502, 'json' => [], 'error' => 'respuesta no JSON'];
+    }
+
+    if (isset($json['detail']) && !isset($json['message'])) {
+        $json['message'] = is_string($json['detail']) ? $json['detail'] : 'No se pudo guardar la configuración.';
+    }
+
+    $ok = $codigoHttp >= 200 && $codigoHttp < 300;
+    if (!isset($json['status'])) {
+        $json['status'] = $ok ? 'success' : 'error';
+    }
+
+    return [
+        'ok'     => $ok,
+        'codigo' => $codigoHttp,
+        'json'   => $json,
+        'error'  => (string) ($json['message'] ?? $error),
+    ];
+}
+
 /** Reenvía la foto de perfil al bot de Telegram. */
 function botPanel_enviar_foto(array $canal, array $archivo): void
 {
@@ -317,7 +377,38 @@ switch ($action) {
         break;
 
     case 'comandos':
-        botPanel_llamar('/api/panel/comandos');
+        botPanel_reenviar($canales['telegram'], '/api/panel/comandos');
+        break;
+
+    case 'configuracion':
+        $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        if ($metodo === 'GET') {
+            $r = botPanel_enviar_json($canales['telegram'], '/api/panel/configuracion', 'GET', null);
+        } elseif ($metodo === 'PUT' || $metodo === 'POST') {
+            $body = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($body)) {
+                botPanel_responder(400, ['status' => 'error', 'message' => 'El cuerpo no es un JSON válido.']);
+            }
+            $nombre = trim((string) ($body['nombre_bot'] ?? ''));
+            if ($nombre === '') {
+                botPanel_responder(400, ['status' => 'error', 'message' => 'El nombre del bot no puede estar vacío.']);
+            }
+            $envio = ['nombre_bot' => $nombre];
+            if (isset($body['token']) && trim((string) $body['token']) !== '') {
+                $envio['token'] = trim((string) $body['token']);
+            }
+            $r = botPanel_enviar_json($canales['telegram'], '/api/panel/configuracion', 'PUT', $envio);
+        } else {
+            botPanel_responder(405, ['status' => 'error', 'message' => 'Método no permitido.']);
+        }
+
+        if (!$r['ok'] && $r['json'] === []) {
+            botPanel_responder($r['codigo'], [
+                'status'  => 'error',
+                'message' => 'No se pudo contactar al backend del bot: ' . $r['error'],
+            ]);
+        }
+        botPanel_responder($r['codigo'] ?: 200, $r['json']);
         break;
 
     case 'config_imagen':

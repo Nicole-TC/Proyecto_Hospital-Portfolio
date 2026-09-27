@@ -6,7 +6,8 @@
  * Renderiza la estructura visual de una Tarjeta de Credencial reutilizable
  * Subtarea 3: Estructura visual base, con soporte para inputs adaptables y estilos coherentes
  */
-function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2, $name2, $val2, $type2 = "text", $conFoto = false, $placeholder2 = "") {
+function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2, $name2, $val2, $type2 = "text", $conFoto = false, $placeholder2 = "", $placeholder1 = "") {
+    $textoPlaceholder1 = $placeholder1 !== "" ? $placeholder1 : ("Ingrese " . strtolower($label1));
     $textoPlaceholder2 = $placeholder2 !== "" ? $placeholder2 : ("Ingrese " . strtolower($label2));
     ?>
     <div class="col-12 col-lg-6">
@@ -36,7 +37,7 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                     <label for="<?php echo $name1; ?>" class="form-label fw-bold text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.05em;">
                         <?php echo $label1; ?>
                     </label>
-                    <input type="text" class="form-control" id="<?php echo $name1; ?>" name="<?php echo $name1; ?>" value="<?php echo htmlspecialchars($val1); ?>" placeholder="Ingrese <?php echo strtolower($label1); ?>">
+                    <input type="text" class="form-control" id="<?php echo $name1; ?>" name="<?php echo $name1; ?>" value="<?php echo htmlspecialchars($val1); ?>" placeholder="<?php echo htmlspecialchars($textoPlaceholder1); ?>">
                 </div>
                 <!-- Segundo Campo -->
                 <div class="mb-3">
@@ -71,7 +72,7 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                             <?php
                             // Valores de estado iniciales (se vincularán con el backend en pasos posteriores)
                             $telegram_token = "";
-                            $telegram_chat_id = "";
+                            $nombre_bot = "";
                             $whatsapp_phone = "";
                             $whatsapp_token = "";
 
@@ -83,11 +84,12 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
                                 "telegram_token",
                                 $telegram_token,
                                 "Nombre del bot",
-                                "telegram_chat_id",
-                                $telegram_chat_id,
+                                "nombre_bot",
+                                $nombre_bot,
                                 "text",
                                 true,
-                                "Ingrese el nombre del bot"
+                                "Ingrese el nombre del bot",
+                                "Dejar vacío para no cambiar el token"
                             );
 
                             // Tarjeta WhatsApp
@@ -128,70 +130,9 @@ function renderTarjetaCredencial($canal, $icono, $label1, $name1, $val1, $label2
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const form = document.getElementById("form-configuracion-conexion");
-    if (form) {
-        form.addEventListener("submit", async function(e) {
-            e.preventDefault();
-            
-            // Capturar datos del formulario
-            const formData = new FormData(form);
-            const data = {};
-            formData.forEach((value, key) => {
-                if (typeof value === "string") {
-                    data[key] = value.trim();
-                }
-            });
-
-            // Cambiar estado del botón de guardar (Loading)
-            const btnSubmit = form.querySelector('button[type="submit"]');
-            const originalText = btnSubmit.innerHTML;
-            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando...';
-            btnSubmit.disabled = true;
-
-            try {
-                // Simulación de latencia de red para demostrar el estado de carga
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Mensaje en consola con los datos listos para el backend
-                console.log("Payload listo para enviar al backend:", data);
-
-                // API Fetch real (ejemplo preparado para conectar en el futuro):
-                /*
-                const response = await fetch('api/chatbot/guardar_conexion.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (result.status !== 'success') throw new Error(result.message);
-                */
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Configuración Guardada',
-                    text: 'Las credenciales de conexión se han registrado exitosamente.',
-                    confirmButtonColor: '#20c997'
-                });
-            } catch (error) {
-                console.error("Error al guardar credenciales:", error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error de Conexión',
-                    text: 'No se pudo guardar la configuración. Intenta nuevamente.',
-                    confirmButtonColor: '#20c997'
-                });
-            } finally {
-                // Restaurar estado del botón
-                btnSubmit.innerHTML = originalText;
-                btnSubmit.disabled = false;
-            }
-        });
-    }
+    const API_URL = 'app/cir-api/endpoints/bot-panel-e.php';
 
     // --- Estado vivo/muerto del bot desde el backend ---
-    const API_URL = 'app/cir-api/endpoints/bot-panel-e.php';
 
     async function cargarEstadoBot() {
         const contenedor = document.getElementById("estado-bot");
@@ -303,6 +244,132 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+});
+</script>
+
+<script>
+// Nombre y token del bot: $.get para leer, $.ajax para guardar.
+$(document).ready(function(){
+    var API_URL = "app/cir-api/endpoints/bot-panel-e.php";
+
+    function cargarNombreBot() {
+        $.get(API_URL + "?action=configuracion", function(response, status){
+            console.log(response);
+            console.log(status);
+            if (status == "success") {
+                var datos = response;
+                if (typeof response == "string") {
+                    datos = JSON.parse(response);
+                }
+                $("#nombre_bot").val(datos.nombre_bot);
+            }
+        });
+    }
+
+    $("#form-configuracion-conexion").submit(function(e){
+        e.preventDefault();
+
+        var nombre = $("#nombre_bot").val().trim();
+        var token = $("#telegram_token").val().trim();
+
+        if (nombre == "") {
+            Swal.fire({
+                icon: "warning",
+                title: "Nombre vacío",
+                text: "Ingresá el nombre del bot.",
+                confirmButtonColor: "#20c997"
+            });
+            return;
+        }
+
+        var datosEnviar = {
+            nombre_bot: nombre
+        };
+        if (token != "") {
+            datosEnviar.token = token;
+        }
+
+        var btn = $(this).find("button[type='submit']");
+        var textoBoton = btn.html();
+        btn.html('<i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando...');
+        btn.prop("disabled", true);
+
+        $.ajax({
+            url: API_URL + "?action=configuracion",
+            type: "PUT",
+            contentType: "application/json",
+            data: JSON.stringify(datosEnviar),
+            success: function(response, status){
+                console.log(response);
+                console.log(status);
+                if (status == "success") {
+                    var datos = response;
+                    if (typeof response == "string") {
+                        datos = JSON.parse(response);
+                    }
+
+                    if (datos.status != "success") {
+                        Swal.fire({
+                            icon: "error",
+                            title: "No se pudo guardar",
+                            text: datos.message || "No se pudo guardar la configuración.",
+                            confirmButtonColor: "#20c997"
+                        });
+                        return;
+                    }
+
+                    if (datos.validacion && datos.validacion.nombre && datos.validacion.nombre.ok == false) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "No se pudo cambiar el nombre",
+                            text: datos.validacion.nombre.mensaje || "Telegram no aceptó el nombre.",
+                            confirmButtonColor: "#20c997"
+                        });
+                        cargarNombreBot();
+                        return;
+                    }
+
+                    if (datos.validacion && datos.validacion.token && datos.validacion.token.mensaje) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Nombre actualizado",
+                            text: datos.validacion.token.mensaje,
+                            confirmButtonColor: "#20c997"
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "success",
+                            title: "Configuración guardada",
+                            text: "El nombre del bot se actualizó.",
+                            confirmButtonColor: "#20c997"
+                        });
+                    }
+
+                    $("#telegram_token").val("");
+                    cargarNombreBot();
+                }
+            },
+            error: function(xhr, status){
+                console.log(status);
+                var mensaje = "No se pudo guardar la configuración. Intenta nuevamente.";
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    mensaje = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    icon: "error",
+                    title: "No se pudo guardar",
+                    text: mensaje,
+                    confirmButtonColor: "#20c997"
+                });
+            },
+            complete: function(){
+                btn.html(textoBoton);
+                btn.prop("disabled", false);
+            }
+        });
+    });
+
+    cargarNombreBot();
 });
 </script>
 

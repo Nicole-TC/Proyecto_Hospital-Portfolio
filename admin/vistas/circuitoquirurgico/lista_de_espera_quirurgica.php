@@ -405,7 +405,6 @@ function inicializarTabla() {
                         return;
                     }
                     const registros = json.registros || [];
-                    actualizarFiltrosEspecialidad(registros);
                     callback({ data: registros });
                 },
                 error: function() {

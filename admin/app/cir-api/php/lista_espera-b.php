@@ -180,6 +180,34 @@ class ConsultasListasEspera {
             'total'     => count($registros),
         ];
     }
+
+    public static function obtenerCatalogosEspecialidades(): array {
+        $pdo = conexionCircuitoQuirurgico();
+        $idActivo = id_estado('USUARIO', 'ACT');
+        $sql = "SELECT id_especialidad, nombre, id_especialidad_padre
+                FROM especialidad
+                WHERE id_estado = :id_activo
+                ORDER BY nombre";
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindValue(':id_activo', $idActivo, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $especialidades = [];
+        $subespecialidades = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $registro) {
+            if ($registro['id_especialidad_padre'] === null) {
+                $especialidades[] = $registro;
+            } else {
+                $subespecialidades[] = $registro;
+            }
+        }
+
+        return [
+            'especialidades' => $especialidades,
+            'subespecialidades' => $subespecialidades,
+        ];
+    }
+
     public static function obtenerCirujanos(): array {
         $pdo = conexionCircuitoQuirurgico();
         // Obtener todos los profesionales registrados (podría filtrarse por especialidad quirúrgica si existiese)

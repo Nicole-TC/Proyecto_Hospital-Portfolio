@@ -38,6 +38,12 @@ try {
             exit;
         }
 
+        if ($accion === 'obtener_catalogos_especialidades') {
+            $catalogos = ConsultasListasEspera::obtenerCatalogosEspecialidades();
+            echo json_encode(['status' => 'success'] + $catalogos);
+            exit;
+        }
+
         $estado_apto = isset($_GET['estado_apto']) ? $_GET['estado_apto'] : 'OK';
         $fecha_desde = isset($_GET['fecha_desde']) ? $_GET['fecha_desde'] : '';
         $fecha_hasta = isset($_GET['fecha_hasta']) ? $_GET['fecha_hasta'] : '';

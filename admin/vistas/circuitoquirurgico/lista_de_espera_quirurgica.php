@@ -404,7 +404,9 @@ function inicializarTabla() {
                         callback({ data: [] });
                         return;
                     }
-                    callback({ data: json.registros || [] });
+                    const registros = json.registros || [];
+                    actualizarFiltrosEspecialidad(registros);
+                    callback({ data: registros });
                 },
                 error: function() {
                     Swal.fire('Error', 'No se pudo comunicar con el servidor al cargar la lista.', 'error');

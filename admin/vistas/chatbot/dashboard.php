@@ -20,16 +20,7 @@
             Estado del servicio
         </h6>
         <div class="row g-3 mb-4" id="dash-cards-estado">
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="card shadow-sm h-100 border rounded-3 bg-white">
-                    <div class="card-body">
-                        <p class="text-muted small text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Servidor API</p>
-                        <h2 class="fw-bold mb-2 text-muted" id="dash-servidor">—</h2>
-                        <p class="mb-0 text-muted small">Respuesta del backend del bot</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card shadow-sm h-100 border rounded-3 bg-white">
                     <div class="card-body">
                         <p class="text-muted small text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Bot Telegram</p>
@@ -38,7 +29,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card shadow-sm h-100 border rounded-3 bg-white">
                     <div class="card-body">
                         <p class="text-muted small text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Polling</p>
@@ -47,7 +38,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-xl-3">
+            <div class="col-12 col-sm-6 col-xl-4">
                 <div class="card shadow-sm h-100 border rounded-3 bg-white">
                     <div class="card-body">
                         <p class="text-muted small text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.05em;">Base de datos</p>
@@ -204,7 +195,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 // Verde si esta bien, rojo si no
-                escribir("dash-servidor", datos.servidor ? "Online" : "Offline", datos.servidor ? "#20c997" : "#dc3545");
                 escribir("dash-bot", datos.bot ? "Activo" : "Inactivo", datos.bot ? "#20c997" : "#dc3545");
                 escribir("dash-polling", datos.polling ? "Activo" : "Inactivo", datos.polling ? "#20c997" : "#dc3545");
                 escribir("dash-db", datos.db ? "OK" : "Caída", datos.db ? "#20c997" : "#dc3545");
@@ -222,7 +212,6 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .catch(function () {
                 var badge = document.getElementById("dash-estado-general");
-                escribir("dash-servidor", "Error", "#dc3545");
                 escribir("dash-bot", "Error", "#dc3545");
                 escribir("dash-polling", "Error", "#dc3545");
                 escribir("dash-db", "Error", "#dc3545");

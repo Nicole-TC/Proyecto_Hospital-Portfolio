@@ -22,7 +22,8 @@ try {
         $resultado = ConsultasAuditoria::listarAuditoria([
             'tipo'   => isset($_GET['tipo'])   ? $_GET['tipo']   : 'todo',
             'valor'  => isset($_GET['valor'])  ? $_GET['valor']  : '',
-            'fecha'  => isset($_GET['fecha'])  ? $_GET['fecha']  : '',
+            'desde'  => isset($_GET['desde'])  ? $_GET['desde']  : '',
+            'hasta'  => isset($_GET['hasta'])  ? $_GET['hasta']  : '',
             'orden'  => isset($_GET['orden'])  ? $_GET['orden']  : 'desc',
             'limite' => isset($_GET['limite']) ? $_GET['limite'] : 10,
             'pagina' => isset($_GET['pagina']) ? $_GET['pagina'] : 1,

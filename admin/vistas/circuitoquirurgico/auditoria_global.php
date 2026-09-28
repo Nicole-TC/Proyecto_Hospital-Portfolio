@@ -28,7 +28,7 @@
         </select>
       </div>
 
-      <div class="col-md-5">
+      <div class="col-md-3">
         <label class="form-label text-secondary small fw-bold">VALOR A BUSCAR</label>
         <input
           type="text"
@@ -40,14 +40,26 @@
         >
       </div>
 
+      <!-- El rango se limita a los ultimos 3 meses: min y max los carga el JS -->
       <div class="col-md-2">
-        <label class="form-label text-secondary small fw-bold">FECHA</label>
+        <label class="form-label text-secondary small fw-bold">DESDE</label>
         <input
           type="date"
           class="form-control border-0 bg-light"
-          id="filtroFechaAuditoria"
+          id="filtroDesdeAuditoria"
           style="border-radius:0.5rem; height:45px;"
-          onchange="ejecutarBusquedaAuditoria()"
+          onchange="ajustarRangoAuditoria(); ejecutarBusquedaAuditoria()"
+        >
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label text-secondary small fw-bold">HASTA</label>
+        <input
+          type="date"
+          class="form-control border-0 bg-light"
+          id="filtroHastaAuditoria"
+          style="border-radius:0.5rem; height:45px;"
+          onchange="ajustarRangoAuditoria(); ejecutarBusquedaAuditoria()"
         >
       </div>
 
@@ -62,6 +74,11 @@
       </div>
 
     </div>
+
+    <p class="text-secondary small mt-3 mb-0">
+      <i class="bi bi-info-circle me-1"></i>
+      Se pueden consultar registros de hasta 3 meses de antigüedad.
+    </p>
   </div>
 </div>
 

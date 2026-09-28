@@ -41,9 +41,16 @@ class ConsultasAuditoria {
     private static $limitesPermitidos = [5, 10, 20, 50];
 
     /**
+     * Antiguedad maxima que se deja consultar. Sin este tope una busqueda sin
+     * fechas recorre la auditoria completa, que crece con cada cambio del
+     * circuito.
+     */
+    private static $mesesMaximos = 3;
+
+    /**
      * Historial de auditoria con filtros, orden y paginado.
      *
-     * @param array $filtros tipo, valor, fecha, orden, limite, pagina
+     * @param array $filtros tipo, valor, desde, hasta, orden, limite, pagina
      * @return array registros, total, pagina, limite, total_paginas
      */
     public static function listarAuditoria(array $filtros): array {
@@ -51,7 +58,8 @@ class ConsultasAuditoria {
 
         $tipo   = strtolower(trim((string)($filtros['tipo'] ?? 'todo')));
         $valor  = trim((string)($filtros['valor'] ?? ''));
-        $fecha  = trim((string)($filtros['fecha'] ?? ''));
+        $desde  = trim((string)($filtros['desde'] ?? ''));
+        $hasta  = trim((string)($filtros['hasta'] ?? ''));
         $orden  = strtolower(trim((string)($filtros['orden'] ?? 'desc')));
         $limite = (int)($filtros['limite'] ?? 10);
         $pagina = (int)($filtros['pagina'] ?? 1);
@@ -61,9 +69,18 @@ class ConsultasAuditoria {
         if ($pagina < 1)                                         $pagina = 1;
         $orden = ($orden === 'asc') ? 'ASC' : 'DESC';
 
-        // Fecha invalida: se ignora el filtro en lugar de romper la consulta.
-        if ($fecha !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
-            $fecha = '';
+        [$desde, $hasta] = self::acotarRango($desde, $hasta);
+
+        // Rango invertido: no hay registros posibles, se responde vacio sin
+        // consultar la base.
+        if ($hasta < $desde) {
+            return [
+                'registros'     => [],
+                'total'         => 0,
+                'pagina'        => $pagina,
+                'limite'        => $limite,
+                'total_paginas' => 0,
+            ];
         }
 
         // Se traduce en SQL para que el buscador filtre por el mismo texto que
@@ -86,12 +103,11 @@ class ConsultasAuditoria {
         $params = [];
 
         // Rango en vez de a.fecha::date para poder usar idx_auditoria_fecha.
-        if ($fecha !== '') {
-            $where .= " AND a.fecha >= :fecha_desde::date
-                        AND a.fecha <  (:fecha_hasta::date + INTERVAL '1 day')";
-            $params[':fecha_desde'] = $fecha;
-            $params[':fecha_hasta'] = $fecha;
-        }
+        // Va siempre, asi ninguna busqueda sale de la ventana permitida.
+        $where .= " AND a.fecha >= :fecha_desde::date
+                    AND a.fecha <  (:fecha_hasta::date + INTERVAL '1 day')";
+        $params[':fecha_desde'] = $desde;
+        $params[':fecha_hasta'] = $hasta;
 
         if ($valor !== '') {
             if ($tipo === 'paciente') {
@@ -163,6 +179,40 @@ class ConsultasAuditoria {
             'limite'        => $limite,
             'total_paginas' => (int)ceil($total / $limite),
         ];
+    }
+
+    /**
+     * Deja DESDE y HASTA dentro de los ultimos $mesesMaximos meses. Una fecha
+     * vacia o mal formada toma el extremo de la ventana, y una fuera de ella
+     * se recorta al limite. No se corrige un rango invertido: eso lo resuelve
+     * quien llama devolviendo un resultado vacio.
+     *
+     * @return array [desde, hasta] en formato YYYY-MM-DD
+     */
+    private static function acotarRango(string $desde, string $hasta): array {
+        // El endpoint se llama directo, sin pasar por index.php, que es donde
+        // se fija la zona horaria del sistema.
+        $zona   = new DateTimeZone('America/Argentina/Buenos_Aires');
+        $hoy    = (new DateTime('today', $zona))->format('Y-m-d');
+        $minimo = (new DateTime('today', $zona))
+            ->modify('-' . self::$mesesMaximos . ' months')
+            ->format('Y-m-d');
+
+        $desde = self::fechaValida($desde) ? $desde : $minimo;
+        $hasta = self::fechaValida($hasta) ? $hasta : $hoy;
+
+        // Las fechas en YYYY-MM-DD se comparan bien como texto.
+        $desde = min(max($desde, $minimo), $hoy);
+        $hasta = min(max($hasta, $minimo), $hoy);
+
+        return [$desde, $hasta];
+    }
+
+    private static function fechaValida(string $fecha): bool {
+        if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $fecha, $m)) {
+            return false;
+        }
+        return checkdate((int)$m[2], (int)$m[3], (int)$m[1]);
     }
 
     /** CASE que traduce el nombre de la tabla auditada. */

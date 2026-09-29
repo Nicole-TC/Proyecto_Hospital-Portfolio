@@ -17,6 +17,29 @@ let configActiva = { sin_config: true, dias_activos: [], cupos_total: 0, hora_in
 /* Mapa: número de getDay() => clave en dias_activos */
 const DAY_KEY_MAP = { 1: 'lunes', 2: 'martes', 3: 'miercoles', 4: 'jueves', 5: 'viernes', 6: 'sabado', 0: 'domingo' };
 
+/* Postgres devuelve los timestamp como 'YYYY-MM-DD HH:MM:SS[.ffffff]' en hora
+   local: la sesion de la conexion fija America/Argentina/Buenos_Aires
+   (model/cir_conexion.php). Se arma el texto desde el string crudo en vez de
+   usar new Date() + toLocale* porque el navegador aplica su propia zona
+   horaria y su propio formato, y la hora puede correr. */
+function partesFechaHora(valor) {
+    var m = String(valor == null ? '' : valor)
+        .match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    return m ? { anio: m[1], mes: m[2], dia: m[3], hora: m[4], minuto: m[5] } : null;
+}
+
+function formatearFecha(valor) {
+    var p = partesFechaHora(valor);
+    if (!p) return valor ? String(valor) : '—';
+    return p.dia + '/' + p.mes + '/' + p.anio;
+}
+
+function formatearHora(valor) {
+    var p = partesFechaHora(valor);
+    if (!p) return valor ? String(valor) : '—';
+    return p.hora + ':' + p.minuto;
+}
+
 function diaHabilitado(dateObj) {
     if (configActiva.sin_config) return true;   // sin config => mostrar todo
     var key = DAY_KEY_MAP[dateObj.getDay()];
@@ -494,7 +517,7 @@ function cargarTurnosDia(fecha) {
                 return;
             }
             data.turnos.forEach(function (t) {
-                var hora = new Date(t.fecha_hora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                var hora = formatearHora(t.fecha_hora);
                 var badgeClass = t.estado_codigo === 'PROG' ? 'bg-primary-subtle text-primary'
                     : t.estado_codigo === 'CONF' ? 'bg-success-subtle text-success'
                         : t.estado_codigo === 'AUS' ? 'bg-warning-subtle text-warning'
@@ -781,8 +804,7 @@ function buscarTurnos(filtro, valor, limite, orden, pagina) {
 
             // Filas
             data.turnos.forEach(function (t) {
-                var dt = new Date(t.fecha_hora);
-                var fecha = dt.toLocaleDateString('es-AR');
+                var fecha = formatearFecha(t.fecha_hora);
                 var badgeClass = t.estado_codigo === 'PROG' ? 'bg-primary-subtle text-primary'
                     : t.estado_codigo === 'CONF' ? 'bg-success-subtle text-success'
                         : t.estado_codigo === 'AUS' ? 'bg-warning-subtle text-warning'

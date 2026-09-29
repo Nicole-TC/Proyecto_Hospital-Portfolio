@@ -563,7 +563,7 @@ switch ($action) {
                 INSERT INTO evento_clinico (id_tipo_evento, id_turno, id_orden, fecha_evento, descripcion)
                 VALUES (
                     (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'cambio de estado' LIMIT 1),
-                    :id_turno, :id_orden, NOW(), 'Paciente confirmó asistencia al turno desde bot'
+                    :id_turno, :id_orden, NOW(), 'Paciente confirmó asistencia al turno desde bot de WhatsApp'
                 )
             ");
             $stmtEv->execute([

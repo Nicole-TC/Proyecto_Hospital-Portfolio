@@ -635,11 +635,11 @@ body.modo-oscuro .btn-accion-orden--ver:hover:not(:disabled) { background: #00ce
             Swal.fire({
                 icon: 'info',
                 title: 'Búsqueda acotada',
-                text: 'La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo, solicitalo a un administrador.',
+                text: 'La búsqueda está acotada a un rango de 3 meses de antigüedad. Si necesitás el listado completo, solicitalo a un administrador.',
                 confirmButtonColor: '#0056b3'
             });
         } else {
-            alert('La búsqueda está acotada a un rango de 90 días. Si necesitás el listado completo, solicitalo a un administrador.');
+            alert('La búsqueda está acotada a un rango de 3 meses de antigüedad. Si necesitás el listado completo, solicitalo a un administrador.');
         }
     });
 

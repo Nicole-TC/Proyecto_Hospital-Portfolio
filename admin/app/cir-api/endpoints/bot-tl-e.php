@@ -345,7 +345,7 @@ switch ($action) {
             $stmtEv = $pdo->prepare("
                 INSERT INTO evento_clinico (id_tipo_evento, id_turno, id_orden, fecha_evento, descripcion)
                 VALUES (
-                    (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'cambio de estado' LIMIT 1),
+                    (SELECT id_tipo_evento FROM tipo_evento WHERE UPPER(evento) = 'CANCELACION' LIMIT 1),
                     :id_turno, :id_orden, NOW(), :descripcion
                 )
             ");
@@ -482,8 +482,8 @@ switch ($action) {
             $stmtEv = $pdo->prepare("
                 INSERT INTO evento_clinico (id_tipo_evento, id_turno, id_orden, fecha_evento, descripcion)
                 VALUES (
-                    (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'cambio de estado' LIMIT 1),
-                    :id_turno, :id_orden, NOW(), 'Paciente confirmó asistencia al turno desde bot'
+                    (SELECT id_tipo_evento FROM tipo_evento WHERE UPPER(evento) = 'CONFIRMACION_ASISTENCIA' LIMIT 1),
+                    :id_turno, :id_orden, NOW(), 'Paciente confirmó asistencia al turno desde bot de Telegram'
                 )
             ");
             $stmtEv->execute([

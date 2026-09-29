@@ -126,305 +126,316 @@
 </div>
 
 <script>
-// Dashboard: pide datos al backend y los muestra en las tarjetas.
-document.addEventListener("DOMContentLoaded", function () {
+    // Dashboard: pide datos al backend y los muestra en las tarjetas.
+    document.addEventListener("DOMContentLoaded", function() {
 
-    var API_URL = "app/cir-api/endpoints/bot-panel-e.php";
+        var API_URL = "app/cir-api/endpoints/bot-panel-e.php";
 
-    // Guardamos la ultima respuesta buena, por si el bot se cae
-    var datosConversacionesOk = null;
-    var datosAuditoriaOk = null;
-    var datosComandosOk = null;
+        // Guardamos la ultima respuesta buena, por si el bot se cae
+        var datosConversacionesOk = null;
+        var datosAuditoriaOk = null;
+        var datosComandosOk = null;
 
-    // Escribe un texto en un elemento por su id
-    function escribir(id, texto, color) {
-        var el = document.getElementById(id);
-        if (!el) {
-            return;
+        // Escribe un texto en un elemento por su id
+        function escribir(id, texto, color) {
+            var el = document.getElementById(id);
+            if (!el) {
+                return;
+            }
+            el.textContent = texto;
+            if (color) {
+                el.style.color = color;
+            }
         }
-        el.textContent = texto;
-        if (color) {
-            el.style.color = color;
-        }
-    }
 
-    // ----- 1) Estado del bot -----
-    function cargarEstado() {
-        fetch(API_URL + "?action=estado")
-            .then(function (respuesta) {
-                return respuesta.json();
-            })
-            .then(function (datos) {
-                var badge = document.getElementById("dash-estado-general");
+        // ----- 1) Estado del bot -----
+        function cargarEstado() {
+            fetch(API_URL + "?action=estado")
+                .then(function(respuesta) {
+                    return respuesta.json();
+                })
+                .then(function(datos) {
+                    var badge = document.getElementById("dash-estado-general");
 
-                if (datos.status !== "success") {
-                    throw new Error("No se pudo leer el estado");
-                }
-
-                var enLinea = datos.bot && datos.servidor && datos.polling && datos.db;
-                if (badge) {
-                    if (enLinea) {
-                        badge.className = "badge align-self-center bg-success";
-                        badge.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Bot en línea';
-                    } else {
-                        badge.className = "badge align-self-center bg-danger";
-                        badge.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Bot caído';
+                    if (datos.status !== "success") {
+                        throw new Error("No se pudo leer el estado");
                     }
-                }
-            })
-            .catch(function () {
-                var badge = document.getElementById("dash-estado-general");
-                if (badge) {
-                    badge.className = "badge bg-danger align-self-center";
-                    badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Sin conexión';
-                }
-            });
-    }
 
-    // ----- 2) Conversaciones -----
-    function mostrarConversaciones(lista, total) {
-        var identificados = 0;
-        var anonimos = 0;
-        var mensajes = 0;
-        var i;
-
-        for (i = 0; i < lista.length; i++) {
-            if (lista[i].estado === "identificado") {
-                identificados = identificados + 1;
-            } else {
-                anonimos = anonimos + 1;
-            }
-            mensajes = mensajes + (Number(lista[i].n_mensajes) || 0);
+                    var enLinea = datos.bot && datos.servidor && datos.polling && datos.db;
+                    if (badge) {
+                        if (enLinea) {
+                            badge.className = "badge align-self-center bg-success";
+                            badge.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Bot en línea';
+                        } else {
+                            badge.className = "badge align-self-center bg-danger";
+                            badge.innerHTML = '<i class="fa-solid fa-wifi me-1"></i> Bot caído';
+                        }
+                    }
+                })
+                .catch(function() {
+                    var badge = document.getElementById("dash-estado-general");
+                    if (badge) {
+                        badge.className = "badge bg-danger align-self-center";
+                        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Sin conexión';
+                    }
+                });
         }
 
-        escribir("dash-total-chats", String(total), "#20c997");
-        escribir("dash-identificados", String(identificados), "#20c997");
-        escribir("dash-anonimos", String(anonimos), "#20c997");
-        escribir("dash-total-mensajes", String(mensajes), "#20c997");
-    }
+        // ----- 2) Conversaciones -----
+        function mostrarConversaciones(lista, total) {
+            var identificados = 0;
+            var anonimos = 0;
+            var mensajes = 0;
+            var i;
 
-    function cargarConversaciones() {
-        fetch(API_URL + "?action=conversaciones&limite=500")
-            .then(function (respuesta) {
-                return respuesta.json();
-            })
-            .then(function (datos) {
-                if (datos.status !== "success") {
-                    throw new Error("No se pudieron leer las conversaciones");
-                }
-
-                var lista = datos.conversaciones || [];
-                var total = datos.cantidad;
-                if (typeof total !== "number") {
-                    total = lista.length;
-                }
-
-                // Guardamos por si despues falla el pedido
-                datosConversacionesOk = {
-                    lista: lista,
-                    total: total
-                };
-                mostrarConversaciones(lista, total);
-            })
-            .catch(function () {
-                // Si falla, mostramos lo ultimo que habia salido bien
-                if (datosConversacionesOk) {
-                    mostrarConversaciones(datosConversacionesOk.lista, datosConversacionesOk.total);
-                }
-            });
-    }
-
-    // ----- 3) Auditoria -----
-    function mostrarAuditoria(resumen) {
-        var caida = resumen.ultima_caida;
-        var recup = resumen.ultima_recuperacion;
-
-        escribir("dash-total-caidas", String(resumen.total_caidas || 0), "#dc3545");
-        escribir("dash-total-recuperaciones", String(resumen.total_recuperaciones || 0), "#20c997");
-
-        if (caida && caida.fecha) {
-            escribir("dash-ultima-caida", caida.fecha, "#dc3545");
-        } else {
-            escribir("dash-ultima-caida", "—", "#dc3545");
-        }
-
-        if (recup && recup.fecha) {
-            escribir("dash-ultima-recuperacion", recup.fecha, "#20c997");
-        } else {
-            escribir("dash-ultima-recuperacion", "—", "#20c997");
-        }
-    }
-
-    function cargarAuditoria() {
-        fetch(API_URL + "?action=auditoria&limite=100")
-            .then(function (respuesta) {
-                return respuesta.json();
-            })
-            .then(function (datos) {
-                if (datos.status !== "success") {
-                    throw new Error("No se pudo leer la auditoria");
-                }
-
-                var resumen = datos.resumen || {};
-                datosAuditoriaOk = resumen;
-                mostrarAuditoria(resumen);
-            })
-            .catch(function () {
-                if (datosAuditoriaOk) {
-                    mostrarAuditoria(datosAuditoriaOk);
-                }
-            });
-    }
-
-    // ----- 4) Comandos mas usados -----
-    function mostrarComandos(lista) {
-        var tbody = document.getElementById("dash-comandos-tbody");
-        var i;
-        var maxUsos;
-        var item;
-        var porcentaje;
-        var filas = 0;
-        var tr;
-        var tdComando;
-        var tdCantidad;
-        var tdBarra;
-        var filaBarra;
-        var cajaProgress;
-        var barra;
-        var textoPct;
-
-        if (!tbody) {
-            return;
-        }
-
-        tbody.innerHTML = "";
-
-        if (!lista || lista.length === 0) {
-            tr = document.createElement("tr");
-            tdComando = document.createElement("td");
-            tdComando.colSpan = 3;
-            tdComando.className = "text-muted";
-            tdComando.textContent = "Sin usos de comandos registrados";
-            tr.appendChild(tdComando);
-            tbody.appendChild(tr);
-            return;
-        }
-
-        // El mayor uso sirve para armar la barra
-        maxUsos = 0;
-        for (i = 0; i < lista.length; i++) {
-            item = lista[i];
-            // Ocultar /comando@nombre_bot
-            if (String(item.comando || "").indexOf("@") !== -1) {
-                continue;
-            }
-            if (Number(item.cantidad) > maxUsos) {
-                maxUsos = Number(item.cantidad);
-            }
-        }
-
-        for (i = 0; i < lista.length; i++) {
-            item = lista[i];
-            if (String(item.comando || "").indexOf("@") !== -1) {
-                continue;
-            }
-
-            porcentaje = 0;
-            if (maxUsos > 0) {
-                porcentaje = Math.round((Number(item.cantidad) / maxUsos) * 100);
-            }
-
-            tr = document.createElement("tr");
-
-            tdComando = document.createElement("td");
-            tdComando.className = "fw-semibold";
-            tdComando.style.color = "#20c997";
-            tdComando.textContent = String(item.comando || "");
-            tr.appendChild(tdComando);
-
-            tdCantidad = document.createElement("td");
-            tdCantidad.textContent = String(item.cantidad || 0);
-            tr.appendChild(tdCantidad);
-
-            // Barra de proporcion
-            barra = document.createElement("div");
-            barra.className = "progress-bar";
-            barra.setAttribute("role", "progressbar");
-            barra.style.width = porcentaje + "%";
-            barra.style.backgroundColor = "#20c997";
-
-            cajaProgress = document.createElement("div");
-            cajaProgress.className = "progress flex-grow-1";
-            cajaProgress.style.height = "6px";
-            cajaProgress.style.maxWidth = "180px";
-            cajaProgress.appendChild(barra);
-
-            textoPct = document.createElement("span");
-            textoPct.className = "small text-muted";
-            textoPct.textContent = porcentaje + "%";
-
-            filaBarra = document.createElement("div");
-            filaBarra.className = "d-flex align-items-center gap-2";
-            filaBarra.appendChild(cajaProgress);
-            filaBarra.appendChild(textoPct);
-
-            tdBarra = document.createElement("td");
-            tdBarra.appendChild(filaBarra);
-            tr.appendChild(tdBarra);
-
-            tbody.appendChild(tr);
-            filas = filas + 1;
-        }
-
-        if (filas === 0) {
-            tr = document.createElement("tr");
-            tdComando = document.createElement("td");
-            tdComando.colSpan = 3;
-            tdComando.className = "text-muted";
-            tdComando.textContent = "Sin usos de comandos registrados";
-            tr.appendChild(tdComando);
-            tbody.appendChild(tr);
-        }
-    }
-
-    function cargarComandos() {
-        fetch(API_URL + "?action=comandos")
-            .then(function (respuesta) {
-                return respuesta.json();
-            })
-            .then(function (datos) {
-                if (datos.status !== "success") {
-                    throw new Error("No se pudieron leer los comandos");
-                }
-
-                var lista = datos.comandos || [];
-                datosComandosOk = lista;
-                mostrarComandos(lista);
-            })
-            .catch(function () {
-                if (datosComandosOk) {
-                    mostrarComandos(datosComandosOk);
+            for (i = 0; i < lista.length; i++) {
+                if (lista[i].estado === "identificado") {
+                    identificados = identificados + 1;
                 } else {
-                    mostrarComandos([]);
+                    anonimos = anonimos + 1;
                 }
-            });
-    }
+                mensajes = mensajes + (Number(lista[i].n_mensajes) || 0);
+            }
 
-    // Carga todo el dashboard
-    function cargarDashboard() {
-        cargarEstado();
-        cargarConversaciones();
-        cargarAuditoria();
-        cargarComandos();
-    }
+            escribir("dash-total-chats", String(total), "#20c997");
+            escribir("dash-identificados", String(identificados), "#20c997");
+            escribir("dash-anonimos", String(anonimos), "#20c997");
+            escribir("dash-total-mensajes", String(mensajes), "#20c997");
+        }
 
-    // Primera carga
-    cargarDashboard();
+        function cargarConversaciones() {
+            fetch(API_URL + "?action=conversaciones&limite=500")
+                .then(function(respuesta) {
+                    return respuesta.json();
+                })
+                .then(function(datos) {
+                    if (datos.status !== "success") {
+                        throw new Error("No se pudieron leer las conversaciones");
+                    }
 
-    // Cada 15 segundos vuelve a pedir los datos
-    setInterval(function () {
+                    var lista = datos.conversaciones || [];
+                    var total = datos.cantidad;
+                    if (typeof total !== "number") {
+                        total = lista.length;
+                    }
+
+                    // Guardamos por si despues falla el pedido
+                    datosConversacionesOk = {
+                        lista: lista,
+                        total: total
+                    };
+                    mostrarConversaciones(lista, total);
+                })
+                .catch(function() {
+                    // Si falla, mostramos lo ultimo que habia salido bien
+                    if (datosConversacionesOk) {
+                        mostrarConversaciones(datosConversacionesOk.lista, datosConversacionesOk.total);
+                    }
+                });
+        }
+
+        // ----- 3) Auditoria -----
+        function mostrarAuditoria(resumen) {
+            var caida = resumen.ultima_caida;
+            var recup = resumen.ultima_recuperacion;
+
+            escribir("dash-total-caidas", String(resumen.total_caidas || 0), "#dc3545");
+            escribir("dash-total-recuperaciones", String(resumen.total_recuperaciones || 0), "#20c997");
+
+            if (caida && caida.fecha) {
+                escribir("dash-ultima-caida", caida.fecha, "#dc3545");
+            } else {
+                escribir("dash-ultima-caida", "—", "#dc3545");
+            }
+
+            if (recup && recup.fecha) {
+                escribir("dash-ultima-recuperacion", recup.fecha, "#20c997");
+            } else {
+                escribir("dash-ultima-recuperacion", "—", "#20c997");
+            }
+        }
+
+        function cargarAuditoria() {
+            fetch(API_URL + "?action=auditoria&limite=100")
+                .then(function(respuesta) {
+                    return respuesta.json();
+                })
+                .then(function(datos) {
+                    if (datos.status !== "success") {
+                        throw new Error("No se pudo leer la auditoria");
+                    }
+
+                    var resumen = datos.resumen || {};
+                    datosAuditoriaOk = resumen;
+                    mostrarAuditoria(resumen);
+                })
+                .catch(function() {
+                    if (datosAuditoriaOk) {
+                        mostrarAuditoria(datosAuditoriaOk);
+                    }
+                });
+        }
+
+        // ----- 4) Comandos mas usados -----
+        function mostrarComandos(lista) {
+            var tbody = document.getElementById("dash-comandos-tbody");
+            var i;
+            var maxUsos;
+            var totalUsos;
+            var item;
+            var porcentaje;
+            var anchoBarra;
+            var filas = 0;
+            var tr;
+            var tdComando;
+            var tdCantidad;
+            var tdBarra;
+            var filaBarra;
+            var cajaProgress;
+            var barra;
+            var textoPct;
+
+            if (!tbody) {
+                return;
+            }
+
+            tbody.innerHTML = "";
+
+            if (!lista || lista.length === 0) {
+                tr = document.createElement("tr");
+                tdComando = document.createElement("td");
+                tdComando.colSpan = 3;
+                tdComando.className = "text-muted";
+                tdComando.textContent = "Sin usos de comandos registrados";
+                tr.appendChild(tdComando);
+                tbody.appendChild(tr);
+                return;
+            }
+
+            // Total y máximo, solo de los comandos visibles
+            totalUsos = 0;
+            maxUsos = 0;
+            for (i = 0; i < lista.length; i++) {
+                item = lista[i];
+                // Ocultar /comando@nombre_bot
+                if (String(item.comando || "").indexOf("@") !== -1) {
+                    continue;
+                }
+                totalUsos = totalUsos + (Number(item.cantidad) || 0);
+                if (Number(item.cantidad) > maxUsos) {
+                    maxUsos = Number(item.cantidad);
+                }
+            }
+
+            for (i = 0; i < lista.length; i++) {
+                item = lista[i];
+                if (String(item.comando || "").indexOf("@") !== -1) {
+                    continue;
+                }
+
+                // Porcentaje real sobre el total (el texto)
+                porcentaje = 0;
+                if (totalUsos > 0) {
+                    porcentaje = Math.round((Number(item.cantidad) / totalUsos) * 100);
+                }
+
+                // Ancho de la barra relativo al más usado (para que se vea bien)
+                anchoBarra = 0;
+                if (maxUsos > 0) {
+                    anchoBarra = Math.round((Number(item.cantidad) / maxUsos) * 100);
+                }
+
+                tr = document.createElement("tr");
+
+                tdComando = document.createElement("td");
+                tdComando.className = "fw-semibold";
+                tdComando.style.color = "#20c997";
+                tdComando.textContent = String(item.comando || "");
+                tr.appendChild(tdComando);
+
+                tdCantidad = document.createElement("td");
+                tdCantidad.textContent = String(item.cantidad || 0);
+                tr.appendChild(tdCantidad);
+
+                // Barra de proporcion
+                barra = document.createElement("div");
+                barra.className = "progress-bar";
+                barra.setAttribute("role", "progressbar");
+                barra.style.width = anchoBarra + "%";
+                barra.style.backgroundColor = "#20c997";
+
+                cajaProgress = document.createElement("div");
+                cajaProgress.className = "progress flex-grow-1";
+                cajaProgress.style.height = "6px";
+                cajaProgress.style.maxWidth = "180px";
+                cajaProgress.appendChild(barra);
+
+                textoPct = document.createElement("span");
+                textoPct.className = "small text-muted";
+                textoPct.textContent = porcentaje + "%";
+
+                filaBarra = document.createElement("div");
+                filaBarra.className = "d-flex align-items-center gap-2";
+                filaBarra.appendChild(cajaProgress);
+                filaBarra.appendChild(textoPct);
+
+                tdBarra = document.createElement("td");
+                tdBarra.appendChild(filaBarra);
+                tr.appendChild(tdBarra);
+
+                tbody.appendChild(tr);
+                filas = filas + 1;
+            }
+
+            if (filas === 0) {
+                tr = document.createElement("tr");
+                tdComando = document.createElement("td");
+                tdComando.colSpan = 3;
+                tdComando.className = "text-muted";
+                tdComando.textContent = "Sin usos de comandos registrados";
+                tr.appendChild(tdComando);
+                tbody.appendChild(tr);
+            }
+        }
+
+        function cargarComandos() {
+            fetch(API_URL + "?action=comandos")
+                .then(function(respuesta) {
+                    return respuesta.json();
+                })
+                .then(function(datos) {
+                    if (datos.status !== "success") {
+                        throw new Error("No se pudieron leer los comandos");
+                    }
+
+                    var lista = datos.comandos || [];
+                    datosComandosOk = lista;
+                    mostrarComandos(lista);
+                })
+                .catch(function() {
+                    if (datosComandosOk) {
+                        mostrarComandos(datosComandosOk);
+                    } else {
+                        mostrarComandos([]);
+                    }
+                });
+        }
+
+        // Carga todo el dashboard
+        function cargarDashboard() {
+            cargarEstado();
+            cargarConversaciones();
+            cargarAuditoria();
+            cargarComandos();
+        }
+
+        // Primera carga
         cargarDashboard();
-    }, 15000);
 
-});
+        // Cada 15 segundos vuelve a pedir los datos
+        setInterval(function() {
+            cargarDashboard();
+        }, 15000);
+
+    });
 </script>

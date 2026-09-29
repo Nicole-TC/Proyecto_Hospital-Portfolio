@@ -486,12 +486,14 @@ function agregarNuevoEstudio() {
 function guardarVinculacion() {
     if (estudiosSeleccionados.size === 0) return;
 
+    const nombreCirugia = obtenerNombreCirugiaSeleccionada();
+
     const payload = {
         accion: 'crear',
         estudios: [...estudiosSeleccionados]
     };
     if (creandoNuevaCirugia) {
-        payload.nombre_cirugia = document.getElementById('nombre_cirugia').value.trim();
+        payload.nombre_cirugia = nombreCirugia;
         payload.descripcion = document.getElementById('descripcion_cirugia').value.trim();
     } else {
         payload.id_cirugia = document.getElementById('select_cirugia_existente').value;
@@ -513,7 +515,9 @@ function guardarVinculacion() {
             Swal.fire({
                 icon: 'success',
                 title: '¡Guardado!',
-                html: `Se vinculó correctamente la cirugía <strong>${escapeHtml(payload.nombre_cirugia)}</strong>.`,
+                html: nombreCirugia
+                    ? `Se vinculó correctamente la cirugía <strong>${escapeHtml(nombreCirugia)}</strong>.`
+                    : 'Se vinculó correctamente la cirugía.',
                 confirmButtonText: 'Aceptar',
                 confirmButtonColor: '#00cec9',
             }).then(() => {

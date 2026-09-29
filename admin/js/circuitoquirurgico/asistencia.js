@@ -1,6 +1,36 @@
 const ENDPOINT_ASISTENCIA = 'app/cir-api/endpoints/asistencia-e.php';
 let paginaActual = 1;
 
+// Postgres devuelve los timestamp como 'YYYY-MM-DD HH:MM:SS[.ffffff]' en hora
+// local: la sesion de la conexion fija America/Argentina/Buenos_Aires
+// (model/cir_conexion.php). Se arma el texto desde el string crudo en vez de
+// usar new Date() + toLocale* porque el navegador aplica su propia zona
+// horaria y su propio formato, y la hora puede correr. Mismo criterio que
+// aplica sumarDiasISO en vistas/circuitoquirurgico/seguimiento_postas.php.
+function partesFechaHora(valor) {
+    var m = String(valor == null ? '' : valor)
+        .match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+    return m ? { anio: m[1], mes: m[2], dia: m[3], hora: m[4], minuto: m[5] } : null;
+}
+
+function formatearFechaHora(valor) {
+    var p = partesFechaHora(valor);
+    if (!p) return valor ? String(valor) : '—';
+    return p.dia + '/' + p.mes + '/' + p.anio + ' ' + p.hora + ':' + p.minuto;
+}
+
+function formatearFecha(valor) {
+    var p = partesFechaHora(valor);
+    if (!p) return valor ? String(valor) : '—';
+    return p.dia + '/' + p.mes + '/' + p.anio;
+}
+
+function formatearHora(valor) {
+    var p = partesFechaHora(valor);
+    if (!p) return valor ? String(valor) : '—';
+    return p.hora + ':' + p.minuto;
+}
+
 (function initAsistencia() {
     var tbody = document.getElementById('tbodyAsistencia');
     if (tbody) {
@@ -50,9 +80,8 @@ function buscarTurnos(filtro, valor, limite, orden, pagina) {
             empty.classList.add('d-none');
 
             data.turnos.forEach(function (t) {
-                var dt = new Date(t.fecha_hora);
-                var fecha = dt.toLocaleDateString('es-AR');
-                var hora  = dt.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                var fecha = formatearFecha(t.fecha_hora);
+                var hora  = formatearHora(t.fecha_hora);
 
                 var badgeClass = t.estado_codigo === 'PROG' ? 'bg-primary-subtle text-primary'
                     : t.estado_codigo === 'CONF' ? 'bg-success text-white'
@@ -160,7 +189,7 @@ function verDetalles(id_turno) {
                 '</div>' +
                 '<div class="row mb-2">' +
                 '  <div class="col-5 text-secondary">Fecha / Hora</div>' +
-                '  <div class="col-7 fw-semibold">' + new Date(t.fecha_hora).toLocaleString('es-AR') + '</div>' +
+                '  <div class="col-7 fw-semibold">' + formatearFechaHora(t.fecha_hora) + '</div>' +
                 '</div>';
 
             if (t.ausente && t.fecha_ausencia) {
@@ -168,7 +197,30 @@ function verDetalles(id_turno) {
                 '<hr>' +
                 '<div class="row mb-0">' +
                 '  <div class="col-5 text-secondary">Ausente desde</div>' +
-                '  <div class="col-7 fw-semibold">' + new Date(t.fecha_ausencia).toLocaleString('es-AR') + '</div>' +
+                '  <div class="col-7 fw-semibold">' + formatearFechaHora(t.fecha_ausencia) + '</div>' +
+                '</div>';
+            }
+
+            if (t.fecha_confirmacion) {
+                var descripcionConfirmacion = (t.motivo_confirmacion || '').toLowerCase();
+                var origenConfirmacion;
+                if (descripcionConfirmacion.indexOf('whatsapp') !== -1) {
+                    origenConfirmacion = 'Confirmado por el paciente vía WhatsApp';
+                } else if (descripcionConfirmacion.indexOf('telegram') !== -1 ||
+                           descripcionConfirmacion.indexOf('bot') !== -1) {
+                    origenConfirmacion = 'Confirmado por el paciente vía Telegram';
+                } else {
+                    origenConfirmacion = 'Confirmado desde el panel de Asistencia';
+                }
+                html +=
+                '<hr>' +
+                '<div class="row mb-2">' +
+                '  <div class="col-5 text-secondary">Confirmación</div>' +
+                '  <div class="col-7 fw-semibold text-success">' + origenConfirmacion + '</div>' +
+                '</div>' +
+                '<div class="row mb-0">' +
+                '  <div class="col-5 text-secondary">Fecha confirmación</div>' +
+                '  <div class="col-7 fw-semibold">' + formatearFechaHora(t.fecha_confirmacion) + '</div>' +
                 '</div>';
             }
 
@@ -181,7 +233,7 @@ function verDetalles(id_turno) {
                 '</div>' +
                 '<div class="row mb-0">' +
                 '  <div class="col-5 text-secondary">Fecha cancelación</div>' +
-                '  <div class="col-7 fw-semibold">' + (t.fecha_cancelacion ? new Date(t.fecha_cancelacion).toLocaleString('es-AR') : '—') + '</div>' +
+                '  <div class="col-7 fw-semibold">' + formatearFechaHora(t.fecha_cancelacion) + '</div>' +
                 '</div>';
             }
 

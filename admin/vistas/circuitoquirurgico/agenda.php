@@ -61,7 +61,7 @@ $baseUrl = 'index.php?modulo=menu_circuitoquirurgico&accion=agenda';
         var el2 = document.getElementById('clockDate');
         if (!el || !el2) return;
         var now = new Date();
-        el.textContent = now.toLocaleTimeString('es-AR');
+        el.textContent = now.toLocaleTimeString('es-AR', { hourCycle: 'h23' });
         el2.textContent = now.toLocaleDateString('es-AR', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });

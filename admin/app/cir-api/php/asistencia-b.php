@@ -97,7 +97,9 @@ class ConsultasAsistencia {
                 cc.nombre AS cirugia,
                 TRIM(COALESCE(pr.apellido, '') || ', ' || COALESCE(pr.nombre, '')) AS medico,
                 t.motivo_cancelacion, t.cancelado, t.fecha_cancelacion,
-                t.ausente, t.fecha_ausencia
+                t.ausente, t.fecha_ausencia,
+                conf.fecha_evento AS fecha_confirmacion,
+                conf.descripcion  AS motivo_confirmacion
             FROM turno t
             JOIN persona_asiste pa ON pa.id_persona_asiste = t.id_persona_asiste
             JOIN persona p          ON p.id_persona         = pa.id_persona
@@ -107,6 +109,14 @@ class ConsultasAsistencia {
             LEFT JOIN catalogo_cirugia cc ON cc.id_cirugia_catalogo = om.id_cirugia_catalogo
             LEFT JOIN profesional prf ON prf.id_profesional = om.id_profesional
             LEFT JOIN persona pr      ON pr.id_persona      = prf.id_persona
+            LEFT JOIN LATERAL (
+                SELECT ec.fecha_evento, ec.descripcion
+                FROM evento_clinico ec
+                WHERE ec.id_turno = t.id_turno
+                  AND ec.descripcion ILIKE 'Paciente confirm%'
+                ORDER BY ec.fecha_evento DESC
+                LIMIT 1
+            ) conf ON true
             WHERE t.id_turno = :id_turno
             LIMIT 1
         ";

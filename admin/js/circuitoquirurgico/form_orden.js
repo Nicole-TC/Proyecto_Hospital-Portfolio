@@ -43,17 +43,16 @@
         if (bloqueContenido) bloqueContenido.classList.remove('d-none');
     }
 
+    // Postgres devuelve los timestamp como 'YYYY-MM-DD HH:MM:SS[.ffffff]' en hora
+    // local: la sesion de la conexion fija America/Argentina/Buenos_Aires
+    // (model/cir_conexion.php). Se arma el texto desde el string crudo en vez de
+    // usar new Date() + toLocale* porque el navegador aplica su propia zona
+    // horaria y su propio formato, y la hora puede correr.
     function formatearFechaHistorial(fecha) {
         if (!fecha) return '—';
-        var dt = new Date(fecha);
-        if (isNaN(dt.getTime())) return fecha;
-        return dt.toLocaleString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        var m = String(fecha).match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+        if (!m) return fecha;
+        return m[3] + '/' + m[2] + '/' + m[1] + ' ' + m[4] + ':' + m[5];
     }
 
     function textoHistorial(valor) {

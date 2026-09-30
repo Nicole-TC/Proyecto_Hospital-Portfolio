@@ -305,9 +305,22 @@ switch ($action) {
             foreach (($r['json']['conversaciones'] ?? []) as $conv) {
                 // Si el backend no lo dice, el canal es el que respondió.
                 $conv['canal'] = $conv['canal'] ?? $nombre;
-                $conversaciones[] = $conv;
+
+                // El de Telegram no filtra por canal y también devuelve los
+                // chats de WhatsApp, así que un mismo chat puede llegar dos
+                // veces. Se indexa por id y gana la versión del backend dueño
+                // del canal.
+                if (!isset($conv['id'])) {
+                    $conversaciones[] = $conv;
+                    continue;
+                }
+                $clave = 'id:' . $conv['id'];
+                if (!isset($conversaciones[$clave]) || $conv['canal'] === $nombre) {
+                    $conversaciones[$clave] = $conv;
+                }
             }
         }
+        $conversaciones = array_values($conversaciones);
 
         // Más recientes primero, mezclando los dos canales.
         usort($conversaciones, function ($a, $b) {

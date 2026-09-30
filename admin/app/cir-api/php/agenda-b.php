@@ -522,7 +522,7 @@ class ConsultasAgenda {
         $sqlEvento = "
             INSERT INTO evento_clinico (id_tipo_evento, id_orden, id_turno, fecha_evento, descripcion)
             VALUES (
-                (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'turno programado' LIMIT 1),
+                (SELECT id_tipo_evento FROM tipo_evento WHERE UPPER(evento) = 'TURNO_PROGRAMADO' LIMIT 1),
                 :id_orden, :id_turno, NOW(), 'Turno prequirúrgico programado desde Agenda'
             )
         ";

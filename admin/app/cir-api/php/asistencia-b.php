@@ -165,16 +165,17 @@ class ConsultasAsistencia {
             $stmt->execute($params);
 
             $descripcion_evento = '';
+            $tipo_evento = '';
             switch ($nuevo_codigo_estado) {
-                case 'CONF': $descripcion_evento = 'Paciente confirmó asistencia al turno'; break;
-                case 'AUS':  $descripcion_evento = 'Paciente ausente al turno'; break;
-                case 'CANC': $descripcion_evento = 'Turno cancelado: ' . ($motivo ?: 'Sin motivo especificado'); break;
+                case 'CONF': $descripcion_evento = 'Paciente confirmó asistencia al turno'; $tipo_evento = 'CONFIRMACION_ASISTENCIA'; break;
+                case 'AUS':  $descripcion_evento = 'Paciente ausente al turno';         $tipo_evento = 'NO_ASISTIO'; break;
+                case 'CANC': $descripcion_evento = 'Turno cancelado: ' . ($motivo ?: 'Sin motivo especificado'); $tipo_evento = 'CANCELACION'; break;
             }
 
             $sqlEvento = "
                 INSERT INTO evento_clinico (id_tipo_evento, id_turno, id_orden, fecha_evento, descripcion)
                 VALUES (
-                    (SELECT id_tipo_evento FROM tipo_evento WHERE LOWER(evento) = 'cambio de estado' LIMIT 1),
+                    (SELECT id_tipo_evento FROM tipo_evento WHERE UPPER(evento) = :tipo_evento LIMIT 1),
                     :id_turno, :id_orden, NOW(), :descripcion
                 )
             ";
@@ -183,6 +184,7 @@ class ConsultasAsistencia {
                 ':id_turno'   => $id_turno,
                 ':id_orden'   => $turno['id_orden'],
                 ':descripcion' => $descripcion_evento,
+                ':tipo_evento' => $tipo_evento,
             ]);
 
             $pdo->commit();

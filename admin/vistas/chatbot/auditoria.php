@@ -101,6 +101,12 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                    <span class="text-muted small" id="info-auditoria">Mostrando 0 a 0 de 0 eventos</span>
+                    <nav aria-label="Paginación del historial de auditoría">
+                        <ul class="pagination pagination-sm mb-0" id="paginacion-auditoria"></ul>
+                    </nav>
+                </div>
             </div>
         </div>
 
@@ -109,7 +115,12 @@
             const API_URL = 'app/cir-api/endpoints/bot-panel-e.php';
             const REFRESH_MS = 30000;
 
+            // Máximo de registros por página. El corte se hace con un slice de
+            // este tamaño, así que la vista nunca pinta más de 10 filas.
+            const TAMANIO_PAGINA = 10;
+
             let eventos = [];
+            let paginaActual = 1;
 
             function escapeHTML(str) {
                 return String(str).replace(/[&<>'"]/g,
@@ -183,11 +194,23 @@
 
             function renderTabla() {
                 const body = document.getElementById("tabla-auditoria-body");
-                document.getElementById("total-eventos").innerText = eventos.length
-                    ? (eventos.length + " eventos registrados")
+                const total = eventos.length;
+                const totalPaginas = Math.max(1, Math.ceil(total / TAMANIO_PAGINA));
+
+                // El log puede encogerse entre refrescos: nunca dejamos la
+                // vista parada en una página que ya no existe.
+                if (paginaActual > totalPaginas) {
+                    paginaActual = totalPaginas;
+                }
+
+                document.getElementById("total-eventos").innerText = total
+                    ? (total + " eventos registrados")
                     : "Sin eventos";
 
-                if (eventos.length === 0) {
+                renderPaginacion();
+
+                if (total === 0) {
+                    document.getElementById("info-auditoria").innerText = "Mostrando 0 a 0 de 0 eventos";
                     body.innerHTML = `
                         <tr>
                             <td colspan="3" class="text-center text-muted small py-4">
@@ -198,12 +221,72 @@
                     return;
                 }
 
-                body.innerHTML = eventos.map(ev => `
+                const desde = (paginaActual - 1) * TAMANIO_PAGINA;
+                const hasta = Math.min(desde + TAMANIO_PAGINA, total);
+
+                body.innerHTML = eventos.slice(desde, hasta).map(ev => `
                     <tr>
                         <td class="font-monospace text-muted small">${escapeHTML(ev.fecha || "")}</td>
                         <td>${badgeEvento(ev.tipo)}</td>
                         <td class="small">${escapeHTML(ev.descripcion || "")}</td>
                     </tr>`).join("");
+
+                document.getElementById("info-auditoria").innerText =
+                    "Mostrando " + (desde + 1) + " a " + hasta + " de " + total + " eventos";
+            }
+
+            function renderPaginacion() {
+                const ul = document.getElementById("paginacion-auditoria");
+                ul.innerHTML = "";
+
+                const totalPaginas = Math.ceil(eventos.length / TAMANIO_PAGINA);
+                if (totalPaginas <= 1) return;
+
+                function irA(destino) {
+                    if (destino < 1 || destino > totalPaginas || destino === paginaActual) return;
+                    paginaActual = destino;
+                    renderTabla();
+                }
+
+                const liPrev = document.createElement("li");
+                liPrev.className = "page-item" + (paginaActual === 1 ? " disabled" : "");
+                liPrev.innerHTML = '<a class="page-link" href="javascript:void(0)">Anterior</a>';
+                liPrev.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    irA(paginaActual - 1);
+                });
+                ul.appendChild(liPrev);
+
+                for (let i = 1; i <= totalPaginas; i++) {
+                    if (i === 1 || i === totalPaginas || (i >= paginaActual - 2 && i <= paginaActual + 2)) {
+                        const li = document.createElement("li");
+                        li.className = "page-item" + (i === paginaActual ? " active" : "");
+                        const link = document.createElement("a");
+                        link.className = "page-link";
+                        link.href = "javascript:void(0)";
+                        link.textContent = i;
+                        link.addEventListener("click", function(e) {
+                            e.preventDefault();
+                            irA(i);
+                        });
+                        li.appendChild(link);
+                        ul.appendChild(li);
+                    } else if (i === paginaActual - 3 || i === paginaActual + 3) {
+                        const liDots = document.createElement("li");
+                        liDots.className = "page-item disabled";
+                        liDots.innerHTML = '<span class="page-link">…</span>';
+                        ul.appendChild(liDots);
+                    }
+                }
+
+                const liNext = document.createElement("li");
+                liNext.className = "page-item" + (paginaActual === totalPaginas ? " disabled" : "");
+                liNext.innerHTML = '<a class="page-link" href="javascript:void(0)">Siguiente</a>';
+                liNext.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    irA(paginaActual + 1);
+                });
+                ul.appendChild(liNext);
             }
 
             async function cargarAuditoria() {
@@ -219,7 +302,11 @@
                         `<i class="fa-solid fa-rotate me-1"></i> Actualizado ${new Date().toLocaleTimeString("es-AR")}`;
                 } catch (error) {
                     console.error("Error cargando auditoría:", error);
+                    eventos = [];
+                    paginaActual = 1;
                     document.getElementById("total-eventos").innerText = "Error de conexión";
+                    document.getElementById("info-auditoria").innerText = "Mostrando 0 a 0 de 0 eventos";
+                    document.getElementById("paginacion-auditoria").innerHTML = "";
                     document.getElementById("tabla-auditoria-body").innerHTML = `
                         <tr>
                             <td colspan="3" class="text-center text-danger small py-4">
@@ -284,6 +371,41 @@
         body.modo-oscuro .badge.bg-secondary {
             background-color: #3a3a3a !important;
             color: #e0e0e0 !important;
+        }
+        /* Paginación del historial de auditoría */
+        .pagination-sm .page-link {
+            color: #0984e3;
+            border: 1px solid #dee2e6;
+            min-width: 2.25rem;
+            text-align: center;
+        }
+        .pagination-sm .page-item.active .page-link {
+            background-color: #0984e3;
+            border-color: #0984e3;
+            color: #fff;
+        }
+        .pagination-sm .page-item.disabled .page-link {
+            color: #adb5bd;
+            background-color: #f8f9fa;
+        }
+        body.modo-oscuro .pagination .page-item .page-link {
+            background-color: #1f1f1f !important;
+            color: #ccc !important;
+            border: 1px solid #444 !important;
+        }
+        body.modo-oscuro .pagination .page-item.active .page-link {
+            background-color: #375a7f !important;
+            color: #fff !important;
+            border-color: #2e4d6d !important;
+        }
+        body.modo-oscuro .pagination .page-item.disabled .page-link {
+            background-color: #1a1a1a !important;
+            color: #666 !important;
+            border-color: #444 !important;
+        }
+        body.modo-oscuro .pagination .page-item .page-link:hover {
+            background-color: #333 !important;
+            color: #fff !important;
         }
         </style>
     </div>

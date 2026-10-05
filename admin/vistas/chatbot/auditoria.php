@@ -113,6 +113,14 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Paginación: 10 registros por página -->
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                    <div class="text-muted small" id="info-paginacion-auditoria">Mostrando 0 registros</div>
+                    <nav aria-label="Paginación de auditoría">
+                        <ul class="pagination pagination-sm mb-0" id="paginacion-auditoria"></ul>
+                    </nav>
+                </div>
             </div>
         </div>
 
@@ -121,8 +129,11 @@
             const API_URL = 'app/cir-api/endpoints/bot-panel-e.php';
             const REFRESH_MS = 30000;
 
+            const POR_PAGINA = 10;
+
             let canalActual = 'telegram';
             let eventos = [];
+            let paginaActual = 1;
 
             const toggle = document.getElementById('bot-canal-toggle');
             const btns = toggle ? toggle.querySelectorAll('button[data-canal]') : [];
@@ -143,6 +154,7 @@
                                 : 'Mostrando auditoría de Telegram';
                         }
                         // Forzar recarga inmediata
+                        paginaActual = 1;
                         cargarAuditoria();
                     });
                 });
@@ -220,13 +232,73 @@
                 }
             }
 
+            function renderPaginacion(totalPaginas) {
+                const ul = document.getElementById("paginacion-auditoria");
+                if (!ul) return;
+
+                ul.innerHTML = "";
+                if (totalPaginas <= 1) return;
+
+                // Ventana de páginas visibles alrededor de la actual
+                let inicio = Math.max(1, paginaActual - 2);
+                let fin = Math.min(totalPaginas, inicio + 4);
+                inicio = Math.max(1, fin - 4);
+
+                const crearBoton = (texto, clases, onClick) => {
+                    const li = document.createElement("li");
+                    li.className = "page-item" + (clases ? " " + clases : "");
+                    const a = document.createElement("a");
+                    a.className = "page-link";
+                    a.href = "#";
+                    a.textContent = texto;
+                    li.appendChild(a);
+                    li.addEventListener("click", ev => {
+                        ev.preventDefault();
+                        if (!li.classList.contains("disabled")) onClick();
+                    });
+                    ul.appendChild(li);
+                };
+
+                crearBoton(
+                    "‹ Anterior",
+                    paginaActual === 1 ? "disabled" : "",
+                    () => irAPagina(paginaActual - 1)
+                );
+
+                for (let num = inicio; num <= fin; num++) {
+                    const destino = num;
+                    crearBoton(
+                        String(destino),
+                        destino === paginaActual ? "active" : "",
+                        () => irAPagina(destino)
+                    );
+                }
+
+                crearBoton(
+                    "Siguiente ›",
+                    paginaActual === totalPaginas ? "disabled" : "",
+                    () => irAPagina(paginaActual + 1)
+                );
+            }
+
+            function irAPagina(num) {
+                const totalPaginas = Math.max(1, Math.ceil(eventos.length / POR_PAGINA));
+                if (num < 1 || num > totalPaginas || num === paginaActual) return;
+                paginaActual = num;
+                renderTabla();
+            }
+
             function renderTabla() {
                 const body = document.getElementById("tabla-auditoria-body");
+                const infoPaginacion = document.getElementById("info-paginacion-auditoria");
                 document.getElementById("total-eventos").innerText = eventos.length
                     ? (eventos.length + " eventos registrados")
                     : "Sin eventos";
 
                 if (eventos.length === 0) {
+                    paginaActual = 1;
+                    if (infoPaginacion) infoPaginacion.textContent = "Sin registros";
+                    renderPaginacion(1);
                     body.innerHTML = `
                         <tr>
                             <td colspan="3" class="text-center text-muted small py-4">
@@ -237,7 +309,21 @@
                     return;
                 }
 
-                body.innerHTML = eventos.map(ev => `
+                // Ajustar la página si el total de eventos cambió entre cargas
+                const totalPaginas = Math.max(1, Math.ceil(eventos.length / POR_PAGINA));
+                if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+                if (paginaActual < 1) paginaActual = 1;
+
+                const desde = (paginaActual - 1) * POR_PAGINA;
+                const hasta = Math.min(desde + POR_PAGINA, eventos.length);
+
+                if (infoPaginacion) {
+                    infoPaginacion.textContent = "Mostrando " + (desde + 1) + "–" + hasta +
+                        " de " + eventos.length + " registros";
+                }
+                renderPaginacion(totalPaginas);
+
+                body.innerHTML = eventos.slice(desde, hasta).map(ev => `
                     <tr>
                         <td class="font-monospace text-muted small">${escapeHTML(ev.fecha || "")}</td>
                         <td>${badgeEvento(ev.tipo)}</td>
@@ -255,6 +341,8 @@
                             </td>
                         </tr>`;
                 }
+                const infoPaginacionCarga = document.getElementById("info-paginacion-auditoria");
+                if (infoPaginacionCarga) infoPaginacionCarga.textContent = "Cargando registros...";
                 try {
                     const url = API_URL + "?action=auditoria&limite=100&canal=" + encodeURIComponent(canalActual);
                     const res = await fetch(url);
@@ -283,6 +371,9 @@
                     document.getElementById("total-eventos").innerText = "Error de conexión";
                     const nombreCanalErr = canalActual === 'whatsapp' ? 'WhatsApp' : 'Telegram';
                     const bodyErr = document.getElementById("tabla-auditoria-body");
+                    const infoPaginacionErr = document.getElementById("info-paginacion-auditoria");
+                    if (infoPaginacionErr) infoPaginacionErr.textContent = "Sin registros";
+                    renderPaginacion(1);
                     if (bodyErr) {
                         bodyErr.innerHTML = `
                             <tr>
@@ -349,6 +440,21 @@
         body.modo-oscuro .badge.bg-secondary {
             background-color: #3a3a3a !important;
             color: #e0e0e0 !important;
+        }
+        body.modo-oscuro .pagination .page-link {
+            background-color: #2a2a2a !important;
+            color: #bbb !important;
+            border-color: #3a3a3a !important;
+        }
+        body.modo-oscuro .pagination .page-item.active .page-link {
+            background-color: #375a7f !important;
+            color: #fff !important;
+            border-color: #2e4d6d !important;
+        }
+        body.modo-oscuro .pagination .page-item.disabled .page-link {
+            background-color: #2a2a2a !important;
+            color: #6c6c6c !important;
+            border-color: #3a3a3a !important;
         }
         </style>
     </div>

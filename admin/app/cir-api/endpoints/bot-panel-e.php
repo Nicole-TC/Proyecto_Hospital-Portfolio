@@ -381,12 +381,60 @@ switch ($action) {
         break;
 
     case 'auditoria':
-        // Solo Telegram: los eventos viven en `errores_log`, que no tiene
-        // columna `canal`, así que todavía no hay forma de separar los de cada
-        // bot sin tocar cómo escribe el de Telegram.
+        // Auditoría con soporte a múltiples canales. Se filtra en proxy
+        // para asegurar que respete el canal seleccionado.
         $limite = filter_input(INPUT_GET, 'limite', FILTER_VALIDATE_INT);
         $limite = $limite && $limite > 0 ? min($limite, 500) : 100;
-        botPanel_reenviar($canales['telegram'], '/api/panel/auditoria?limite=' . $limite);
+
+        $canalPedido = strtolower(trim($_GET['canal'] ?? 'telegram'));
+        if ($canalPedido !== 'telegram' && $canalPedido !== 'whatsapp') {
+            $canalPedido = 'telegram';
+        }
+
+        $rutaAuditoria = '/api/panel/auditoria?limite=' . $limite . '&canal=' . urlencode($canalPedido);
+        $r = botPanel_consultar($canales[$canalPedido], $rutaAuditoria);
+
+        if (!$r['ok'] && $r['json'] === []) {
+            botPanel_responder($r['codigo'], [
+                'status'  => 'error',
+                'message' => 'No se pudo contactar al backend del bot: ' . $r['error'],
+            ]);
+        }
+
+        $datos = $r['json'] ?? [];
+        $datos['status'] = $datos['status'] ?? 'success';
+
+        // Filtrar eventos por canal si el backend no lo hizo
+        if (isset($datos['eventos']) && is_array($datos['eventos'])) {
+            $datos['eventos'] = array_values(array_filter($datos['eventos'], function ($ev) use ($canalPedido) {
+                $c = strtolower(trim((string) ($ev['canal'] ?? '')));
+                if ($c === '') {
+                    return true; // Compatibilidad con registros antiguos
+                }
+                return $c === $canalPedido;
+            }));
+        }
+
+        // Filtrar resumen por canal
+        if (isset($datos['resumen']) && is_array($datos['resumen'])) {
+            $res = $datos['resumen'];
+            if (isset($res['ultima_caida']) && is_array($res['ultima_caida'])) {
+                $cUlt = strtolower(trim((string) ($res['ultima_caida']['canal'] ?? '')));
+                if ($cUlt !== '' && $cUlt !== $canalPedido) {
+                    $res['ultima_caida'] = null;
+                }
+            }
+            $datos['resumen'] = $res;
+        }
+
+        // Marcar coherencia con canal seleccionado
+        if (isset($datos['estado_actual']) && is_array($datos['estado_actual'])) {
+            $ea = $datos['estado_actual'];
+            $ea['canal'] = $ea['canal'] ?? $canalPedido;
+            $datos['estado_actual'] = $ea;
+        }
+
+        botPanel_responder($r['codigo'] ?: 200, $datos);
         break;
 
     case 'comandos':

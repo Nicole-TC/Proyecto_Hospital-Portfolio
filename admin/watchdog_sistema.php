@@ -1,18 +1,25 @@
 <?php
-// Watchdog del estado del bot (FastAPI telegram-api).
+// Watchdog del estado de los bots (FastAPI telegram-api y bot-wsp-backend).
 //
 // CLI: una pasada por ejecución, pensado para correr desde cron en el HOST
 // donde vive el panel (NO en la VPS, para que sobreviva a los apagones del bot):
 //   * * * * * docker exec cliente_proyecto php /var/www/html/admin/watchdog_sistema.php >> /tmp/watchdog.log 2>&1
 //
-// Consulta /api/panel/estado del bot por URL (BOT_API_URL o MONITOR_URL) con
-// header X-API-Key y registra en errores_log (BD "bots") SOLO las transiciones
-// funcional <-> caído, como eventos estado_caida / estado_recuperacion con
-// contexto origen=watchdog. Idempotente: se resincroniza del último evento en BD.
+// Consulta /api/panel/estado de cada bot por URL (MONITOR_URL o BOT_API_URL para
+// Telegram, WSP_API_URL para WhatsApp) con header X-API-Key y registra en
+// errores_log (BD "bots") SOLO las transiciones funcional <-> caído, como eventos
+// estado_caida / estado_recuperacion con contexto origen=watchdog. Idempotente:
+// cada canal se resincroniza de su propio último evento en BD.
+//
+// Los canales son independientes: uno sin configurar se saltea y el otro se
+// sigue midiendo; uno caído registra su propia caída, que es justamente lo que
+// este script está para ver.
 //
 // Variables usadas (env del container / .env del panel):
-//   MONITOR_URL      opcional; si está vacía se usa BOT_API_URL
-//   BOT_API_SECRET   token para el header X-API-Key
+//   MONITOR_URL      opcional; si está vacía se usa BOT_API_URL (solo Telegram)
+//   BOT_API_SECRET   token para el header X-API-Key de Telegram
+//   WSP_API_URL      URL del backend de WhatsApp
+//   WSP_API_SECRET   token para el header X-API-Key de WhatsApp
 //   BOT_DB_HOST/PORT/NAME/USER/PASSWORD   conexión a la BD "bots" (errores_log)
 declare(strict_types=1);
 
@@ -45,6 +52,31 @@ function watchdog_env(string $clave): string
 function watchdog_log(string $mensaje): void
 {
     echo '[' . date('Y-m-d H:i:s') . '] ' . $mensaje . PHP_EOL;
+}
+
+/**
+ * Canales que vigila el watchdog, con la URL y el secreto de cada uno.
+ *
+ * Telegram conserva el fallback a MONITOR_URL para no romper la instalación
+ * que ya estaba; WhatsApp usa WSP_API_URL.
+ */
+function watchdog_canales(): array
+{
+    $telegramUrl = watchdog_env('MONITOR_URL');
+    if ($telegramUrl === '') {
+        $telegramUrl = watchdog_env('BOT_API_URL');
+    }
+
+    return [
+        'telegram' => [
+            'url'    => rtrim($telegramUrl, '/'),
+            'secret' => watchdog_env('BOT_API_SECRET'),
+        ],
+        'whatsapp' => [
+            'url'    => rtrim(watchdog_env('WSP_API_URL'), '/'),
+            'secret' => watchdog_env('WSP_API_SECRET'),
+        ],
+    ];
 }
 
 /**
@@ -125,69 +157,100 @@ function watchdog_conectar(): PDO
 }
 
 /**
- * Último evento de estado registrado por el watchdog. null si no hay historial.
+ * Último evento de estado registrado por el watchdog PARA UN CANAL.
+ * null si no hay historial de ese canal.
+ *
+ * El filtro por canal es lo que hace que los dos sean independientes: sin él,
+ * el último evento de Telegram enmascara al de WhatsApp y un canal nunca ve su
+ * propia transición (se queda creyendo que ya estaba caído).
  */
-function watchdog_ultimo_evento(PDO $pdo): ?string
+function watchdog_ultimo_evento(PDO $pdo, string $canal): ?string
 {
-    $stmt = $pdo->query(
+    $stmt = $pdo->prepare(
         "SELECT tipo
            FROM errores_log
           WHERE tipo IN ('estado_caida','estado_recuperacion','estado_inicio','estado_detencion')
             AND contexto LIKE '%watchdog%'
+            AND canal = CAST(:canal AS canal_enum)
           ORDER BY id DESC
           LIMIT 1"
     );
+    $stmt->execute([':canal' => $canal]);
     $fila = $stmt->fetch();
     return is_array($fila) && isset($fila['tipo']) ? $fila['tipo'] : null;
 }
 
-function watchdog_registrar(PDO $pdo, string $tipo, string $descripcion, array $probe, string $baseUrl): void
+function watchdog_registrar(PDO $pdo, string $canal, string $tipo, string $descripcion, array $probe, string $baseUrl): void
 {
     $contexto = json_encode([
         'origen'    => 'watchdog',
+        'canal'     => $canal,
         'probe_url' => $baseUrl,
         'detalle'   => $probe['detalle'],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
+    // `canal` va explícito y casteado a canal_enum: la columna acepta NULL y su
+    // DEFAULT en la base es 'whatsapp', así que omitirla etiquetaría como
+    // WhatsApp las caídas del bot de Telegram.
     $stmt = $pdo->prepare(
-        "INSERT INTO errores_log (chat_id, descripcion, contexto, tipo) VALUES (NULL, :desc, :ctx, :tipo)"
+        "INSERT INTO errores_log (chat_id, descripcion, contexto, tipo, canal)
+         VALUES (NULL, :desc, :ctx, :tipo, CAST(:canal AS canal_enum))"
     );
     $stmt->execute([
-        ':desc' => $descripcion,
-        ':ctx'  => $contexto,
-        ':tipo' => $tipo,
+        ':desc'  => $descripcion,
+        ':ctx'   => $contexto,
+        ':tipo'  => $tipo,
+        ':canal' => $canal,
     ]);
 
-    watchdog_log("registrado {$tipo}: {$descripcion}");
+    watchdog_log("[$canal] registrado {$tipo}: {$descripcion}");
 }
 
-function watchdog_ejecutar(PDO $pdo, array $probe, string $baseUrl): void
+function watchdog_ejecutar(PDO $pdo, string $canal, array $probe, string $baseUrl): void
 {
-    $funcional     = $probe['funcional'];
-    $ultimo        = watchdog_ultimo_evento($pdo);
+    $funcional      = $probe['funcional'];
+    $ultimo         = watchdog_ultimo_evento($pdo, $canal);
     $ultimoFueCaida = ($ultimo === 'estado_caida');
 
     if ($funcional && $ultimoFueCaida) {
-        watchdog_registrar($pdo, 'estado_recuperacion', 'Watchdog: bot funcional', $probe, $baseUrl);
+        watchdog_registrar($pdo, $canal, 'estado_recuperacion', 'Watchdog: bot funcional', $probe, $baseUrl);
     } elseif (!$funcional && !$ultimoFueCaida) {
-        watchdog_registrar($pdo, 'estado_caida', 'Watchdog: ' . $probe['detalle'], $probe, $baseUrl);
+        watchdog_registrar($pdo, $canal, 'estado_caida', 'Watchdog: ' . $probe['detalle'], $probe, $baseUrl);
     } else {
-        watchdog_log('sin cambios (estado: ' . ($funcional ? 'funcional' : 'caído') . ')');
+        watchdog_log("[$canal] sin cambios (estado: " . ($funcional ? 'funcional' : 'caído') . ')');
     }
 }
 
-// Base URL de monitoreo: MONITOR_URL si está seteada, sino BOT_API_URL.
-$monitorUrl = watchdog_env('MONITOR_URL');
-$baseUrl    = $monitorUrl !== '' ? rtrim($monitorUrl, '/') : rtrim(watchdog_env('BOT_API_URL'), '/');
-$secret     = watchdog_env('BOT_API_SECRET');
+/**
+ * Corre un canal de punta a punta.
+ *
+ * @return int 0 si se registró una transición, si no había cambios, o si el
+ *             canal todavía no está configurado (falta un paso de deploy, no
+ *             es una falla); 1 solo si el probe o el registro se rompieron.
+ */
+function watchdog_canal(PDO $pdo, string $canal, array $cfg): int
+{
+    if ($cfg['url'] === '' || $cfg['secret'] === '') {
+        // NoConfigured sale con 0: mientras falten WSP_API_URL / WSP_API_SECRET
+        // en el .env del panel, esto corre cada minuto y no debe ensuciar el
+        // log de cron con errores.
+        watchdog_log("[$canal] sin configurar (falta la URL o el secreto en .env), se saltea.");
+        return 0;
+    }
 
-if ($baseUrl === '' || $secret === '') {
-    watchdog_log('ERROR: faltan BOT_API_URL (o MONITOR_URL) / BOT_API_SECRET en .env.');
-    exit(1);
+    $probe = watchdog_probar($cfg['url'], $cfg['secret']);
+    watchdog_log("[$canal] probe " . ($probe['funcional'] ? 'funcional' : 'caído') . " → {$probe['detalle']}");
+
+    try {
+        watchdog_ejecutar($pdo, $canal, $probe, $cfg['url']);
+    } catch (Throwable $e) {
+        watchdog_log("[$canal] ERROR: " . $e->getMessage());
+        return 1;
+    }
+    return 0;
 }
 
-$probe = watchdog_probar($baseUrl, $secret);
-watchdog_log('probe ' . ($probe['funcional'] ? 'funcional' : 'caído') . ' → ' . $probe['detalle']);
+$canales = watchdog_canales();
 
 try {
     $pdo = watchdog_conectar();
@@ -196,9 +259,13 @@ try {
     exit(1);
 }
 
-try {
-    watchdog_ejecutar($pdo, $probe, $baseUrl);
-} catch (Throwable $e) {
-    watchdog_log('ERROR: ' . $e->getMessage());
-    exit(1);
+// Cada canal se mide por separado: que uno esté mal configurado, o caído, no
+// puede impedir que el otro se registre.
+$fallos = 0;
+foreach ($canales as $canal => $cfg) {
+    if (watchdog_canal($pdo, $canal, $cfg) !== 0) {
+        $fallos++;
+    }
 }
+
+exit($fallos > 0 ? 1 : 0);

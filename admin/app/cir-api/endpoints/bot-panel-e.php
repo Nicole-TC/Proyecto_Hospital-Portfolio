@@ -401,7 +401,19 @@ switch ($action) {
             ]);
         }
 
-        $datos = $r['json'] ?? [];
+        // Un backend que conteste otra cosa (por ejemplo un 404 {"detail":...}
+        // de un servicio sin este endpoint) no viene con 'eventos'. Antes se le
+        // ponía status=success igual y el front pintaba una tabla vacía sin
+        // decir nada; ahora se reporta como lo que es.
+        if (!isset($r['json']['eventos']) || !is_array($r['json']['eventos'])) {
+            botPanel_responder($r['codigo'] ?: 502, [
+                'status'  => 'error',
+                'message' => 'El backend del bot no devolvió una auditoría válida para ' . $canalPedido
+                    . ($r['error'] !== '' ? ' (' . $r['error'] . ')' : ''),
+            ]);
+        }
+
+        $datos = $r['json'];
         $datos['status'] = $datos['status'] ?? 'success';
 
         // Filtrar eventos por canal si el backend no lo hizo

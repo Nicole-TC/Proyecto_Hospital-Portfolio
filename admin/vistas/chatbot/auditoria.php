@@ -6,24 +6,12 @@
 <div class="container-fluid py-3">
     <div class="card p-4 shadow-sm">
         <!-- Cabecera de la Vista -->
-        <div class="mb-4 pb-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="mb-4 pb-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
                 <h4 class="fw-bold text-primary"><i class="fa-solid fa-clipboard-list me-2"></i> Auditoría del Bot</h4>
                 <p class="text-muted mb-0">Historial de caídas y recuperaciones del servicio para control administrativo.</p>
             </div>
-            <div class="d-flex flex-wrap align-items-center gap-3">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="text-muted small text-uppercase fw-semibold">Canal</span>
-                    <div class="btn-group btn-group-sm" role="group" id="bot-canal-toggle">
-                        <button type="button" class="btn btn-outline-primary active" data-canal="telegram">
-                            <i class="fa-brands fa-telegram me-1"></i> Telegram
-                        </button>
-                        <button type="button" class="btn btn-outline-success" data-canal="whatsapp">
-                            <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp
-                        </button>
-                    </div>
-                </div>
-                <small class="text-muted" id="canal-info">Mostrando auditoría de Telegram</small>
+            <div>
                 <span class="badge bg-secondary fs-6" id="total-eventos">Cargando...</span>
             </div>
         </div>
@@ -127,37 +115,12 @@
             const API_URL = 'app/cir-api/endpoints/bot-panel-e.php';
             const REFRESH_MS = 30000;
 
-            let canalActual = 'telegram';
             // Máximo de registros por página. El corte se hace con un slice de
             // este tamaño, así que la vista nunca pinta más de 10 filas.
             const TAMANIO_PAGINA = 10;
 
             let eventos = [];
             let paginaActual = 1;
-
-            const toggle = document.getElementById('bot-canal-toggle');
-            const btns = toggle ? toggle.querySelectorAll('button[data-canal]') : [];
-            const canalInfo = document.getElementById('canal-info');
-            const estadoTexto = document.getElementById('resumen-estado-texto');
-            const tituloEstado = "Estado Actual";
-
-            if (btns.length) {
-                btns.forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        if (this.classList.contains('active')) return;
-                        btns.forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                        canalActual = this.getAttribute('data-canal') || 'telegram';
-                        if (canalInfo) {
-                            canalInfo.innerText = canalActual === 'whatsapp'
-                                ? 'Mostrando auditoría de WhatsApp'
-                                : 'Mostrando auditoría de Telegram';
-                        }
-                        // Forzar recarga inmediata
-                        cargarAuditoria();
-                    });
-                });
-            }
 
             function escapeHTML(str) {
                 return String(str).replace(/[&<>'"]/g,
@@ -198,14 +161,12 @@
                 if (enLinea) {
                     card.classList.add("text-success");
                     icono.className = "fa-solid fa-circle-check";
-                    const nombreCanal = canalActual === 'whatsapp' ? 'WhatsApp' : 'Telegram';
-                    texto.innerText = "Bot " + nombreCanal + " en línea";
+                    texto.innerText = "Bot en línea";
                     detalle.innerText = "Servidor, polling y base de datos activos.";
                 } else {
                     card.classList.add("text-danger");
                     icono.className = "fa-solid fa-circle-xmark";
-                    const nombreCanal = canalActual === 'whatsapp' ? 'WhatsApp' : 'Telegram';
-                    texto.innerText = "Bot " + nombreCanal + " caído";
+                    texto.innerText = "Bot caído";
                     const partes = [];
                     if (!est.servidor) partes.push("backend");
                     if (!est.bot) partes.push("bot");
@@ -330,8 +291,7 @@
 
             async function cargarAuditoria() {
                 try {
-                    const url = API_URL + "?action=auditoria&limite=100&canal=" + encodeURIComponent(canalActual);
-                    const res = await fetch(url);
+                    const res = await fetch(API_URL + "?action=auditoria&limite=100");
                     const json = await res.json();
                     if (json.status !== "success") throw new Error(json.message || "Error al cargar la auditoría.");
 
@@ -345,14 +305,13 @@
                     eventos = [];
                     paginaActual = 1;
                     document.getElementById("total-eventos").innerText = "Error de conexión";
-                    const nombreCanalErr = canalActual === 'whatsapp' ? 'WhatsApp' : 'Telegram';
                     document.getElementById("info-auditoria").innerText = "Mostrando 0 a 0 de 0 eventos";
                     document.getElementById("paginacion-auditoria").innerHTML = "";
                     document.getElementById("tabla-auditoria-body").innerHTML = `
                         <tr>
                             <td colspan="3" class="text-center text-danger small py-4">
                                 <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                                No se pudo conectar con el backend del bot (${escapeHTML(nombreCanalErr)}).<br>
+                                No se pudo conectar con el backend del bot.<br>
                                 <span class="text-muted">Verificá que el servicio esté activo.</span>
                             </td>
                         </tr>`;

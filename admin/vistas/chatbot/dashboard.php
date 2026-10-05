@@ -11,9 +11,19 @@
                 </h4>
                 <p class="text-muted mb-0">Estado del bot y métricas de conversaciones.</p>
             </div>
-            <span class="badge bg-secondary align-self-center" id="dash-estado-general">
-                <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando...
-            </span>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="btn-group btn-group-sm" role="group" id="dash-canal-toggle">
+                    <button type="button" class="btn btn-outline-primary active" data-canal="telegram">
+                        <i class="fa-brands fa-telegram me-1"></i> Telegram
+                    </button>
+                    <button type="button" class="btn btn-outline-success" data-canal="whatsapp">
+                        <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp
+                    </button>
+                </div>
+                <span class="badge bg-secondary align-self-center" id="dash-estado-general">
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando...
+                </span>
+            </div>
         </div>
 
         <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size: 0.75rem; letter-spacing: 0.05em;">
@@ -98,6 +108,7 @@
             </div>
         </div>
 
+        <div id="dash-bloque-comandos">
         <h6 class="fw-bold text-muted text-uppercase mb-3 mt-4" style="font-size: 0.75rem; letter-spacing: 0.05em;">
             Comandos
         </h6>
@@ -122,6 +133,7 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
 </div>
 
@@ -130,6 +142,7 @@
     document.addEventListener("DOMContentLoaded", function() {
 
         var API_URL = "app/cir-api/endpoints/bot-panel-e.php";
+        var canalActual = "telegram";
 
         // Guardamos la ultima respuesta buena, por si el bot se cae
         var datosConversacionesOk = null;
@@ -150,6 +163,7 @@
 
         // ----- 1) Estado del bot -----
         function cargarEstado() {
+            var canalPedido = canalActual;
             fetch(API_URL + "?action=estado")
                 .then(function(respuesta) {
                     return respuesta.json();
@@ -157,11 +171,18 @@
                 .then(function(datos) {
                     var badge = document.getElementById("dash-estado-general");
 
+                    if (canalPedido !== canalActual) {
+                        return;
+                    }
                     if (datos.status !== "success") {
                         throw new Error("No se pudo leer el estado");
                     }
 
-                    var enLinea = datos.bot && datos.servidor && datos.polling && datos.db;
+                    var info = datos;
+                    if (canalPedido === "whatsapp") {
+                        info = (datos.canales && datos.canales.whatsapp) ? datos.canales.whatsapp : {};
+                    }
+                    var enLinea = info.bot && info.servidor && info.polling && info.db;
                     if (badge) {
                         if (enLinea) {
                             badge.className = "badge align-self-center bg-success";
@@ -204,20 +225,21 @@
         }
 
         function cargarConversaciones() {
+            var canalPedido = canalActual;
             fetch(API_URL + "?action=conversaciones&limite=500")
                 .then(function(respuesta) {
                     return respuesta.json();
                 })
                 .then(function(datos) {
+                    if (canalPedido !== canalActual) {
+                        return;
+                    }
                     if (datos.status !== "success") {
                         throw new Error("No se pudieron leer las conversaciones");
                     }
 
-                    var lista = datos.conversaciones || [];
-                    var total = datos.cantidad;
-                    if (typeof total !== "number") {
-                        total = lista.length;
-                    }
+                    var lista = filtrarPorCanal(datos.conversaciones || []);
+                    var total = lista.length;
 
                     // Guardamos por si despues falla el pedido
                     datosConversacionesOk = {
@@ -256,11 +278,15 @@
         }
 
         function cargarAuditoria() {
-            fetch(API_URL + "?action=auditoria&limite=100")
+            var canalPedido = canalActual;
+            fetch(API_URL + "?action=auditoria&limite=100&canal=" + canalPedido)
                 .then(function(respuesta) {
                     return respuesta.json();
                 })
                 .then(function(datos) {
+                    if (canalPedido !== canalActual) {
+                        return;
+                    }
                     if (datos.status !== "success") {
                         throw new Error("No se pudo leer la auditoria");
                     }
@@ -399,11 +425,15 @@
         }
 
         function cargarComandos() {
+            var canalPedido = canalActual;
             fetch(API_URL + "?action=comandos")
                 .then(function(respuesta) {
                     return respuesta.json();
                 })
                 .then(function(datos) {
+                    if (canalPedido !== canalActual || canalActual !== "telegram") {
+                        return;
+                    }
                     if (datos.status !== "success") {
                         throw new Error("No se pudieron leer los comandos");
                     }
@@ -421,12 +451,65 @@
                 });
         }
 
+        // Deja solo las conversaciones del canal elegido
+        function filtrarPorCanal(lista) {
+            var salida = [];
+            var i;
+            var canal;
+            for (i = 0; i < lista.length; i++) {
+                canal = lista[i].canal || "telegram";
+                if (canal === canalActual) {
+                    salida.push(lista[i]);
+                }
+            }
+            return salida;
+        }
+
+        // WhatsApp no trae comandos: se oculta ese bloque
+        function mostrarComandosSegunCanal() {
+            var bloque = document.getElementById("dash-bloque-comandos");
+            if (!bloque) {
+                return;
+            }
+            if (canalActual === "whatsapp") {
+                bloque.style.display = "none";
+            } else {
+                bloque.style.display = "";
+            }
+        }
+
         // Carga todo el dashboard
         function cargarDashboard() {
+            mostrarComandosSegunCanal();
             cargarEstado();
             cargarConversaciones();
             cargarAuditoria();
-            cargarComandos();
+            if (canalActual === "telegram") {
+                cargarComandos();
+            }
+        }
+
+        var toggleCanal = document.getElementById("dash-canal-toggle");
+        var botonesCanal = toggleCanal ? toggleCanal.querySelectorAll("button[data-canal]") : [];
+        var iBoton;
+        for (iBoton = 0; iBoton < botonesCanal.length; iBoton++) {
+            botonesCanal[iBoton].addEventListener("click", function () {
+                var i;
+                if (this.classList.contains("active")) {
+                    return;
+                }
+                for (i = 0; i < botonesCanal.length; i++) {
+                    botonesCanal[i].classList.remove("active");
+                }
+                this.classList.add("active");
+                canalActual = this.getAttribute("data-canal") || "telegram";
+                datosConversacionesOk = null;
+                datosAuditoriaOk = null;
+                datosComandosOk = null;
+                mostrarConversaciones([], 0);
+                mostrarAuditoria({});
+                cargarDashboard();
+            });
         }
 
         // Primera carga

@@ -16,7 +16,7 @@
             <?php HTML::tarjeta("menu_bot", "Configuración", "Conexión del bot", "fa-solid fa-gear", "primary", "index.php?modulo=menu_bot&accion=configuracion"); ?>
 
             <!-- Historial -->
-            <?php HTML::tarjeta("menu_bot", "Historial", "Auditoría del bot", "fa-solid fa-clock-rotate-left", "info", "index.php?modulo=menu_bot&accion=historial"); ?>
+            <?php HTML::tarjeta("menu_bot", "Historial", "Conversaciones del bot", "fa-solid fa-clock-rotate-left", "info", "index.php?modulo=menu_bot&accion=historial"); ?>
 
             <!-- Auditoría -->
             <?php HTML::tarjeta("menu_bot", "Auditoría", "Cambios del sistema", "fa-solid fa-clipboard-list", "dark", "index.php?modulo=menu_bot&accion=auditoria"); ?>

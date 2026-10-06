@@ -3,4 +3,9 @@
 # bot-wsp-backend) por separado en cada pasada. Instalar en la VPS/host donde
 # vive el panel (NO en la VPS del bot 149.50.137.51):
 #   cp watchdog_sistema.cron /etc/cron.d/watchdog_sistema && service cron restart
+#
+# En el host de pruebas, WSP_REGISTRA_AUDITORIA=0 y BOT_REGISTRA_AUDITORIA=0 en el
+# .env del panel: el probe sigue corriendo y queda en /tmp/watchdog.log, pero no
+# se insertan estado_caida/estado_recuperacion, que se mezclarían con los de la
+# VPS en la base compartida. Ver admin/watchdog_sistema.php.
 * * * * * root docker exec cliente_proyecto php /var/www/html/admin/watchdog_sistema.php >> /tmp/watchdog.log 2>&1

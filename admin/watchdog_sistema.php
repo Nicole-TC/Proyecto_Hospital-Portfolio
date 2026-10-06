@@ -15,11 +15,23 @@
 // sigue midiendo; uno caído registra su propia caída, que es justamente lo que
 // este script está para ver.
 //
+// Sobre registrar de más: el probe va por URL de la red docker, y el MISMO
+// nombre (`bot-wsp-backend`) resuelve al contenedor local si el panel corre en
+// la máquina de pruebas y al de la VPS si corre en producción. Como los dos
+// escriben en la misma base `bots` con `canal='whatsapp'`, las caídas de prueba
+// se mezclan con las reales y ensucian el "Total de Caídas" del panel. Por eso
+// cada canal tiene su propia bandera: en local se pone en 0 y el watchdog sigue
+// midiendo (probe + log), pero no inserta transiciones. Lo apagado NO es el
+// default, para que desplegar este archivo a la VPS no cambie el comportamiento
+// que ya tenía.
+//
 // Variables usadas (env del container / .env del panel):
-//   MONITOR_URL      opcional; si está vacía se usa BOT_API_URL (solo Telegram)
-//   BOT_API_SECRET   token para el header X-API-Key de Telegram
-//   WSP_API_URL      URL del backend de WhatsApp
-//   WSP_API_SECRET   token para el header X-API-Key de WhatsApp
+//   MONITOR_URL          opcional; si está vacía se usa BOT_API_URL (solo Telegram)
+//   BOT_API_SECRET       token para el header X-API-Key de Telegram
+//   WSP_API_URL          URL del backend de WhatsApp
+//   WSP_API_SECRET       token para el header X-API-Key de WhatsApp
+//   BOT_REGISTRA_AUDITORIA   0 = no registrar caídas de Telegram. Vacío/1 = sí (default)
+//   WSP_REGISTRA_AUDITORIA   0 = no registrar caídas de WhatsApp. Vacío/1 = sí (default)
 //   BOT_DB_HOST/PORT/NAME/USER/PASSWORD   conexión a la BD "bots" (errores_log)
 declare(strict_types=1);
 
@@ -49,6 +61,27 @@ function watchdog_env(string $clave): string
     return trim((string) getenv($clave));
 }
 
+/**
+ * Lee una bandera booleana del entorno.
+ *
+ * Vacía o ausente = true: es lo que hace que desplegar este archivo en la VPS
+ * no cambie el comportamiento anterior sin tener que tocar su .env. Apagarla
+ * es un acto explícito, en el .env del host donde NO se quiere el historial.
+ *
+ * Acepta las escrituras que se usan de verdad en un .env: 1/0, true/false,
+ * si/no, on/off.
+ */
+function watchdog_bandera(string $clave): bool
+{
+    $valor = strtolower(watchdog_env($clave));
+
+    if ($valor === '') {
+        return true;
+    }
+
+    return !in_array($valor, ['0', 'false', 'no', 'off'], true);
+}
+
 function watchdog_log(string $mensaje): void
 {
     echo '[' . date('Y-m-d H:i:s') . '] ' . $mensaje . PHP_EOL;
@@ -59,6 +92,11 @@ function watchdog_log(string $mensaje): void
  *
  * Telegram conserva el fallback a MONITOR_URL para no romper la instalación
  * que ya estaba; WhatsApp usa WSP_API_URL.
+ *
+ * `registra` es qué hacer con las transiciones de ese canal. Va aparte del
+ * probe a propósito: aunque esté apagado, el watchdog sigue midiendo y
+ * logueando, así que en la máquina de pruebas se ve el estado real del bot
+ * local sin ensuciar el historial que mira el hospital.
  */
 function watchdog_canales(): array
 {
@@ -69,12 +107,14 @@ function watchdog_canales(): array
 
     return [
         'telegram' => [
-            'url'    => rtrim($telegramUrl, '/'),
-            'secret' => watchdog_env('BOT_API_SECRET'),
+            'url'      => rtrim($telegramUrl, '/'),
+            'secret'   => watchdog_env('BOT_API_SECRET'),
+            'registra' => watchdog_bandera('BOT_REGISTRA_AUDITORIA'),
         ],
         'whatsapp' => [
-            'url'    => rtrim(watchdog_env('WSP_API_URL'), '/'),
-            'secret' => watchdog_env('WSP_API_SECRET'),
+            'url'      => rtrim(watchdog_env('WSP_API_URL'), '/'),
+            'secret'   => watchdog_env('WSP_API_SECRET'),
+            'registra' => watchdog_bandera('WSP_REGISTRA_AUDITORIA'),
         ],
     ];
 }
@@ -224,9 +264,13 @@ function watchdog_ejecutar(PDO $pdo, string $canal, array $probe, string $baseUr
 /**
  * Corre un canal de punta a punta.
  *
- * @return int 0 si se registró una transición, si no había cambios, o si el
- *             canal todavía no está configurado (falta un paso de deploy, no
- *             es una falla); 1 solo si el probe o el registro se rompieron.
+ * El probe es siempre el mismo; lo único que se puede apagar (con
+ * <canal>_REGISTRA_AUDITORIA=0) es el INSERT de las transiciones.
+ *
+ * @return int 0 si se registró una transición, si no había cambios, si el canal
+ *             no tiene la auditoría habilitada, o si todavía no está configurado
+ *             (falta un paso de deploy, no es una falla); 1 solo si el probe o el
+ *             registro se rompieron.
  */
 function watchdog_canal(PDO $pdo, string $canal, array $cfg): int
 {
@@ -240,6 +284,14 @@ function watchdog_canal(PDO $pdo, string $canal, array $cfg): int
 
     $probe = watchdog_probar($cfg['url'], $cfg['secret']);
     watchdog_log("[$canal] probe " . ($probe['funcional'] ? 'funcional' : 'caído') . " → {$probe['detalle']}");
+
+    if (!$cfg['registra']) {
+        // Se midió pero no se escribe: es el caso de la máquina de pruebas, donde
+        // las caídas del contenedor local no deben aparecer en el historial del
+        // hospital. Se probea igual para no perder el log de diagnóstico.
+        watchdog_log("[$canal] auditoría desactivada en este entorno, no se registra.");
+        return 0;
+    }
 
     try {
         watchdog_ejecutar($pdo, $canal, $probe, $cfg['url']);

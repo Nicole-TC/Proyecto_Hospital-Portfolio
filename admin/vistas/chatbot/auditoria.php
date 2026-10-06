@@ -355,11 +355,22 @@
                         if (c === '') return true; // Compatibilidad con registros antiguos
                         return c === canalActual;
                     });
-                    // Ordenar por fecha DESC por seguridad
+                    // Ordenar por fecha DESC de verdad. `fecha` viene como
+                    // 'dd/mm/aaaa hh:mm', que comparado como texto ordena por DÍA
+                    // primero ('30/09/2026' > '05/10/2026'), así que las caídas
+                    // más recientes quedaban al final de la tabla y, con
+                    // POR_PAGINA=10, caían en la página 2. Se pasa a ISO, que sí
+                    // ordena lexicográficamente; el desempate es por id, como el
+                    // ORDER BY fecha DESC, id DESC de los dos backends.
+                    const claveFecha = ev => {
+                        const m = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/
+                            .exec((ev.fecha || '').toString().trim());
+                        return m ? `${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}` : '';
+                    };
                     eventos = lista.sort((a, b) => {
-                        const fa = (a.fecha || '').toString();
-                        const fb = (b.fecha || '').toString();
-                        if (fa === fb) return 0;
+                        const fa = claveFecha(a);
+                        const fb = claveFecha(b);
+                        if (fa === fb) return (b.id || 0) - (a.id || 0);
                         return fa < fb ? 1 : -1;
                     });
                     renderResumen(json);
